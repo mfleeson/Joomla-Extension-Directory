@@ -179,7 +179,7 @@ class VeldeveloperupdateformModel extends FormModel
             $table = $this->getTable();
 
             if (isset($table) !== false && $table->load($id) && !empty($table->id)) {
-                $properties = $table->getProperties();
+                $properties = $table->getTableProperties();
                 $table_data = ArrayHelper::toObject($properties, stdClass::class);
                 $user       = Factory::getApplication()->getIdentity();
                 $id         = $table->id;
@@ -202,7 +202,7 @@ class VeldeveloperupdateformModel extends FormModel
                     }
 
                     // Convert the JTable to a clean JObject.
-                    $properties = $table->getProperties(1);
+                    $properties = $table->getTableProperties(1);
                     $this->item = ArrayHelper::toObject($properties, stdClass::class);
 
                     if (isset($this->item->category_id) && is_object($this->item->category_id)) {
@@ -274,7 +274,7 @@ class VeldeveloperupdateformModel extends FormModel
                 $data->update_data_source = $array;
             }
 
-            return $data;
+            return (array)$data;
         }
 
         return [];
@@ -379,7 +379,7 @@ class VeldeveloperupdateformModel extends FormModel
         $id = (!empty($data['id'])) ? $data['id'] : (int) $this->getState('veldeveloperupdate.id');
 
         $data['user_ip'] = $_SERVER['REMOTE_ADDR'];
-        $isLoggedIn      = JedHelper::IsLoggedIn();
+        $isLoggedIn      = JedHelper::isLoggedIn();
         $user            = Factory::getApplication()->getIdentity();
 
         if ((!$id || JedHelper::isAdminOrSuperUser()) && $isLoggedIn) {
@@ -388,14 +388,14 @@ class VeldeveloperupdateformModel extends FormModel
             $table = $this->getTable();
 
             if ($table->save($data) === true) {
-                $ticket                              = JedHelper::CreateVELTicket(2, $table->id);
-                $ticket_message                      = JedHelper::CreateEmptyTicketMessage();
+                $ticket                              = JedHelper::createVELTicket(2, $table->id);
+                $ticket_message                      = JedHelper::createEmptyTicketMessage();
                 $ticket_message['subject']           = $ticket['ticket_subject'];
                 $ticket_message['message']           = $ticket['ticket_text'];
                 $ticket_message['message_direction'] = 1; /*  1 for coming in, 0 for going out */
 
-                $ticket_model = new JedticketformModel();
-                //$ticket_model = BaseDatabaseModel::getInstance('Jedticketform', 'JedModel', ['ignore_request' => true]);
+                $ticket_model = new TicketformModel();
+                //$ticket_model = BaseDatabaseModel::getInstance('Ticketform', 'JedModel', ['ignore_request' => true]);
                 $ticket_model->save($ticket);
                 $ticket_id = $ticket_model->getId();
                 /* We need to store the incoming ticket message */
@@ -408,7 +408,7 @@ class VeldeveloperupdateformModel extends FormModel
                 $ticket_message_model->save($ticket_message);
 
                 /* We need to email standard message to user and store message in ticket */
-                $message_out = JedHelper::GetMessageTemplate(1000);
+                $message_out = JedHelper::getMessageTemplate(1000);
                 if (isset($message_out->subject)) {
                     JedemailHelper::sendEmail($message_out->subject, $message_out->template, $user, 'dummy@dummy.com');
 

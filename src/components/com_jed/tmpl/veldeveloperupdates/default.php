@@ -35,7 +35,7 @@ $canEdit     = $user->authorise('core.edit', 'com_jed');
 $canCheckin  = $user->authorise('core.manage', 'com_jed');
 $canChange   = $user->authorise('core.edit.state', 'com_jed');
 $canDelete   = $user->authorise('core.delete', 'com_jed');
-$isLoggedIn  = JedHelper::IsLoggedIn();
+$isLoggedIn  = JedHelper::isLoggedIn();
 $redirectURL = JedHelper::getLoginlink();
 
 // Import CSS
@@ -66,16 +66,16 @@ if (!$isLoggedIn) {
                     </th>
 
                     <th class=''>
-                        <?php echo HTMLHelper::_('grid.sort', 'COM_JED_VEL_GENERAL_FIELD_ITEM_NAME_LABEL', 'a.vulnerable_item_name', $listDirn, $listOrder); ?>
+                        <?php echo HTMLHelper::_('grid.sort', 'COM_JED_VEL_GENERAL_ITEM_NAME_LABEL', 'a.vulnerable_item_name', $listDirn, $listOrder); ?>
                     </th>
                     <th class=''>
-                        <?php echo HTMLHelper::_('grid.sort', 'COM_JED_VEL_GENERAL_FIELD_ITEM_VERSION_LABEL', 'a.vulnerable_item_version', $listDirn, $listOrder); ?>
+                        <?php echo HTMLHelper::_('grid.sort', 'COM_JED_VEL_GENERAL_ITEM_VERSION_LABEL', 'a.vulnerable_item_version', $listDirn, $listOrder); ?>
                     </th>
                     <th class=''>
-                        <?php echo HTMLHelper::_('grid.sort', 'COM_JED_VEL_GENERAL_FIELD_VEL_ITEM_ID_LABEL', 'a.vel_item_id', $listDirn, $listOrder); ?>
+                        <?php echo HTMLHelper::_('grid.sort', 'COM_JED_VEL_GENERAL_VEL_ITEM_ID_LABEL', 'a.vel_item_id', $listDirn, $listOrder); ?>
                     </th>
                     <th class=''>
-                        <?php echo HTMLHelper::_('grid.sort', 'COM_JED_GENERAL_FIELD_DATE_SUBMITTED_LABEL', 'a.update_date_submitted', $listDirn, $listOrder); ?>
+                        <?php echo HTMLHelper::_('grid.sort', 'COM_JED_GENERAL_DATE_SUBMITTED_LABEL', 'a.update_date_submitted', $listDirn, $listOrder); ?>
                     </th>
 
 

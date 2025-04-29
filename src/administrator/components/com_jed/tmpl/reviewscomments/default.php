@@ -72,13 +72,13 @@ if ($saveOrder) {
                             <?php echo HTMLHelper::_('searchtools.sort', 'JGLOBAL_FIELD_ID_LABEL', 'a.id', $listDirn, $listOrder); ?>
                         </th>
                         <th class='left'>
-                            <?php echo HTMLHelper::_('searchtools.sort', 'COM_JED_REVIEWCOMMENTS_FIELD_REVIEW_ID_LABEL', 'a.review_id', $listDirn, $listOrder); ?>
+                            <?php echo HTMLHelper::_('searchtools.sort', 'COM_JED_REVIEWCOMMENTS_REVIEW_ID_LABEL', 'a.review_id', $listDirn, $listOrder); ?>
                         </th>
                         <th class='left'>
-                            <?php echo HTMLHelper::_('searchtools.sort', 'COM_JED_REVIEWCOMMENTS_FIELD_IP_ADDRESS_LABEL', 'a.ip_address', $listDirn, $listOrder); ?>
+                            <?php echo HTMLHelper::_('searchtools.sort', 'COM_JED_GENERAL_IPADDRESS_LABEL', 'a.ip_address', $listDirn, $listOrder); ?>
                         </th>
                         <th class='left'>
-                            <?php echo HTMLHelper::_('searchtools.sort', 'COM_JED_GENERAL_FIELD_CREATED_ON_LABEL', 'a.created_on', $listDirn, $listOrder); ?>
+                            <?php echo HTMLHelper::_('searchtools.sort', 'COM_JED_GENERAL_CREATED_ON_LABEL', 'a.created_on', $listDirn, $listOrder); ?>
                         </th>
                         <th class='left'>
                             <?php echo HTMLHelper::_('searchtools.sort', 'JGLOBAL_FIELD_CREATED_BY_LABEL', 'a.created_by', $listDirn, $listOrder); ?>

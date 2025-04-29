@@ -22,7 +22,6 @@ use Joomla\CMS\Form\Form;
 use Joomla\CMS\HTML\Helpers\Sidebar;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\View\HtmlView as BaseHtmlView;
-
 use Joomla\CMS\Toolbar\Toolbar;
 use Joomla\Registry\Registry;
 use Joomla\CMS\Pagination\Pagination;
@@ -55,7 +54,7 @@ class HtmlView extends BaseHtmlView
     {
         $canDo = JedHelper::getActions();
 
-        ToolbarHelper::title(Text::_('COM_JED_TITLE_EXTENSIONIMAGES'), "generic");
+        ToolbarHelper::title(Text::_('COM_JED_EXTENSIONIMAGES'), "generic");
 
         $toolbar = Toolbar::getInstance(); //$toolbar = Factory::getContainer()->get(ToolbarFactoryInterface::class)->createToolbar('toolbar');
 

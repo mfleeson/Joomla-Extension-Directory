@@ -34,7 +34,7 @@ $lang->load('com_jed', JPATH_SITE);
 $user    = Factory::getApplication()->getIdentity();
 $canEdit = JedHelper::canUserEdit($this->item);
 
-$isLoggedIn  = JedHelper::IsLoggedIn();
+$isLoggedIn  = JedHelper::isLoggedIn();
 $redirectURL = JedHelper::getLoginlink();
 
 if (!$isLoggedIn) {
@@ -65,7 +65,7 @@ if (!$isLoggedIn) {
                 $fieldsets['overview']['fields']          = [];
 
 
-                $fieldsets['aboutyou']['title']       = Text::_('COM_JED_VEL_GENERAL_FIELD_ABOUT_YOU_LABEL');
+                $fieldsets['aboutyou']['title']       = Text::_('COM_JED_VEL_GENERAL_ABOUT_YOU_LABEL');
                 $fieldsets['aboutyou']['description'] = "";
                 $fieldsets['aboutyou']['fields']      = [
                 'reporter_fullname',

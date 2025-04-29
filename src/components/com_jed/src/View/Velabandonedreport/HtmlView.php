@@ -22,7 +22,6 @@ use Joomla\CMS\Form\Form;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\View\HtmlView as BaseHtmlView;
 use Joomla\Registry\Registry;
-
 use stdClass;
 
 /**
@@ -62,7 +61,6 @@ class HtmlView extends BaseHtmlView
      * @var   Registry
      * @since 4.0.0
      */
-    protected mixed $params;
 
     /**
      * Prepares the document

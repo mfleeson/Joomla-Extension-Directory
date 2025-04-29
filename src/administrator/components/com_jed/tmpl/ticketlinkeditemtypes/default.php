@@ -75,7 +75,7 @@ if ($saveOrder) {
                             <?php echo HTMLHelper::_('searchtools.sort', 'JGLOBAL_TITLE', 'a.`title`', $listDirn, $listOrder); ?>
                         </th>
                         <th class='left'>
-                            <?php echo HTMLHelper::_('searchtools.sort', 'COM_JED_TICKET_LINKED_ITEM_TYPES_MODEL', 'a.`model`', $listDirn, $listOrder); ?>
+                            <?php echo HTMLHelper::_('searchtools.sort', 'COM_JED_TICKET_LINKED_ITEM_FIELD_MODEL_LABEL', 'a.`model`', $listDirn, $listOrder); ?>
                         </th>
 
 

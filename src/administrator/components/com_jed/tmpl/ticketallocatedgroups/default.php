@@ -73,7 +73,7 @@ if ($saveOrder) {
                             <?php echo HTMLHelper::_('searchtools.sort', 'JGLOBAL_FIELD_ID_LABEL', 'a.`id`', $listDirn, $listOrder); ?>
                         </th>
                         <th class='left'>
-                            <?php echo HTMLHelper::_('searchtools.sort', 'COM_JED_TICKET_ALLOCATED_GROUP_FIELD_NAME_LABEL', 'a.`name`', $listDirn, $listOrder); ?>
+                            <?php echo HTMLHelper::_('searchtools.sort', 'COM_JED_GENERAL_NAME_LABEL', 'a.`name`', $listDirn, $listOrder); ?>
                         </th>
 
 

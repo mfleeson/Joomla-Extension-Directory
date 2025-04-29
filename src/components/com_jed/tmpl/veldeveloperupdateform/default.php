@@ -36,12 +36,12 @@ $wa->useStyle('com_jed.form');
 $user    = Factory::getApplication()->getIdentity();
 $canEdit = JedHelper::canUserEdit($this->item);
 
-$isLoggedIn  = JedHelper::IsLoggedIn();
+$isLoggedIn  = JedHelper::isLoggedIn();
 $redirectURL = JedHelper::getLoginlink();
 
 if (!$isLoggedIn) {
     try {
-        $app = JFactory::getApplication();
+        $app = Factory::getApplication();
     } catch (Exception $e) {
     }
 
@@ -64,7 +64,7 @@ if (!$isLoggedIn) {
                 $fieldsets['overview']['description']     = Text::_('COM_JED_VEL_DEVELOPERUPDATES_FORM_OVERVIEW_DESCR');
                 $fieldsets['overview']['fields']          = [];
 
-                $fieldsets['aboutyou']['title']       = Text::_('COM_JED_VEL_GENERAL_FIELD_ABOUT_YOU_LABEL');
+                $fieldsets['aboutyou']['title']       = Text::_('COM_JED_VEL_GENERAL_ABOUT_YOU_LABEL');
                 $fieldsets['aboutyou']['description'] = "";
                 $fieldsets['aboutyou']['fields']      = [
                 'contact_fullname',

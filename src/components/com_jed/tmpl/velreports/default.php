@@ -35,7 +35,7 @@ $canEdit     = $user->authorise('core.edit', 'com_jed');
 $canCheckin  = $user->authorise('core.manage', 'com_jed');
 $canChange   = $user->authorise('core.edit.state', 'com_jed');
 $canDelete   = $user->authorise('core.delete', 'com_jed');
-$isLoggedIn  = JedHelper::IsLoggedIn();
+$isLoggedIn  = JedHelper::isLoggedIn();
 $redirectURL = JedHelper::getLoginlink();
 
 // Import CSS
@@ -69,23 +69,23 @@ if (!$isLoggedIn) {
                     </th>
 
                     <th class=''>
-                        <?php echo HTMLHelper::_('grid.sort', 'COM_JED_VEL_GENERAL_FIELD_ITEM_NAME_LABEL', 'a.vulnerable_item_name', $listDirn, $listOrder); ?>
+                        <?php echo HTMLHelper::_('grid.sort', 'COM_JED_VEL_GENERAL_ITEM_NAME_LABEL', 'a.vulnerable_item_name', $listDirn, $listOrder); ?>
                     </th>
                     <th class=''>
-                        <?php echo HTMLHelper::_('grid.sort', 'COM_JED_VEL_GENERAL_FIELD_ITEM_VERSION_LABEL', 'a.vulnerable_item_version', $listDirn, $listOrder); ?>
+                        <?php echo HTMLHelper::_('grid.sort', 'COM_JED_VEL_GENERAL_ITEM_VERSION_LABEL', 'a.vulnerable_item_version', $listDirn, $listOrder); ?>
                     </th>
                     <th class=''>
-                        <?php echo HTMLHelper::_('grid.sort', 'COM_JED_VEL_GENERAL_FIELD_EXPLOIT_TYPE_LABEL', 'a.exploit_type', $listDirn, $listOrder); ?>
+                        <?php echo HTMLHelper::_('grid.sort', 'COM_JED_VEL_GENERAL_EXPLOIT_TYPE_LABEL', 'a.exploit_type', $listDirn, $listOrder); ?>
                     </th>
                     <th class=''>
-                        <?php echo HTMLHelper::_('grid.sort', 'COM_JED_VEL_GENERAL_FIELD_CONSENT_TO_PROCESS_LABEL', 'a.consent_to_process', $listDirn, $listOrder); ?>
+                        <?php echo HTMLHelper::_('grid.sort', 'COM_JED_VEL_GENERAL_CONSENT_TO_PROCESS_LABEL', 'a.consent_to_process', $listDirn, $listOrder); ?>
                     </th>
                     <th class=''>
-                        <?php echo HTMLHelper::_('grid.sort', 'COM_JED_VEL_GENERAL_FIELD_PASSED_TO_VEL_LABEL', 'a.passed_to_vel', $listDirn, $listOrder); ?>
+                        <?php echo HTMLHelper::_('grid.sort', 'COM_JED_VEL_GENERAL_PASSED_TO_VEL_LABEL', 'a.passed_to_vel', $listDirn, $listOrder); ?>
                     </th>
 
                     <th class=''>
-                        <?php echo HTMLHelper::_('grid.sort', 'COM_JED_GENERAL_FIELD_DATE_SUBMITTED_LABEL', 'a.date_submitted', $listDirn, $listOrder); ?>
+                        <?php echo HTMLHelper::_('grid.sort', 'COM_JED_GENERAL_DATE_SUBMITTED_LABEL', 'a.date_submitted', $listDirn, $listOrder); ?>
                     </th>
 
 

@@ -34,7 +34,7 @@ $lang->load('com_jed', JPATH_SITE);
 $user    = Factory::getApplication()->getIdentity();
 $canEdit = JedHelper::canUserEdit($this->item);
 
-$isLoggedIn  = JedHelper::IsLoggedIn();
+$isLoggedIn  = JedHelper::isLoggedIn();
 $redirectURL = JedHelper::getLoginlink();
 
 echo LayoutHelper::render('review.guidelines', $this->extension_details);
@@ -45,7 +45,7 @@ echo LayoutHelper::render('review.guidelines', $this->extension_details);
         <?php
         if (!$isLoggedIn) {
             try {
-                $app = JFactory::getApplication();
+                $app = Factory::getApplication();
             } catch (Exception $e) {
             }
 
@@ -74,7 +74,7 @@ echo LayoutHelper::render('review.guidelines', $this->extension_details);
             }
             try {
                 $xml = new SimpleXMLElement(
-                    '<field name="supply_option_id" type="radio"         label="COM_JED_REVIEWS_FIELD_SUPPLY_OPTION_ID_LABEL"           description="COM_JED_REVIEWS_FIELD_SUPPLY_OPTION_ID_DESCR"
+                    '<field name="supply_option_id" type="radio"         label="COM_JED_EXTENSION_SUPPLY_OPTION_ID_LABEL"           description="COM_JED_REVIEWS_SUPPLY_OPTION_ID_DESCR"
                default="' . $default . '" class="btn-group">      ' . $optionstr . '  </field>'
                 );
             } catch (Exception $e) {
