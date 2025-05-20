@@ -26,7 +26,7 @@ HTMLHelper::_('bootstrap.tooltip');
 HTMLHelper::_('behavior.multiselect');
 HTMLHelper::_('formbehavior.chosen', 'select');
 
-$user        = $this->getCurrentUser();
+$user        = Factory::getApplication()->getIdentity();
 $userId      = $user->id;
 $listOrder   = $this->state->get('list.ordering');
 $listDirn    = $this->state->get('list.direction');
@@ -37,20 +37,16 @@ $canCreate = $isLoggedIn;
 
 
 // Import CSS
-//$wa = $this->getDocument()->getWebAssetManager();
+//$wa = Factory::getApplication()->getDocument()->getWebAssetManager();
 //$wa->useStyle('com_jed.list');
 
 ?>
 
     <form action="<?php echo htmlspecialchars(Uri::getInstance()->toString()); ?>" method="post"
           name="ticketsForm" id="ticketsForm">
-        <div class="container"><div class="row">
-        <div class="col-10"><?php echo '<fieldset class="mytickets"><legend>' . Text::_('COM_JED_TICKETS_LIST_HEADER') . '</legend>' . Text::_('COM_JED_TICKETS_LIST_DESCR') . '</fieldset>'; ?></div>
-        <div class="col-2">
-        <a href="index.php?option=com_jed&view=ticketform" class="btn btn-primary pull-right">Create Ticket</a></div>
-            </div></div>
+        <?php echo '<fieldset class="mytickets"><legend>' . Text::_('COM_JED_TICKETS_LIST_HEADER') . '</legend>' . Text::_('COM_JED_TICKETS_LIST_DESCR') . '</fieldset>'; ?>
         <?php if (!empty($this->filterForm)) {
-          //  echo LayoutHelper::render('joomla.searchtools.default', ['view' => $this]);
+            echo LayoutHelper::render('joomla.searchtools.default', ['view' => $this]);
         } ?>
         <div class="table-responsive">
             <table class="table table-striped" id="ticketList">
@@ -86,14 +82,14 @@ $canCreate = $isLoggedIn;
                 </thead>
                 <tfoot>
                 <tr>
-                    <td colspan="<?php echo isset($this->ticket_items[0]) ? count(get_object_vars($this->ticket_items[0])) : 10; ?>">
+                    <td colspan="<?php echo isset($displayData[0]) ? count(get_object_vars($displayData[0])) : 10; ?>">
                         <?php echo $this->pagination->getListFooter(); ?>
                     </td>
                 </tr>
                 </tfoot>
                 <tbody>
-                <?php foreach ($this->ticket_items as $i => $item) : ?>
-                    <?php $canEdit = $this->getCurrentUser()->id == $item->created_by; ?>
+                <?php foreach ($displayData as $i => $item) : ?>
+                    <?php $canEdit = Factory::getApplication()->getIdentity()->id == $item->created_by; ?>
 
                     <tr class="row<?php echo $i % 2; ?>">
 

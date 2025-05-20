@@ -136,7 +136,6 @@ $canState = $this->getCurrentUser()->authorise('core.edit.state', 'com_jed');
                 throw new Exception(Text::_('JERROR_ALERTNOAUTHOR'), 403); ?>
         </h3>
         <?php else : ?>
-<h3 id="extensiontitle"></h3>
         <form id="form-extension"
               action="<?php
                   echo Route::_('index.php?option=com_jed&task=extensionform.save'); ?>"
@@ -145,7 +144,7 @@ $canState = $this->getCurrentUser()->authorise('core.edit.state', 'com_jed');
                 <?php
                 $fieldsets['overview']['title']       = Text::_('COM_JED_EXTENSION_ADD_EXTENSION_LABEL');
                 $fieldsets['overview']['description']     = Text::_('COM_JED_EXTENSION_ADD_EXTENSION_LABEL_DESCR') . '</br>' . '</br>';
-                $fieldsets['overview']['fields']          = [['title','alias'],'version',['primary_category_id', 'tags']];
+                $fieldsets['overview']['fields']          = ['supply_option_id',['title','alias'],'version',['primary_category_id', 'tags']];
                 $fieldsets['overview']['hidden']          = [];
 
                 JedHelper::outputFieldsets($fieldsets, $this->form);

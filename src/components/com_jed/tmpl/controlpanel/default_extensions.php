@@ -3,7 +3,7 @@
 /**
  * @package JED
  *
- * @subpackage TICKETS
+ * @subpackage Extensions
  *
  * @copyright (C) 2022 Open Source Matters, Inc.  <https://www.joomla.org>
  * @license   GNU General Public License version 2 or later; see LICENSE.txt
@@ -43,11 +43,11 @@ $canCreate = $isLoggedIn;
 ?>
 
     <form action="<?php echo htmlspecialchars(Uri::getInstance()->toString()); ?>" method="post"
-          name="ticketsForm" id="ticketsForm">
+          name="extensionsForm" id="extensionsForm">
         <div class="container"><div class="row">
-        <div class="col-10"><?php echo '<fieldset class="mytickets"><legend>' . Text::_('COM_JED_TICKETS_LIST_HEADER') . '</legend>' . Text::_('COM_JED_TICKETS_LIST_DESCR') . '</fieldset>'; ?></div>
+        <div class="col-10"><?php echo '<fieldset class="myextensions"><legend>' . Text::_('COM_JED_EXTENSIONS_LIST_HEADER') . '</legend>' . Text::_('COM_JED_EXTENSIONS_LIST_DESCR') . '</fieldset>'; ?></div>
         <div class="col-2">
-        <a href="index.php?option=com_jed&view=ticketform" class="btn btn-primary pull-right">Create Ticket</a></div>
+        <a href="index.php?option=com_jed&view=extensionform" class="btn btn-primary pull-right">Submit Extension</a></div>
             </div></div>
         <?php if (!empty($this->filterForm)) {
           //  echo LayoutHelper::render('joomla.searchtools.default', ['view' => $this]);
@@ -58,10 +58,10 @@ $canCreate = $isLoggedIn;
                 <tr>
 
                     <th class='left'>
-                        <?php echo HTMLHelper::_('searchtools.sort', 'COM_JED_GENERAL_TYPE_LABEL', 'a.`ticket_category_type`', $listDirn, $listOrder); ?>
+                        <?php echo HTMLHelper::_('searchtools.sort', 'COM_JED_EXTENSION_NAME_LABEL', 'a.`name`', $listDirn, $listOrder); ?>
                     </th>
                     <th class='left'>
-                        <?php echo HTMLHelper::_('searchtools.sort', 'COM_JED_GENERAL_SUBJECT_LABEL', 'a.`ticket_subject`', $listDirn, $listOrder); ?>
+                        <?php echo HTMLHelper::_('searchtools.sort', 'Supply Type', 'a.`ticket_subject`', $listDirn, $listOrder); ?>
                     </th>
 
                     <th class='left'>
@@ -71,10 +71,6 @@ $canCreate = $isLoggedIn;
                     <th class='left'>
                         <?php echo HTMLHelper::_('searchtools.sort', 'JSTATUS', 'a.`ticket_status`', $listDirn, $listOrder); ?>
                     </th>
-                    <th class='left'>
-                        <?php echo HTMLHelper::_('searchtools.sort', 'COM_JED_TICKETS_ALLOCATED_GROUP_LABEL', 'a.`allocated_group`', $listDirn, $listOrder); ?>
-                    </th>
-
 
                     <?php if ($canEdit) : ?>
                         <th class="center">
@@ -100,15 +96,15 @@ $canCreate = $isLoggedIn;
 
                         <td>
 
-                            <?php echo $item->categorytype_string; ?>
+                            <?php // echo $item->categorytype_string; ?>
                         </td>
                         <td>
 
                             <?php if ($canEdit) : ?>
                                 <a href="<?php echo Route::_('index.php?option=com_jed&task=ticket.edit&id=' . (int) $item->id); ?>">
-                                    <?php echo $this->escape($item->ticket_subject); ?></a>
+                                    <?php // echo $this->escape($item->ticket_subject); ?></a>
                             <?php else : ?>
-                                <?php echo $this->escape($item->ticket_subject); ?>
+                                <?php // echo  $this->escape($item->ticket_subject); ?>
                             <?php endif; ?>
 
                         </td>
@@ -117,7 +113,7 @@ $canCreate = $isLoggedIn;
 
                             <?php try {
                                 $d = new DateTime($item->created_on);
-                                echo $d->format("d M y H:i");
+                               // echo $d->format("d M y H:i");
                             } catch (Exception $e) {
                             }
                             ?>
@@ -126,14 +122,11 @@ $canCreate = $isLoggedIn;
 
                         <td>
 
-                            <?php echo $item->ticket_status; ?>
+                            <?php // echo $item->ticket_status; ?>
                         </td>
 
 
-                        <td>
 
-                            <?php echo $item->ticketallocatedgroup_string; ?>
-                        </td>
 
 
                         <?php if ($canEdit) : ?>

@@ -122,5 +122,9 @@
                description="JGLOBAL_FIELD_CREATED_BY_DESC" hint="COM_JED_FORM_LBL_EXTENSIONVARIEDDATUM_CREATED_BY"/>
         <field name="created_on" type="timecreated" label="COM_JED_GENERAL_CREATED_ON_LABEL"
                description="COM_JED_FORM_DESC_EXTENSION_CREATED_ON" hint="COM_JED_GENERAL_CREATED_ON_LABEL"/>
+
+        <field name="supply_option_id" type="foreignkey" label="COM_JED_EXTENSION_SUPPLY_OPTION_LABEL"
+               default="0" input_type="list" table="#__jed_extension_supply_options" key_field="id" translate="true"
+               value_field="title"/>
     </fieldset>
 </form>

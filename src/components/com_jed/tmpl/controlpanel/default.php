@@ -59,13 +59,12 @@ if (!$isLoggedIn) {
     <?php
     echo HTMLHelper::_('uitab.startTabSet', 'controlpanel_tabs');
 
-    echo HTMLHelper::_('uitab.addTab', 'controlpanel_tabs', 'tickets_tab' . "My Tickets", "My Tickets");
-    //echo LayoutHelper::render('controlpanel.tickets', $this->tickets);
+    echo HTMLHelper::_('uitab.addTab', 'controlpanel_tabs', 'tickets_tab' . Text::_('COM_JED_TICKETS_LIST_HEADER'), Text::_('COM_JED_TICKETS_LIST_HEADER'));
     echo $this->loadTemplate('tickets');
     echo HTMLHelper::_('uitab.endTab');
 
-    echo HTMLHelper::_('uitab.addTab', 'controlpanel_tabs', 'extensions_tab' . "My Extensions", "My Extensions");
-    echo "Hello";
+    echo HTMLHelper::_('uitab.addTab', 'controlpanel_tabs', 'extensions_tab' . Text::_('COM_JED_EXTENSIONS_LIST_HEADER'), Text::_('COM_JED_EXTENSIONS_LIST_HEADER'));
+    echo $this->loadTemplate('extensions');
     echo HTMLHelper::_('uitab.endTab');
 
 
