@@ -21,7 +21,6 @@ use Exception;
 use Jed\Component\Jed\Administrator\Helper\JedemailHelper;
 use Jed\Component\Jed\Administrator\Helper\JedHelper;
 use Joomla\CMS\Factory;
-use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\Controller\FormController;
 use Joomla\CMS\Router\Route;
 
@@ -50,7 +49,7 @@ class TicketController extends FormController
      * @since  4.0.0
      * @throws Exception
      */
-    public function getTemplate()
+    public function getTemplate(): void
     {
         //  Session::checkToken('post') or die;
         $app        = Factory::getApplication();
@@ -83,7 +82,7 @@ class TicketController extends FormController
      * @since  4.0.0
      * @throws \PHPMailer\PHPMailer\Exception
      */
-    public function sendMessage()
+    public function sendMessage(): void
     {
         $this->task = $_POST['task'];
 
@@ -91,7 +90,7 @@ class TicketController extends FormController
         if ($this->task == "ticket.sendmessage") {
             /* Functionality
             1 - Verify
-            2 - Send email with mesage
+            2 - Send email with message
             3 - Store message to database
             4 - Redirect back to ticket so message history reloads
             */
@@ -101,7 +100,7 @@ class TicketController extends FormController
 
             $id          = $_POST['jform']['id'];
             $ticket_user = JedHelper::getUserById($_POST['jform']['created_by_num']);
-            JedemailHelper::sendEmail($subject, $message, $ticket_user, 'mark@burninglight.co.uk');
+            JedemailHelper::sendEmail($subject, $message, $ticket_user, 'dummy@joomla.org');
             $this->storeMessage($id, $subject, $message);
             $this->setRedirect(Route::_('index.php?option=com_tickets&view=ticket&layout=edit&id=' . (int)$id, false));
         }
@@ -110,11 +109,13 @@ class TicketController extends FormController
     /**
      * Store Ticket Message back to database
      *
-     * @param int $ticket_id
-     * @param $subject
-     * @param $message
+     * @param   int  $ticket_id
+     * @param        $subject
+     * @param        $message
      *
      * @since 4.0.0
+     *
+     * @throws Exception
      */
     public function storeMessage(int $ticket_id, $subject, $message)
     {

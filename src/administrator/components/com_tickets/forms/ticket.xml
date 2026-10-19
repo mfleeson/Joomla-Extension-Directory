@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<form addfieldprefix="Jed\Component\Jed\Administrator\Field,Jed\Component\Tickets\Administrator\Field">
+<form addfieldprefix="Jed\Component\Jed\Administrator\Field">
     <fieldset>
-        <field name="id" type="text" readonly="true" class="readonly" default="0" description="JGLOBAL_FIELD_ID_DESC"/>
+        <field name="id" type="text" readonly="true" class="readonly" default="0" label="JGLOBAL_FIELD_ID_LABEL" description="JGLOBAL_FIELD_ID_DESC"/>
         <field name="ticket_origin" default="0" type="list" label="COM_TICKETS_TICKETS_TICKET_ORIGIN_LABEL"
                description="COM_TICKETS_TICKETS_TICKET_ORIGIN_DESCR"
                hint="COM_TICKETS_TICKETS_TICKET_ORIGIN_LABEL">
             <option value="0">COM_TICKETS_TICKETS_TICKET_ORIGIN_OPTION_0</option>
             <option value="1">COM_TICKETS_TICKETS_TICKET_ORIGIN_OPTION_1</option>
         </field>
-        <field name="ticket_category_type" type="foreignkey" label="COM_TICKETS_GENERAL_TYPE_LABEL"
-               description="COM_TICKETS_TICKETS_TICKET_CATEGORY_TYPE_DESCR" input_type="list"
-               table="#__jed_ticket_categories" key_field="id" value_field="categorytype" default="0"/>
+        <field name="ticket_category_type" type="sql" label="COM_TICKETS_GENERAL_TYPE_LABEL"
+               description="COM_TICKETS_TICKETS_TICKET_CATEGORY_TYPE_DESCR"
+               query="SELECT id, categorytype from #__jed_ticket_categories" key_field="id" value_field="categorytype" default="0"/>
         <field name="ticket_subject" filter="safehtml" type="text" label="COM_TICKETS_GENERAL_SUBJECT_LABEL"
                description="COM_TICKETS_TICKETS_TICKET_SUBJECT_DESCR"
                hint="COM_TICKETS_GENERAL_SUBJECT_LABEL"/>
@@ -32,16 +32,16 @@
                label="COM_TICKETS_TICKETS_UPLOADED_FILES_LOCATION_LABEL"
                description="COM_TICKETS_TICKETS_UPLOADED_FILES_LOCATION_DESCR"
                hint="COM_TICKETS_TICKETS_UPLOADED_FILES_LOCATION_LABEL"/>
-        <field name="allocated_group" type="foreignkey" label="COM_TICKETS_TICKETS_ALLOCATED_GROUP_LABEL"
-               description="COM_TICKETS_TICKETS_ALLOCATED_GROUP_DESCR" input_type="list"
-               table="#__jed_ticket_groups"
+        <field name="allocated_group" type="sql" label="COM_TICKETS_TICKETS_ALLOCATED_GROUP_LABEL"
+               description="COM_TICKETS_TICKETS_ALLOCATED_GROUP_DESCR"
+               query ="select id,name from #__jed_ticket_groups"
                key_field="id" value_field="name" default="0"/>
         <field name="allocated_to" type="user" label="COM_TICKETS_TICKETS_ALLOCATED_TO_LABEL"
                description="COM_TICKETS_TICKETS_ALLOCATED_TO_DESCR"
                hint="COM_TICKETS_TICKETS_ALLOCATED_TO_LABEL"/>
         <field name="linked_item_type" type="enum" enum="Jed\Component\Tickets\Administrator\Enum\TicketType"
                prefix="COM_TICKETS_TICKETS_LINKED_ITEM_TYPE_OPTION" label="COM_TICKETS_TICKETS_LINKED_ITEM_TYPE_LABEL"
-               description="COM_TICKETS_TICKETS_LINKED_ITEM_TYPE_DESCR" default="0">
+               description="COM_TICKETS_TICKETS_LINKED_ITEM_TYPE_DESCR" default="0" addfieldprefix ="Jed\Component\Tickets\Administrator\Field">
             <option value="0">COM_TICKETS_TICKETS_LINKED_ITEM_TYPE_OPTION_NONE</option>
         </field>
         <field name="linked_item_id" label="COM_TICKETS_TICKETS_LINKED_ITEM_ID_LABEL"
@@ -64,6 +64,7 @@
             publication state. Both used to be labelled JSTATUS, which is why the same ticket could
             appear to be in two different statuses at once.
         -->
+        <!-- The below field does not make sense, it should be a published/unpublished state but as all tickets should be shown regardless of state. I am hiding it for now. MF -->
         <field name="state" type="list" label="COM_TICKETS_TICKETS_STATE_LABEL"
                description="COM_TICKETS_TICKETS_STATE_DESCR" class="inputbox" size="1"
                default="1">
@@ -75,6 +76,7 @@
         </field>
         <field name="ordering"/>
         <field name="created_by" type="createdby" label="JGLOBAL_FIELD_CREATED_BY_LABEL"/>
+
         <field name="created_by_num" type="number" label="JGLOBAL_FIELD_CREATED_BY_LABEL"/>
         <field name="created_on" default="0000-00-00" type="timecreated"
                label="COM_TICKETS_GENERAL_CREATED_ON_LABEL"

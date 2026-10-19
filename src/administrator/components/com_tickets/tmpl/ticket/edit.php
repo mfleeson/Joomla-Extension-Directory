@@ -49,6 +49,7 @@ $fieldhiddenoptions = ['hidden' => true];
 
 $container   = Factory::getContainer();
 $userFactory = $container->get('user.factory');
+
 ?>
 
 
@@ -57,11 +58,10 @@ $userFactory = $container->get('user.factory');
         method="post" enctype="multipart/form-data" name="adminForm" id="ticket-form"
         class="form-validate form-horizontal">
 
-
     <div class="com_jed_ticket">
         <div class="row-fluid">
             <!-- header boxes -->
-            <?php echo LayoutHelper::render('ticket.ticket.header', $this->form); ?>
+            <?php echo LayoutHelper::render('ticket.header', $this->form); ?>
 
         </div>
 
@@ -81,14 +81,15 @@ $userFactory = $container->get('user.factory');
                 <h1><?php echo Text::_('COM_TICKETS_MASTERDATA_LABEL'); ?></h1>
                 <div class="container">
                     <?php echo LayoutHelper::render($this->linkedItemLayout, $this->linkedItemData); ?>
-                    <?php if ($this->linkedItemActions) : ?>
+                    <!-- The below code crashes the standard form toolbar actions, commented out for now by MF -->
+                    <?php /*if ($this->linkedItemActions) : ?>
                         <div class="row jed-ticket-actions mt-2">
                             <?php foreach ($this->linkedItemActions as $action) :
                                 /** @var TicketAction $action */
-                                echo LayoutHelper::render('ticket.action_button', ['action' => $action]);
+                             /*   echo LayoutHelper::render('ticket.action_button', ['action' => $action]);
                             endforeach; ?>
                         </div>
-                    <?php endif; ?>
+                    <?php endif; */ ?>
                 </div>
             </div>
 
@@ -163,12 +164,12 @@ $userFactory = $container->get('user.factory');
                     <div class="row">
                         <div class="col"><?php echo $this->form->renderField('created_by', null, null, $headerlabeloptions); ?></div>
                         <div class="col"><?php
-                        echo 'on ';
+                            echo 'on ';
 
-                        echo JedHelper::prettyDate($this->item->created_on);
+                            echo JedHelper::prettyDate($this->item->created_on);
 
 
-                        ?></div>
+                            ?></div>
                     </div>
 
                 </div>
@@ -191,19 +192,20 @@ $userFactory = $container->get('user.factory');
     echo HTMLHelper::_('uitab.addTab', $this->linked_item_type_name.'Tab', 'Linked'.$this->linked_item_type_name, 'Linked '.$this->linked_item_type_name);
 
     echo LayoutHelper::render(
-                            'ticket.'.$this->linkedItemLayout,
-                            $this->linkedItemData
-                        );
+            'ticket.'.$this->linkedItemLayout,
+            $this->linkedItemData
+    );
 
     echo HTMLHelper::_('uitab.endTab');
-?>
+    ?>
 
     <?php echo HTMLHelper::_('uitab.addTab', 'myTab', 'Publishing', Text::_('COM_TICKETS_TAB_PUBLISHING', true)); ?>
     <div class="row-fluid">
         <div class="span10 form-horizontal">
             <fieldset class="adminform">
                 <legend><?php echo Text::_('COM_TICKETS_GENERAL_PUBLISHING_LABEL'); ?></legend>
-                <?php echo $this->form->renderField('state'); ?>
+                <!-- The below field does not make sense, it should be a published/unpublished state but as all tickets should be shown regardless of state. I am hiding it for now. MF -->
+                <?php //echo $this->form->renderField('state'); ?>
 
                 <?php echo $this->form->renderField('created_on'); ?>
                 <?php echo $this->form->renderField('modified_by'); ?>
@@ -224,6 +226,7 @@ $userFactory = $container->get('user.factory');
 
 
     <?php echo HTMLHelper::_('uitab.endTabSet'); ?>
+
 
     <input type="hidden" name="task" value=""/>
     <?php echo HTMLHelper::_('form.token'); ?>
