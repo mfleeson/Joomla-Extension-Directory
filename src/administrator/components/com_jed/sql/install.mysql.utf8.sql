@@ -794,7 +794,148 @@ CREATE TABLE IF NOT EXISTS `#__jed_ticket_linked_item_types`
 INSERT IGNORE INTO `#__jed_ticket_linked_item_types`(`id`, `title`, `model`, `ordering`, `state`, `checked_out`, `checked_out_time`, `created_by`, `modified_by`) VALUES
 (1, 'Unknown', 'unknown', 0, 1, NULL, NULL, 652, 652),
 (2, 'Extension', 'Extension', 1, 1, NULL, NULL, 652, 652),
-(3, 'Review', 'Review', 0, 1, NULL, NULL, 652, 652);
+(3, 'Review', 'Review', 0, 1, NULL, NULL, 652, 652),
+(4, 'Vulnerable Item Initial Report', 'Velreport', 0, 1, NULL, NULL, 652, 652),
+(5, 'Vulnerable Item Developer Update', 'Veldeveloperupdate', 0, 1, NULL, NULL, 652, 652),
+(6, 'VEL Abandonware Report', 'Velabandonedreport', 0, 1, NULL, NULL, 652, 652);
+
+
+/* Vulnerable Extension Lists (VEL) */
+
+CREATE TABLE IF NOT EXISTS `#__jed_vel_report`
+(
+	`id`                               int unsigned NOT NULL AUTO_INCREMENT,
+	`reporter_fullname`                varchar(255) NOT NULL DEFAULT '',
+	`reporter_email`                   varchar(255) NOT NULL DEFAULT '',
+	`reporter_organisation`            varchar(255) NOT NULL DEFAULT '',
+	`pass_details_ok`                  int          NOT NULL DEFAULT '0',
+	`vulnerability_type`               int          NOT NULL DEFAULT '0',
+	`vulnerable_item_name`             varchar(255) NOT NULL DEFAULT '',
+	`vulnerable_item_version`          varchar(255) NOT NULL DEFAULT '',
+	`exploit_type`                     int          NOT NULL DEFAULT '0',
+	`exploit_other_description`        text         NOT NULL,
+	`vulnerability_description`        text         NOT NULL,
+	`vulnerability_how_found`          text         NOT NULL,
+	`vulnerability_actively_exploited` int          NOT NULL DEFAULT '0',
+	`vulnerability_publicly_available` int          NOT NULL DEFAULT '0',
+	`vulnerability_publicly_url`       varchar(255) NOT NULL DEFAULT '',
+	`vulnerability_specific_impact`    text         NOT NULL,
+	`developer_communication_type`     int          NOT NULL DEFAULT '0',
+	`developer_patch_download_url`     varchar(255) NOT NULL DEFAULT '',
+	`developer_name`                   varchar(255) NOT NULL DEFAULT '',
+	`developer_contact_email`          varchar(255) NOT NULL DEFAULT '',
+	`tracking_db_name`                 varchar(255) NOT NULL DEFAULT '',
+	`tracking_db_id`                   varchar(255) NOT NULL DEFAULT '',
+	`jed_url`                          varchar(255) NOT NULL DEFAULT '',
+	`developer_additional_info`        text         NOT NULL,
+	`download_url`                     varchar(255) NOT NULL DEFAULT '',
+	`consent_to_process`               int          NOT NULL DEFAULT '0',
+	`passed_to_vel`                    int          NOT NULL DEFAULT '0',
+	`vel_item_id`                      int          NOT NULL DEFAULT '0',
+	`data_source`                      int          NOT NULL DEFAULT '0',
+	`date_submitted`                   datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	`user_ip`                          varchar(20)  NOT NULL DEFAULT '',
+	`created_by`                       int          NOT NULL DEFAULT '0',
+	`modified_by`                      int          NOT NULL DEFAULT '0',
+	`created`                          datetime,
+	`modified`                         datetime,
+	PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 DEFAULT COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `#__jed_vel_developer_update`
+(
+	`id`                      int unsigned NOT NULL AUTO_INCREMENT,
+	`contact_fullname`        varchar(255) NOT NULL DEFAULT '',
+	`contact_organisation`    varchar(255) NOT NULL DEFAULT '',
+	`contact_email`           varchar(255) NOT NULL DEFAULT '',
+	`vulnerable_item_name`    varchar(255) NOT NULL DEFAULT '',
+	`vulnerable_item_version` varchar(255) NOT NULL DEFAULT '',
+	`extension_update`        text         NOT NULL,
+	`new_version_number`      varchar(255) NOT NULL DEFAULT '',
+	`update_notice_url`       varchar(255) NOT NULL DEFAULT '',
+	`changelog_url`           varchar(255) NOT NULL DEFAULT '',
+	`download_url`            varchar(255) NOT NULL DEFAULT '',
+	`consent_to_process`      int                   DEFAULT '0',
+	`vel_item_id`             int          NOT NULL DEFAULT '0',
+	`update_data_source`      int          NOT NULL DEFAULT '0',
+	`update_date_submitted`   datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	`update_user_ip`          varchar(20)  NOT NULL DEFAULT '',
+	`created_by`              int          NOT NULL DEFAULT '0',
+	`modified_by`             int          NOT NULL DEFAULT '0',
+	`created`                 datetime,
+	`modified`                datetime,
+	PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 DEFAULT COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `#__jed_vel_abandoned_report`
+(
+	`id`                    int unsigned NOT NULL AUTO_INCREMENT,
+	`reporter_fullname`     varchar(255) NOT NULL,
+	`reporter_email`        varchar(255) NOT NULL,
+	`reporter_organisation` varchar(255) NULL     DEFAULT '',
+	`extension_name`        varchar(255) NOT NULL,
+	`developer_name`        varchar(255) NULL     DEFAULT '',
+	`extension_version`     varchar(255) NULL     DEFAULT '',
+	`extension_url`         varchar(255) NULL     DEFAULT '',
+	`abandoned_reason`      text         NULL,
+	`consent_to_process`    varchar(255) NOT NULL DEFAULT '0',
+	`passed_to_vel`         varchar(255) NULL     DEFAULT '0',
+	`vel_item_id`           int          NULL     DEFAULT 0,
+	`data_source`           varchar(255) NULL     DEFAULT '0',
+	`date_submitted`        datetime     NULL     DEFAULT CURRENT_TIMESTAMP,
+	`user_ip`               varchar(20)  NULL     DEFAULT '',
+	`created_by`            int          NULL     DEFAULT 0,
+	`modified_by`           int          NULL     DEFAULT 0,
+	`created`               datetime,
+	`modified`              datetime,
+	PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 DEFAULT COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `#__jed_vel_vulnerable_item`
+(
+	`id`                        int unsigned  NOT NULL AUTO_INCREMENT,
+	`vulnerable_item_name`      varchar(255)  NOT NULL DEFAULT '',
+	`vulnerable_item_version`   varchar(255)  NOT NULL DEFAULT '',
+	`title`                     varchar(255)  NOT NULL DEFAULT '',
+	`internal_description`      text          NOT NULL,
+	`status`                    int           NOT NULL DEFAULT '0',
+	`report_id`                 int           NOT NULL DEFAULT '-1',
+	`jed`                       varchar(255)  NOT NULL DEFAULT '',
+	`risk_level`                varchar(255)  NOT NULL DEFAULT '',
+	`start_version`             varchar(255)  NOT NULL DEFAULT '',
+	`vulnerable_version`        varchar(255)  NOT NULL DEFAULT '',
+	`patch_version`             varchar(255)  NOT NULL DEFAULT '',
+	`recommendation`            varchar(255)  NOT NULL DEFAULT '',
+	`update_notice`             varchar(255)  NOT NULL DEFAULT '',
+	`exploit_type`              int           NOT NULL DEFAULT '0',
+	`exploit_other_description` text          NOT NULL,
+	`xml_manifest`              text          NOT NULL,
+	`manifest_location`         varchar(255)  NOT NULL DEFAULT '',
+	`install_data`              varchar(255)  NOT NULL DEFAULT '',
+	`discovered_by`             varchar(255)  NOT NULL DEFAULT '',
+	`discoverer_public`         varchar(255)  NOT NULL DEFAULT '',
+	`fixed_by`                  varchar(255)  NOT NULL DEFAULT '',
+	`coordinated_by`            varchar(255)  NOT NULL DEFAULT '',
+	`jira`                      varchar(255)  NOT NULL DEFAULT '',
+	`cve_id`                    varchar(255)  NOT NULL DEFAULT '',
+	`cwe_id`                    varchar(255)  NOT NULL DEFAULT '',
+	`cvssthirty_base`           varchar(255)  NOT NULL DEFAULT '',
+	`cvssthirty_base_score`     decimal(5, 2) NOT NULL DEFAULT '0.00',
+	`cvssthirty_temp`           varchar(255)  NOT NULL DEFAULT '',
+	`cvssthirty_temp_score`     decimal(5, 2) NOT NULL DEFAULT '0.00',
+	`cvssthirty_env`            varchar(255)  NOT NULL DEFAULT '',
+	`cvssthirty_env_score`      decimal(5, 2) NOT NULL DEFAULT '0.00',
+	`public_description`        text          NOT NULL,
+	`alias`                     varchar(255)  NOT NULL DEFAULT '',
+	`created_by`                int           NOT NULL DEFAULT '0',
+	`modified_by`               int           NOT NULL DEFAULT '0',
+	`created`                   datetime,
+	`modified`                  datetime,
+	`checked_out`               int unsigned,
+	`checked_out_time`          datetime,
+	`state`                     tinyint       NOT NULL DEFAULT '0',
+	PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 DEFAULT COLLATE=utf8mb4_unicode_ci;
 
 
 /* JED Ticket Messages */

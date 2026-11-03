@@ -40,5 +40,9 @@ DROP TABLE IF EXISTS `#__jed_ticket_linked_item_types`;
 DROP TABLE IF EXISTS `#__jed_ticket_messages`;
 DROP TABLE IF EXISTS `#__jed_ticket_internal_notes`;
 DROP TABLE IF EXISTS `#__jed_tickets`;
+DROP TABLE IF EXISTS `#__jed_vel_report`;
+DROP TABLE IF EXISTS `#__jed_vel_developer_update`;
+DROP TABLE IF EXISTS `#__jed_vel_abandoned_report`;
+DROP TABLE IF EXISTS `#__jed_vel_vulnerable_item`;
 
 SET FOREIGN_KEY_CHECKS = 1;
