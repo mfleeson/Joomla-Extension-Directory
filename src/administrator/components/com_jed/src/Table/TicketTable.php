@@ -111,7 +111,7 @@ class TicketTable extends Table
             }
         }
 
-        // A new ticket carries no id.
+        // A new ticket carries no id. So setting default value to 0
         $src['id'] ??= 0;
 
         $input = Factory::getApplication()->input;
