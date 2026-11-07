@@ -17,17 +17,20 @@ namespace Jed\Component\Vel\Administrator\Feed;
 // phpcs:enable PSR1.Files.SideEffects
 
 use DateTimeImmutable;
-use Jed\Component\Vel\Administrator\Enum\FeedClassification;
 use Jed\Component\Vel\Administrator\Enum\FeedSource;
-use Joomla\CMS\Log\Log;
 
 /**
  * The NVD feed (VEL2-PRD §6.6.2): discovery by keyword, enrichment by id.
  *
- * The NVD's own source identifier for a record is an address, not a CNA short name, so the
- * classifier's "ours" test cannot fire here; what the NVD contributes for our own records is
- * enrichment, done by {@see self::fetchOne()} for every advisory with a CVE id. Discovery keeps
- * other-CNA records that name a Joomla extension.
+ * The classifier recognises our own records by the NVD's `sourceIdentifier`
+ * (`security@joomla.org`). What the NVD contributes for them is enrichment - CVSS, CWE, CPE
+ * bounds - done by {@see self::fetchOne()} for every advisory with a CVE id, and it comes back
+ * empty for most recent records (`Deferred`: 209 of the 326 records of 2026). Discovery keeps
+ * other CNAs' records that name a Joomla extension and queues mere mentions for a person.
+ *
+ * Errors: the NVD answers a bad request with 404 and a `message` header; `NvdClient` turns
+ * that into an exception, and this source lets it end the run loudly rather than as "nothing
+ * found".
  *
  * @since 4.0.0
  */
@@ -83,9 +86,9 @@ final class NvdFeedSource implements FeedSourceInterface
                 try {
                     $page = $this->client->search($this->keyword, $cursor, $end, $start, 500);
                 } catch (\Throwable $e) {
-                    Log::add('VEL NVD feed: ' . $e->getMessage(), Log::WARNING, 'com_vel');
-
-                    return;
+                    // A refused request is our bug (404 + message) or a rate limit; either way
+                    // the run must say so, not report a clean empty window.
+                    throw new \RuntimeException('NVD discovery: ' . $e->getMessage(), 0, $e);
                 }
 
                 $items = (array) ($page['vulnerabilities'] ?? []);
@@ -101,15 +104,9 @@ final class NvdFeedSource implements FeedSourceInterface
                         continue;
                     }
 
-                    $mapped->classification = $this->classifier->classify($mapped);
+                    $this->classifier->classify($mapped);
 
-                    // Core and "mentions Joomla somewhere" are the NVD's only useful verdicts;
-                    // a description that merely contains the word is the one to review.
-                    if ($mapped->classification === FeedClassification::UNRELATED && (bool) ($mapped->normalised['mentions_joomla'] ?? false)) {
-                        $mapped->classification = FeedClassification::UNKNOWN;
-                    }
-
-                    if ($mapped->classification !== FeedClassification::UNRELATED && $this->classifier->worthKeeping($mapped->classification) || $mapped->classification === FeedClassification::UNKNOWN) {
+                    if ($this->classifier->worthKeeping($mapped->classification)) {
                         yield $mapped;
                     }
                 }
@@ -140,7 +137,7 @@ final class NvdFeedSource implements FeedSourceInterface
         $mapped = NvdRecordMapper::map($item);
 
         if ($mapped !== null) {
-            $mapped->classification = $this->classifier->classify($mapped);
+            $this->classifier->classify($mapped);
         }
 
         return $mapped;

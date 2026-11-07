@@ -465,9 +465,12 @@ CREATE TABLE IF NOT EXISTS `#__vel_feed_runs`
 	`items_seen`    int unsigned NOT NULL DEFAULT '0',
 	`items_new`     int unsigned NOT NULL DEFAULT '0',
 	`items_updated` int unsigned NOT NULL DEFAULT '0',
-	-- running | ok | partial | failed.
+	-- running | ok | partial | failed. `partial` has three meanings (fetch cap reached, delta
+	-- range under-sized, gap older than the log's retention) and `message` says which.
 	`status`        varchar(8)   NOT NULL DEFAULT 'running',
-	`message`       text,
+	`message`       text         NOT NULL,
+	-- Source-specific resume state: the delta log's ETag for the CVE feed.
+	`cursor`        varchar(255) NOT NULL DEFAULT '',
 
 	PRIMARY KEY (`id`),
 	KEY `IDX_vel_feed_runs_source` (`source`, `started`)
@@ -485,8 +488,13 @@ CREATE TABLE IF NOT EXISTS `#__vel_feed_items`
 	`external_updated` datetime     DEFAULT NULL,
 	`content_hash`     char(64)     NOT NULL DEFAULT '',
 	`payload`          mediumtext,
-	-- joomla_cna | joomla_extension_other_cna | joomla_core | unrelated | unknown.
-	`classification`   varchar(32)  NOT NULL DEFAULT 'unknown',
+	-- joomla_cna | joomla_extension_other_cna | joomla_core | rejected | unclassified | unrelated.
+	-- `classification_reason` names the rule of the ten-step cascade that fired (R-02, feeds
+	-- PRD §5.1) and `confidence` how sure it was, because an editor deciding about a record
+	-- needs to see *why* it is in the queue.
+	`classification`        varchar(32)  NOT NULL DEFAULT 'unclassified',
+	`classification_reason` varchar(32)  NOT NULL DEFAULT '',
+	`confidence`            varchar(8)   NOT NULL DEFAULT 'low',
 	-- pending | created | merged | ignored.
 	`decision`         varchar(16)  NOT NULL DEFAULT 'pending',
 	`advisory_id`      int unsigned DEFAULT NULL,

@@ -95,6 +95,45 @@ class FeeditemsController extends AdminController
     }
 
     /**
+     * Seed the CNA feed: build the back catalogue of our own CVE IDs once, before delta polling
+     * takes over (feeds PRD §2.3). Manual only - the task plugin never seeds, because a seed
+     * that silently re-runs every night would hammer the NVD for nothing. Repeat until the
+     * message says complete.
+     *
+     * @return void
+     *
+     * @since 4.0.0
+     */
+    public function seed(): void
+    {
+        $this->checkToken();
+
+        $return = Route::_('index.php?option=com_vel&view=feedruns', false);
+
+        if (!$this->app->getIdentity()->authorise('vel.feeds', 'com_vel')) {
+            $this->setRedirect($return, Text::_('JERROR_ALERTNOAUTHOR'), 'error');
+
+            return;
+        }
+
+        try {
+            $db  = Factory::getContainer()->get(DatabaseInterface::class);
+            $run = (new FeedRunner($db, new VelService($db)))->seed(60);
+        } catch (Throwable $e) {
+            $this->setRedirect($return, $e->getMessage(), 'error');
+
+            return;
+        }
+
+        $this->setRedirect(
+            $return,
+            Text::sprintf('COM_VEL_MSG_FEED_SEED', Text::_('COM_VEL_FEED_RUN_STATUS_' . strtoupper((string) $run->status)), (int) $run->items_seen, (int) $run->items_new, (int) $run->items_updated)
+            . ((string) $run->message !== '' ? ' ' . $run->message : ''),
+            (string) $run->status === 'failed' ? 'error' : ((string) $run->status === 'partial' ? 'warning' : 'message')
+        );
+    }
+
+    /**
      * Ignore the selected items.
      *
      * @return void

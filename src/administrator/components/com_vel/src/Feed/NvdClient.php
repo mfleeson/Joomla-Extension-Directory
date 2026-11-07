@@ -17,15 +17,22 @@ namespace Jed\Component\Vel\Administrator\Feed;
 // phpcs:enable PSR1.Files.SideEffects
 
 use DateTimeImmutable;
+use DateTimeZone;
 use Joomla\Http\Http;
 use RuntimeException;
 
 /**
- * NVD API 2.0 (VEL2-PRD §6.6.2, Appendix D).
+ * NVD API 2.0, as measured on 2026-11-05 (R-01).
  *
- * Rate limits: 5 requests per rolling 30 seconds without a key, 50 with one. This client sleeps
- * between requests regardless, because a 403 from the NVD costs more time than the sleep. Date
- * windows may not exceed 120 days; the runner splits longer ones.
+ * The one fact that shapes this class: **NVD reports parameter errors as HTTP 404 with an empty
+ * body and the reason in a `message` response header.** A 404 *with* that header is our bug and
+ * fails the run loudly; a 404 *without* it on a `cveId` lookup is "no such record". Treating
+ * every 404 as "not found" would report a clean run on every malformed request.
+ *
+ * Limits, enforced: windows of at most 120 days, `resultsPerPage` at most 2000. Rate limits
+ * are the documented 5 requests per rolling 30 s without a key and 50 with one; the service
+ * sends no rate-limit headers at all, so the pause is fixed and a 403 or 429 trips the run.
+ * Timestamps are accepted in several forms; this client sends `…Z` so the intent is in the URL.
  *
  * @since 4.0.0
  */
@@ -33,9 +40,10 @@ final class NvdClient
 {
     public const BASE = 'https://services.nvd.nist.gov/rest/json/cves/2.0';
 
+    public const MAX_WINDOW_DAYS = 120;
+    public const MAX_PER_PAGE    = 2000;
+
     /**
-     * Seconds between requests: 6 without a key (5 per 30 s), 1 with one.
-     *
      * @var float
      *
      * @since 4.0.0
@@ -61,50 +69,39 @@ final class NvdClient
     }
 
     /**
-     * One page of CVEs modified in a window that mention a keyword.
+     * One page of CVEs matching a keyword, modified in a window.
      *
      * @param string            $keyword    `keywordSearch`.
      * @param DateTimeImmutable $from       Window start.
      * @param DateTimeImmutable $to         Window end (at most 120 days after start).
      * @param int               $startIndex Paging offset.
-     * @param int               $perPage    Page size (max 2000).
+     * @param int               $perPage    Page size.
+     * @param string            $dateField  `lastMod` (default) or `pub`.
      *
-     * @return array  The decoded response (`totalResults`, `vulnerabilities[]`).
+     * @return array  The decoded envelope (`totalResults`, `resultsPerPage`, `vulnerabilities[]`).
      *
      * @throws RuntimeException
      *
      * @since 4.0.0
      */
-    public function search(string $keyword, DateTimeImmutable $from, DateTimeImmutable $to, int $startIndex = 0, int $perPage = 500): array
+    public function search(string $keyword, DateTimeImmutable $from, DateTimeImmutable $to, int $startIndex = 0, int $perPage = 500, string $dateField = 'lastMod'): array
     {
         return $this->get([
-            'keywordSearch'    => $keyword,
-            'lastModStartDate' => $from->format('Y-m-d\TH:i:s.000'),
-            'lastModEndDate'   => $to->format('Y-m-d\TH:i:s.000'),
-            'resultsPerPage'   => max(1, min(2000, $perPage)),
-            'startIndex'       => max(0, $startIndex),
+            'keywordSearch'         => $keyword,
+            $dateField . 'StartDate' => self::stamp($from),
+            $dateField . 'EndDate'   => self::stamp($to),
+            'resultsPerPage'        => max(1, min(self::MAX_PER_PAGE, $perPage)),
+            'startIndex'            => max(0, $startIndex),
         ]);
     }
 
     /**
-     * @param string $cveId The id.
+     * One page of CVEs matching a keyword, with no date window at all (the whole corpus: 1,633
+     * records for "Joomla", which fits in one page of 2000).
      *
-     * @return array|null  The `vulnerabilities[0]` entry, or null.
-     *
-     * @throws RuntimeException
-     *
-     * @since 4.0.0
-     */
-    public function byId(string $cveId): ?array
-    {
-        $response = $this->get(['cveId' => strtoupper(trim($cveId))]);
-        $first    = $response['vulnerabilities'][0] ?? null;
-
-        return \is_array($first) ? $first : null;
-    }
-
-    /**
-     * @param array $query Query parameters.
+     * @param string $keyword    `keywordSearch`.
+     * @param int    $startIndex Paging offset.
+     * @param int    $perPage    Page size.
      *
      * @return array
      *
@@ -112,7 +109,81 @@ final class NvdClient
      *
      * @since 4.0.0
      */
-    private function get(array $query): array
+    public function keyword(string $keyword, int $startIndex = 0, int $perPage = self::MAX_PER_PAGE): array
+    {
+        return $this->get([
+            'keywordSearch'  => $keyword,
+            'resultsPerPage' => max(1, min(self::MAX_PER_PAGE, $perPage)),
+            'startIndex'     => max(0, $startIndex),
+        ]);
+    }
+
+    /**
+     * One page of CVEs by their NVD source identifier (`security@joomla.org` for ours).
+     *
+     * @param string                 $sourceIdentifier The identifier.
+     * @param DateTimeImmutable|null $from             Window start, or null for no window.
+     * @param DateTimeImmutable|null $to               Window end.
+     * @param int                    $startIndex       Paging offset.
+     * @param int                    $perPage          Page size.
+     * @param string                 $dateField        `lastMod` or `pub`.
+     *
+     * @return array
+     *
+     * @throws RuntimeException
+     *
+     * @since 4.0.0
+     */
+    public function bySource(string $sourceIdentifier, ?DateTimeImmutable $from, ?DateTimeImmutable $to, int $startIndex = 0, int $perPage = 500, string $dateField = 'lastMod'): array
+    {
+        $query = [
+            'sourceIdentifier' => $sourceIdentifier,
+            'resultsPerPage'   => max(1, min(self::MAX_PER_PAGE, $perPage)),
+            'startIndex'       => max(0, $startIndex),
+        ];
+
+        if ($from !== null && $to !== null) {
+            $query[$dateField . 'StartDate'] = self::stamp($from);
+            $query[$dateField . 'EndDate']   = self::stamp($to);
+        }
+
+        return $this->get($query);
+    }
+
+    /**
+     * @param string $cveId The id.
+     *
+     * @return array|null  The `vulnerabilities[0]` entry, or null for no such record.
+     *
+     * @throws RuntimeException
+     *
+     * @since 4.0.0
+     */
+    public function byId(string $cveId): ?array
+    {
+        $response = $this->get(['cveId' => strtoupper(trim($cveId))], true);
+
+        if ($response === null) {
+            return null;
+        }
+
+        $first = $response['vulnerabilities'][0] ?? null;
+
+        return \is_array($first) ? $first : null;
+    }
+
+    /**
+     * @param array $query        Query parameters.
+     * @param bool  $nullOnAbsent Whether a bare 404 (no `message` header) means "no record"
+     *                            and returns null rather than throwing.
+     *
+     * @return array|null
+     *
+     * @throws RuntimeException
+     *
+     * @since 4.0.0
+     */
+    private function get(array $query, bool $nullOnAbsent = false): ?array
     {
         $this->throttle();
 
@@ -130,21 +201,49 @@ final class NvdClient
             throw new RuntimeException('NVD request failed: ' . $e->getMessage(), 0, $e);
         }
 
-        if ($response->code === 403 || $response->code === 429) {
-            throw new RuntimeException('NVD rate limit hit (' . $response->code . '); try again later or add an API key.');
+        $status  = $response->getStatusCode();
+        $message = trim($response->getHeaderLine('message'));
+
+        if ($status === 403 || $status === 429) {
+            throw new RuntimeException('NVD rate limit hit (' . $status . '); try again later or add an API key.');
         }
 
-        if ($response->code >= 400) {
-            throw new RuntimeException('NVD answered ' . $response->code . ': ' . mb_substr((string) ($response->headers['message'][0] ?? $response->body), 0, 200));
+        if ($status === 404) {
+            // The header is the error body. Its absence on an id lookup is simply "no record".
+            if ($message !== '') {
+                throw new RuntimeException('NVD refused the request: ' . $message);
+            }
+
+            if ($nullOnAbsent) {
+                return null;
+            }
+
+            throw new RuntimeException('NVD answered 404 with no message for ' . $url);
         }
 
-        $decoded = json_decode((string) $response->body, true);
+        if ($status >= 400) {
+            throw new RuntimeException('NVD answered ' . $status . ($message !== '' ? ': ' . $message : ''));
+        }
+
+        $decoded = json_decode((string) $response->getBody(), true);
 
         if (!\is_array($decoded)) {
             throw new RuntimeException('NVD returned invalid JSON.');
         }
 
         return $decoded;
+    }
+
+    /**
+     * @param DateTimeImmutable $date A moment.
+     *
+     * @return string  `YYYY-MM-DDTHH:MM:SS.000Z`.
+     *
+     * @since 4.0.0
+     */
+    public static function stamp(DateTimeImmutable $date): string
+    {
+        return $date->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d\TH:i:s.000\Z');
     }
 
     /**

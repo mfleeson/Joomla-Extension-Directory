@@ -59,38 +59,38 @@ final class CveRecordBuilderTest extends TestCase
         }
 
         return (object) [
-            'id'                   => 42,
-            'alias'                => 'xss-regular-labs',
-            'title'                => 'XSS vectors in tag-provided inputs in various Regular Labs extensions',
-            'state'                => 'published',
-            'status'               => 'patched',
-            'description'          => '<p>Tag-provided custom HTML, module content/title overrides and decoded modal or tooltip values could execute unsafe markup. A content author could inject JavaScript that ran in visitors’ browsers.</p>',
-            'solution'             => '',
-            'workaround'           => '',
-            'cvss_version'         => null,
-            'cvss_vector'          => null,
-            'cvss_score'           => null,
-            'severity'             => null,
-            'exploited'            => 'unknown',
-            'discovery'            => 'UNKNOWN',
-            'cve_id'               => 'CVE-2026-64795',
-            'cve_state'            => 'published',
-            'cve_assigner'         => 'Joomla',
-            'date_reserved'        => '2026-07-20 18:16:31',
-            'date_published'       => '2026-07-22 20:41:19',
-            'date_updated'         => '2026-07-27 13:29:26',
-            'date_public'          => null,
-            'date_reported'        => null,
+            'id'             => 42,
+            'alias'          => 'xss-regular-labs',
+            'title'          => 'XSS vectors in tag-provided inputs in various Regular Labs extensions',
+            'state'          => 'published',
+            'status'         => 'patched',
+            'description'    => '<p>Tag-provided custom HTML, module content/title overrides and decoded modal or tooltip values could execute unsafe markup. A content author could inject JavaScript that ran in visitors’ browsers.</p>',
+            'solution'       => '',
+            'workaround'     => '',
+            'cvss_version'   => null,
+            'cvss_vector'    => null,
+            'cvss_score'     => null,
+            'severity'       => null,
+            'exploited'      => 'unknown',
+            'discovery'      => 'UNKNOWN',
+            'cve_id'         => 'CVE-2026-64795',
+            'cve_state'      => 'published',
+            'cve_assigner'   => 'Joomla',
+            'date_reserved'  => '2026-07-20 18:16:31',
+            'date_published' => '2026-07-22 20:41:19',
+            'date_updated'   => '2026-07-27 13:29:26',
+            'date_public'    => null,
+            'date_reported'  => null,
             'date_vendor_notified' => null,
-            'date_fixed'           => null,
-            'products'             => $products,
-            'cwes'                 => [(object) ['cwe_id' => 'CWE-79', 'description' => "CWE-79 Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"]],
-            'references'           => [(object) ['url' => 'https://regularlabs.com/', 'name' => '', 'tags' => ['product']]],
-            'credits'              => [],
+            'date_fixed'     => null,
+            'products'       => $products,
+            'cwes'           => [(object) ['cwe_id' => 'CWE-79', 'description' => "CWE-79 Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"]],
+            'references'     => [(object) ['url' => 'https://regularlabs.com/', 'name' => '', 'tags' => ['product']]],
+            'credits'        => [],
         ];
     }
 
-    private function builder(string $style = 'structured'): CveRecordBuilder
+    private function builder(string $style = 'structured', bool $extra = false): CveRecordBuilder
     {
         return new CveRecordBuilder(
             new AdvisorySerializer('https://extensions.joomla.org', '/vulnerable-extensions'),
@@ -99,7 +99,8 @@ final class CveRecordBuilderTest extends TestCase
             '5.2',
             'Joomla Extension - {vendor} - ',
             ' extension for Joomla',
-            $style
+            $style,
+            $extra
         );
     }
 
@@ -151,12 +152,23 @@ final class CveRecordBuilderTest extends TestCase
             self::assertSame($expected['vendor'], $cna['affected'][$i]['vendor']);
             self::assertSame($expected['product'], $cna['affected'][$i]['product']);
             self::assertSame('unaffected', $cna['affected'][$i]['defaultStatus']);
-            self::assertSame(['Joomla'], $cna['affected'][$i]['platforms']);
+
+            // The CNA emits none of platforms / packageName / collectionURL (R-02.3); the VEL
+            // follows unless the option says otherwise.
+            self::assertArrayNotHasKey('platforms', $cna['affected'][$i]);
+            self::assertArrayNotHasKey('collectionURL', $cna['affected'][$i]);
 
             // The example's "1.0.0-15.0.0" string becomes version + lessThanOrEqual.
             [$from, $to] = explode('-', $expected['versions'][0]['version']);
             self::assertSame(['version' => $from, 'status' => 'affected', 'versionType' => 'custom', 'lessThanOrEqual' => $to], $cna['affected'][$i]['versions'][0]);
         }
+    }
+
+    public function testExtraAffectedFieldsAreOptIn(): void
+    {
+        $cna = $this->builder('structured', true)->record($this->advisory())['containers']['cna'];
+
+        self::assertSame(['Joomla'], $cna['affected'][0]['platforms']);
     }
 
     public function testAffectedProductsStringStyleReproducesTheExample(): void
@@ -172,8 +184,8 @@ final class CveRecordBuilderTest extends TestCase
 
     public function testOpenEndedRangeBecomesStar(): void
     {
-        $advisory                                         = $this->advisory();
-        $advisory->products[0]->versions[0]->version_to   = '*';
+        $advisory                            = $this->advisory();
+        $advisory->products[0]->versions[0]->version_to = '*';
         $advisory->products[0]->versions[0]->version_from = '*';
 
         $versions = $this->builder()->record($advisory)['containers']['cna']['affected'][0]['versions'][0];

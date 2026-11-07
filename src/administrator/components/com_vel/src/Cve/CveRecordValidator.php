@@ -22,9 +22,12 @@ namespace Jed\Component\Vel\Administrator\Cve;
  * Two layers. The structural checks below are written from the schema and need nothing
  * installed; they catch every mistake the builder could plausibly make (a missing required
  * member, a bad id, a bad date, an unknown tag or credit type, an empty affected list). The
- * full JSON-Schema validation runs on top when research task R-02 has dropped the schema into
- * `administrator/components/com_vel/schema/cve-record.json` and `opis/json-schema` is in the
- * component's vendor folder - both optional, both detected at runtime.
+ * full JSON-Schema validation runs on top when the schema (`CVE_Record_Format.json` from the
+ * `v5.2.0` tag of CVEProject/cve-schema: draft-07, CC0-1.0, one self-contained file) is at
+ * `administrator/components/com_vel/schema/cve-record.json` and `opis/json-schema` (the
+ * draft-07 validator; `justinrainbow` is draft-04 and will not do) is in the component's vendor
+ * folder - both optional, both detected at runtime. The CNA container validates against
+ * `#/definitions/cnaPublishedContainer` of the same file.
  *
  * @since 4.0.0
  */
@@ -75,7 +78,8 @@ final class CveRecordValidator
             $problems[] = 'dataType must be CVE_RECORD.';
         }
 
-        if (!preg_match('/^5\.\d+(\.\d+)?$/', (string) ($record['dataVersion'] ?? ''))) {
+        // The schema's own pattern: 5.2 and 5.2.0 both validate; untouched records are still 5.1.
+        if (!preg_match('/^5\.(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))?$/', (string) ($record['dataVersion'] ?? ''))) {
             $problems[] = 'dataVersion must be a 5.x version.';
         }
 
@@ -115,7 +119,7 @@ final class CveRecordValidator
             $problems = array_merge($problems, $this->validateCna($cna));
         }
 
-        return array_merge($problems, $this->schemaProblems($record));
+        return array_merge($problems, $this->schemaProblems($record, null));
     }
 
     /**
@@ -269,7 +273,7 @@ final class CveRecordValidator
             }
         }
 
-        return $problems;
+        return array_merge($problems, $this->schemaProblems($cna, 'cnaPublishedContainer'));
     }
 
     /**
@@ -281,7 +285,7 @@ final class CveRecordValidator
      *
      * @since 4.0.0
      */
-    private function schemaProblems(array $record): array
+    private function schemaProblems(array $record, ?string $definition): array
     {
         if ($this->schemaPath === null || !is_file($this->schemaPath) || !class_exists('\\Opis\\JsonSchema\\Validator')) {
             return [];
@@ -290,6 +294,13 @@ final class CveRecordValidator
         try {
             $validator = new \Opis\JsonSchema\Validator();
             $schema    = json_decode((string) file_get_contents($this->schemaPath));
+
+            if ($definition !== null) {
+                // Validate against one named definition of the same file.
+                $schema = (object) ['$ref' => (string) ($schema->{'$id'} ?? 'cve-record.json') . '#/definitions/' . $definition];
+                $validator->resolver()->registerFile((string) ($schema->{'$ref'} ? explode('#', $schema->{'$ref'})[0] : ''), $this->schemaPath);
+            }
+
             $result    = $validator->validate(json_decode((string) json_encode($record)), $schema);
 
             if ($result->isValid()) {
