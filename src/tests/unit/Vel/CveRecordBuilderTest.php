@@ -268,8 +268,11 @@ final class CveRecordBuilderTest extends TestCase
         $problems = (new CveRecordValidator())->validateRecord($record);
 
         self::assertNotSame([], $problems);
-        self::assertTrue((bool) array_filter($problems, static fn (string $p): bool => str_contains($p, 'cveId')));
-        self::assertTrue((bool) array_filter($problems, static fn (string $p): bool => str_contains($p, 'affected')));
+
+        // Problems are `[language key, ...arguments]`; the view translates them.
+        self::assertContains(['COM_VEL_CVE_PROBLEM_NO_CVE_ID'], $problems);
+        self::assertContains(['COM_VEL_CVE_PROBLEM_AT_LEAST_ONE', 'affected'], $problems);
+        self::assertContains(['COM_VEL_CVE_PROBLEM_AT_LEAST_ONE', 'problemTypes'], $problems);
     }
 
     public function testCnaContainerShapeForServices(): void

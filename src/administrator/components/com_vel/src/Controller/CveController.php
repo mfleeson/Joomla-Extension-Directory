@@ -227,7 +227,7 @@ class CveController extends BaseController
         $problems  = (new CveRecordValidator())->validateCna($builder->cnaContainer($advisory));
 
         if ($problems !== []) {
-            $this->fail($id, Text::_('COM_VEL_ERROR_CVE_INVALID') . ' ' . implode(' ', $problems));
+            $this->fail($id, Text::_('COM_VEL_ERROR_CVE_INVALID') . ' ' . implode(' ', array_map(static fn (array $problem): string => Text::sprintf(...$problem), $problems)));
 
             return;
         }

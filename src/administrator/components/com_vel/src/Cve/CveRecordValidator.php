@@ -66,7 +66,8 @@ final class CveRecordValidator
     /**
      * @param array $record A full record (dataType CVE_RECORD).
      *
-     * @return string[]  Problems; empty means valid.
+     * @return array<int, array<int, string>>  Problems as `[language key, ...arguments]`, ready for
+     *                                       `Text::sprintf(...$problem)`; empty means valid.
      *
      * @since 4.0.0
      */
@@ -75,46 +76,46 @@ final class CveRecordValidator
         $problems = [];
 
         if (($record['dataType'] ?? '') !== 'CVE_RECORD') {
-            $problems[] = 'dataType must be CVE_RECORD.';
+            $problems[] = ['COM_VEL_CVE_PROBLEM_DATATYPE'];
         }
 
         // The schema's own pattern: 5.2 and 5.2.0 both validate; untouched records are still 5.1.
         if (!preg_match('/^5\.(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))?$/', (string) ($record['dataVersion'] ?? ''))) {
-            $problems[] = 'dataVersion must be a 5.x version.';
+            $problems[] = ['COM_VEL_CVE_PROBLEM_DATAVERSION'];
         }
 
         $meta = $record['cveMetadata'] ?? null;
 
         if (!\is_array($meta)) {
-            $problems[] = 'cveMetadata is required.';
+            $problems[] = ['COM_VEL_CVE_PROBLEM_REQUIRED', 'cveMetadata'];
         } else {
             if (!preg_match('/^CVE-\d{4}-\d{4,19}$/', (string) ($meta['cveId'] ?? ''))) {
-                $problems[] = 'cveMetadata.cveId is not a CVE id (the advisory has no CVE id yet).';
+                $problems[] = ['COM_VEL_CVE_PROBLEM_NO_CVE_ID'];
             }
 
             if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', (string) ($meta['assignerOrgId'] ?? ''))) {
-                $problems[] = 'cveMetadata.assignerOrgId is not a UUID.';
+                $problems[] = ['COM_VEL_CVE_PROBLEM_NOT_UUID', 'cveMetadata.assignerOrgId'];
             }
 
             if (!\in_array((string) ($meta['state'] ?? ''), ['PUBLISHED', 'RESERVED', 'REJECTED'], true)) {
-                $problems[] = 'cveMetadata.state must be PUBLISHED, RESERVED or REJECTED.';
+                $problems[] = ['COM_VEL_CVE_PROBLEM_STATE'];
             }
 
             foreach (['dateReserved', 'datePublished', 'dateUpdated'] as $date) {
                 if (isset($meta[$date]) && !self::isTimestamp((string) $meta[$date])) {
-                    $problems[] = 'cveMetadata.' . $date . ' is not an ISO 8601 timestamp.';
+                    $problems[] = ['COM_VEL_CVE_PROBLEM_NOT_TIMESTAMP', 'cveMetadata.' . $date];
                 }
             }
 
             if (($meta['state'] ?? '') === 'PUBLISHED' && empty($meta['datePublished'])) {
-                $problems[] = 'A PUBLISHED record needs cveMetadata.datePublished.';
+                $problems[] = ['COM_VEL_CVE_PROBLEM_DATE_PUBLISHED'];
             }
         }
 
         $cna = $record['containers']['cna'] ?? null;
 
         if (!\is_array($cna)) {
-            $problems[] = 'containers.cna is required.';
+            $problems[] = ['COM_VEL_CVE_PROBLEM_REQUIRED', 'containers.cna'];
         } else {
             $problems = array_merge($problems, $this->validateCna($cna));
         }
@@ -125,7 +126,7 @@ final class CveRecordValidator
     /**
      * @param array $cna A CNA container.
      *
-     * @return string[]
+     * @return array<int, array<int, string>>  As validateRecord().
      *
      * @since 4.0.0
      */
@@ -136,23 +137,23 @@ final class CveRecordValidator
         $provider = $cna['providerMetadata'] ?? null;
 
         if (!\is_array($provider) || empty($provider['orgId'])) {
-            $problems[] = 'providerMetadata.orgId is required.';
+            $problems[] = ['COM_VEL_CVE_PROBLEM_REQUIRED', 'providerMetadata.orgId'];
         }
 
         if (isset($cna['title']) && mb_strlen((string) $cna['title']) > 256) {
-            $problems[] = 'title is longer than 256 characters.';
+            $problems[] = ['COM_VEL_CVE_PROBLEM_TOO_LONG', 'title', '256'];
         }
 
         $descriptions = $cna['descriptions'] ?? [];
 
         if (!\is_array($descriptions) || $descriptions === []) {
-            $problems[] = 'At least one description is required.';
+            $problems[] = ['COM_VEL_CVE_PROBLEM_AT_LEAST_ONE', 'descriptions'];
         } else {
             foreach ($descriptions as $i => $description) {
                 if (empty($description['lang']) || trim((string) ($description['value'] ?? '')) === '') {
-                    $problems[] = 'descriptions[' . $i . '] needs lang and value.';
+                    $problems[] = ['COM_VEL_CVE_PROBLEM_NEEDS', 'descriptions[' . $i . ']', 'lang, value'];
                 } elseif (mb_strlen((string) $description['value']) > 4096) {
-                    $problems[] = 'descriptions[' . $i . '].value is longer than 4096 characters.';
+                    $problems[] = ['COM_VEL_CVE_PROBLEM_TOO_LONG', 'descriptions[' . $i . '].value', '4096'];
                 }
             }
         }
@@ -160,37 +161,37 @@ final class CveRecordValidator
         $affected = $cna['affected'] ?? [];
 
         if (!\is_array($affected) || $affected === []) {
-            $problems[] = 'At least one affected product is required.';
+            $problems[] = ['COM_VEL_CVE_PROBLEM_AT_LEAST_ONE', 'affected'];
         } else {
             foreach ($affected as $i => $product) {
                 if (trim((string) ($product['vendor'] ?? '')) === '' || trim((string) ($product['product'] ?? '')) === '') {
-                    $problems[] = 'affected[' . $i . '] needs vendor and product.';
+                    $problems[] = ['COM_VEL_CVE_PROBLEM_NEEDS', 'affected[' . $i . ']', 'vendor, product'];
                 }
 
                 if (isset($product['defaultStatus']) && !\in_array($product['defaultStatus'], ['affected', 'unaffected', 'unknown'], true)) {
-                    $problems[] = 'affected[' . $i . '].defaultStatus is invalid.';
+                    $problems[] = ['COM_VEL_CVE_PROBLEM_INVALID', 'affected[' . $i . '].defaultStatus'];
                 }
 
                 foreach ((array) ($product['versions'] ?? []) as $j => $version) {
                     if (trim((string) ($version['version'] ?? '')) === '') {
-                        $problems[] = 'affected[' . $i . '].versions[' . $j . '].version is required.';
+                        $problems[] = ['COM_VEL_CVE_PROBLEM_REQUIRED', 'affected[' . $i . '].versions[' . $j . '].version'];
                     }
 
                     if (!\in_array((string) ($version['status'] ?? ''), ['affected', 'unaffected', 'unknown'], true)) {
-                        $problems[] = 'affected[' . $i . '].versions[' . $j . '].status is invalid.';
+                        $problems[] = ['COM_VEL_CVE_PROBLEM_INVALID', 'affected[' . $i . '].versions[' . $j . '].status'];
                     }
 
                     if (isset($version['lessThan'], $version['lessThanOrEqual'])) {
-                        $problems[] = 'affected[' . $i . '].versions[' . $j . '] carries both lessThan and lessThanOrEqual.';
+                        $problems[] = ['COM_VEL_CVE_PROBLEM_BOTH_BOUNDS', 'affected[' . $i . '].versions[' . $j . ']'];
                     }
 
                     if ((isset($version['lessThan']) || isset($version['lessThanOrEqual'])) && empty($version['versionType'])) {
-                        $problems[] = 'affected[' . $i . '].versions[' . $j . '] needs versionType with a range.';
+                        $problems[] = ['COM_VEL_CVE_PROBLEM_RANGE_NEEDS_TYPE', 'affected[' . $i . '].versions[' . $j . ']'];
                     }
                 }
 
                 if (empty($product['versions']) && ($product['defaultStatus'] ?? '') !== 'affected') {
-                    $problems[] = 'affected[' . $i . '] has no versions and is not affected by default - nothing is marked affected.';
+                    $problems[] = ['COM_VEL_CVE_PROBLEM_NOTHING_AFFECTED', 'affected[' . $i . ']'];
                 }
             }
         }
@@ -198,16 +199,16 @@ final class CveRecordValidator
         $problemTypes = $cna['problemTypes'] ?? [];
 
         if (!\is_array($problemTypes) || $problemTypes === []) {
-            $problems[] = 'At least one problemType is required.';
+            $problems[] = ['COM_VEL_CVE_PROBLEM_AT_LEAST_ONE', 'problemTypes'];
         } else {
             foreach ($problemTypes as $i => $type) {
                 foreach ((array) ($type['descriptions'] ?? []) as $j => $description) {
                     if (empty($description['lang']) || trim((string) ($description['description'] ?? '')) === '') {
-                        $problems[] = 'problemTypes[' . $i . '].descriptions[' . $j . '] needs lang and description.';
+                        $problems[] = ['COM_VEL_CVE_PROBLEM_NEEDS', 'problemTypes[' . $i . '].descriptions[' . $j . ']', 'lang, description'];
                     }
 
                     if (isset($description['cweId']) && !preg_match('/^CWE-\d{1,5}$/', (string) $description['cweId'])) {
-                        $problems[] = 'problemTypes[' . $i . '].descriptions[' . $j . '].cweId is not a CWE id.';
+                        $problems[] = ['COM_VEL_CVE_PROBLEM_NOT_CWE', 'problemTypes[' . $i . '].descriptions[' . $j . '].cweId'];
                     }
                 }
             }
@@ -216,16 +217,16 @@ final class CveRecordValidator
         $references = $cna['references'] ?? [];
 
         if (!\is_array($references) || $references === []) {
-            $problems[] = 'At least one reference is required.';
+            $problems[] = ['COM_VEL_CVE_PROBLEM_AT_LEAST_ONE', 'references'];
         } else {
             foreach ($references as $i => $reference) {
                 if (!preg_match('~^https?://~i', (string) ($reference['url'] ?? ''))) {
-                    $problems[] = 'references[' . $i . '].url is not a URL.';
+                    $problems[] = ['COM_VEL_CVE_PROBLEM_NOT_URL', 'references[' . $i . '].url'];
                 }
 
                 foreach ((array) ($reference['tags'] ?? []) as $tag) {
                     if (!\in_array($tag, self::TAGS, true) && !str_starts_with((string) $tag, 'x_')) {
-                        $problems[] = 'references[' . $i . '] carries the unknown tag "' . $tag . '".';
+                        $problems[] = ['COM_VEL_CVE_PROBLEM_UNKNOWN_TAG', 'references[' . $i . ']', (string) $tag];
                     }
                 }
             }
@@ -233,11 +234,11 @@ final class CveRecordValidator
 
         foreach ((array) ($cna['credits'] ?? []) as $i => $credit) {
             if (trim((string) ($credit['value'] ?? '')) === '') {
-                $problems[] = 'credits[' . $i . '].value is required.';
+                $problems[] = ['COM_VEL_CVE_PROBLEM_REQUIRED', 'credits[' . $i . '].value'];
             }
 
             if (isset($credit['type']) && !\in_array($credit['type'], self::CREDIT_TYPES, true)) {
-                $problems[] = 'credits[' . $i . '].type "' . $credit['type'] . '" is not a credit type.';
+                $problems[] = ['COM_VEL_CVE_PROBLEM_NOT_CREDIT_TYPE', 'credits[' . $i . '].type', (string) $credit['type']];
             }
         }
 
@@ -245,31 +246,31 @@ final class CveRecordValidator
             $cvss = $metric['cvssV3_1'] ?? $metric['cvssV4_0'] ?? $metric['cvssV3_0'] ?? null;
 
             if (!\is_array($cvss)) {
-                $problems[] = 'metrics[' . $i . '] carries no CVSS object.';
+                $problems[] = ['COM_VEL_CVE_PROBLEM_NO_CVSS', 'metrics[' . $i . ']'];
 
                 continue;
             }
 
             if (!isset($cvss['baseScore']) || (float) $cvss['baseScore'] < 0 || (float) $cvss['baseScore'] > 10) {
-                $problems[] = 'metrics[' . $i . '].baseScore is out of range.';
+                $problems[] = ['COM_VEL_CVE_PROBLEM_SCORE_RANGE', 'metrics[' . $i . '].baseScore'];
             }
 
             if (!\in_array((string) ($cvss['baseSeverity'] ?? ''), ['NONE', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'], true)) {
-                $problems[] = 'metrics[' . $i . '].baseSeverity is invalid.';
+                $problems[] = ['COM_VEL_CVE_PROBLEM_INVALID', 'metrics[' . $i . '].baseSeverity'];
             }
 
             if (!preg_match('/^CVSS:(3\.[01]|4\.0)\//', (string) ($cvss['vectorString'] ?? ''))) {
-                $problems[] = 'metrics[' . $i . '].vectorString is not a CVSS vector.';
+                $problems[] = ['COM_VEL_CVE_PROBLEM_NOT_VECTOR', 'metrics[' . $i . '].vectorString'];
             }
         }
 
         if (isset($cna['source']['discovery']) && !\in_array($cna['source']['discovery'], ['UNKNOWN', 'INTERNAL', 'EXTERNAL', 'USER'], true)) {
-            $problems[] = 'source.discovery is invalid.';
+            $problems[] = ['COM_VEL_CVE_PROBLEM_INVALID', 'source.discovery'];
         }
 
         foreach ((array) ($cna['timeline'] ?? []) as $i => $entry) {
             if (!self::isTimestamp((string) ($entry['time'] ?? ''))) {
-                $problems[] = 'timeline[' . $i . '].time is not a timestamp.';
+                $problems[] = ['COM_VEL_CVE_PROBLEM_NOT_TIMESTAMP', 'timeline[' . $i . '].time'];
             }
         }
 
@@ -279,9 +280,10 @@ final class CveRecordValidator
     /**
      * Full JSON-Schema validation when the schema and a validator library are present.
      *
-     * @param array $record The record.
+     * @param array       $record     The record.
+     * @param string|null $definition A named definition of the schema to validate against.
      *
-     * @return string[]
+     * @return array<int, array<int, string>>  As validateRecord().
      *
      * @since 4.0.0
      */
@@ -309,9 +311,9 @@ final class CveRecordValidator
 
             $error = $result->error();
 
-            return ['Schema: ' . ($error ? $error->message() . ' at ' . implode('/', $error->data()->fullPath()) : 'invalid')];
+            return [$error ? ['COM_VEL_CVE_PROBLEM_SCHEMA', $error->message(), implode('/', $error->data()->fullPath())] : ['COM_VEL_CVE_PROBLEM_SCHEMA_INVALID']];
         } catch (\Throwable $e) {
-            return ['Schema validation could not run: ' . $e->getMessage()];
+            return [['COM_VEL_CVE_PROBLEM_SCHEMA_UNAVAILABLE', $e->getMessage()]];
         }
     }
 

@@ -18,6 +18,7 @@ namespace Jed\Component\Vel\Administrator\Cve;
 
 use Joomla\CMS\Component\ComponentHelper;
 use Joomla\CMS\Http\HttpFactory;
+use Joomla\CMS\Language\Text;
 use Joomla\Http\Http;
 use RuntimeException;
 
@@ -161,7 +162,7 @@ final class CveServicesClient
         }
 
         if ($ids === []) {
-            throw new RuntimeException('CVE Services returned no id: ' . json_encode($response));
+            throw new RuntimeException(Text::sprintf('COM_VEL_ERROR_CVE_SERVICES_NO_ID', (string) json_encode($response)));
         }
 
         return ['ids' => $ids, 'partial' => $status === 206];
@@ -260,7 +261,7 @@ final class CveServicesClient
     private function requireCredentials(): void
     {
         if (!$this->configured()) {
-            throw new RuntimeException('CVE Services credentials are not configured in the VEL options.');
+            throw new RuntimeException(Text::_('COM_VEL_ERROR_CVE_SERVICES_NOT_CONFIGURED'));
         }
     }
 
@@ -315,7 +316,7 @@ final class CveServicesClient
                 $response = $method === 'POST' ? $this->http->post($url, '', $headers) : $this->http->get($url, $headers);
             }
         } catch (\Throwable $e) {
-            throw new RuntimeException('CVE Services request failed: ' . $e->getMessage(), 0, $e);
+            throw new RuntimeException(Text::sprintf('COM_VEL_ERROR_CVE_SERVICES_REQUEST_FAILED', $e->getMessage()), 0, $e);
         }
 
         $status  = $response->getStatusCode();
@@ -325,7 +326,7 @@ final class CveServicesClient
         if (!\in_array($status, $accepted, true)) {
             $message = \is_array($decoded) ? (string) ($decoded['message'] ?? $decoded['error'] ?? json_encode($decoded)) : $raw;
 
-            throw new RuntimeException('CVE Services answered ' . $status . ': ' . mb_substr($message, 0, 500));
+            throw new RuntimeException(Text::sprintf('COM_VEL_ERROR_CVE_SERVICES_STATUS', $status, mb_substr($message, 0, 500)));
         }
 
         return [$status, \is_array($decoded) ? $decoded : []];

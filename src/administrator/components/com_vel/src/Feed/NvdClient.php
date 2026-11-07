@@ -18,6 +18,7 @@ namespace Jed\Component\Vel\Administrator\Feed;
 
 use DateTimeImmutable;
 use DateTimeZone;
+use Joomla\CMS\Language\Text;
 use Joomla\Http\Http;
 use RuntimeException;
 
@@ -198,37 +199,37 @@ final class NvdClient
         try {
             $response = $this->http->get($url, $headers, 60);
         } catch (\Throwable $e) {
-            throw new RuntimeException('NVD request failed: ' . $e->getMessage(), 0, $e);
+            throw new RuntimeException(Text::sprintf('COM_VEL_ERROR_NVD_REQUEST_FAILED', $e->getMessage()), 0, $e);
         }
 
         $status  = $response->getStatusCode();
         $message = trim($response->getHeaderLine('message'));
 
         if ($status === 403 || $status === 429) {
-            throw new RuntimeException('NVD rate limit hit (' . $status . '); try again later or add an API key.');
+            throw new RuntimeException(Text::sprintf('COM_VEL_ERROR_NVD_RATE_LIMIT', $status));
         }
 
         if ($status === 404) {
             // The header is the error body. Its absence on an id lookup is simply "no record".
             if ($message !== '') {
-                throw new RuntimeException('NVD refused the request: ' . $message);
+                throw new RuntimeException(Text::sprintf('COM_VEL_ERROR_NVD_REFUSED', $message));
             }
 
             if ($nullOnAbsent) {
                 return null;
             }
 
-            throw new RuntimeException('NVD answered 404 with no message for ' . $url);
+            throw new RuntimeException(Text::sprintf('COM_VEL_ERROR_NVD_404_NO_MESSAGE', $url));
         }
 
         if ($status >= 400) {
-            throw new RuntimeException('NVD answered ' . $status . ($message !== '' ? ': ' . $message : ''));
+            throw new RuntimeException(Text::sprintf('COM_VEL_ERROR_NVD_STATUS', $status, $message));
         }
 
         $decoded = json_decode((string) $response->getBody(), true);
 
         if (!\is_array($decoded)) {
-            throw new RuntimeException('NVD returned invalid JSON.');
+            throw new RuntimeException(Text::_('COM_VEL_ERROR_NVD_INVALID_JSON'));
         }
 
         return $decoded;

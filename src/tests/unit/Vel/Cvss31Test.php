@@ -13,6 +13,7 @@ use InvalidArgumentException;
 use Jed\Component\Vel\Administrator\Cvss\Cvss;
 use Jed\Component\Vel\Administrator\Cvss\Cvss31;
 use Jed\Component\Vel\Administrator\Cvss\Cvss40;
+use Jed\Component\Vel\Administrator\Cvss\CvssException;
 use Jed\Component\Vel\Administrator\Enum\Severity;
 use PHPUnit\Framework\TestCase;
 
@@ -80,6 +81,18 @@ final class Cvss31Test extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
         Cvss31::evaluate('CVSS:3.1/AV:X/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H');
+    }
+
+    public function testRefusalCarriesALanguageKeyAndItsArguments(): void
+    {
+        // The CVSS classes run without Joomla, so they throw the key and the model translates.
+        try {
+            Cvss31::evaluate('CVSS:3.1/AV:X/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H');
+            self::fail('expected a CvssException');
+        } catch (CvssException $e) {
+            self::assertSame('COM_VEL_CVSS_ERROR_INVALID_VALUE', $e->getMessage());
+            self::assertSame(['AV', 'X'], $e->args);
+        }
     }
 
     public function testRoundUp(): void

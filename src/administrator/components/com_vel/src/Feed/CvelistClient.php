@@ -16,6 +16,7 @@ namespace Jed\Component\Vel\Administrator\Feed;
 \defined('_JEXEC') or die;
 // phpcs:enable PSR1.Files.SideEffects
 
+use Joomla\CMS\Language\Text;
 use Joomla\Http\Http;
 use RuntimeException;
 
@@ -188,7 +189,7 @@ final class CvelistClient
     public function recordByUrl(string $url): ?array
     {
         if (!str_starts_with($url, self::RAW_BASE)) {
-            throw new RuntimeException('Refusing to fetch a record from outside the cvelistV5 mirror: ' . $url);
+            throw new RuntimeException(Text::sprintf('COM_VEL_ERROR_CVELIST_FOREIGN_URL', $url));
         }
 
         usleep((int) (self::COURTESY_PAUSE * 1000000));
@@ -252,7 +253,7 @@ final class CvelistClient
         try {
             $response = $this->http->get($url, $headers, 60);
         } catch (\Throwable $e) {
-            throw new RuntimeException('cvelistV5 request failed: ' . $e->getMessage(), 0, $e);
+            throw new RuntimeException(Text::sprintf('COM_VEL_ERROR_CVELIST_REQUEST_FAILED', $e->getMessage()), 0, $e);
         }
 
         $status  = $response->getStatusCode();
@@ -272,13 +273,13 @@ final class CvelistClient
             $body   = (string) $response->getBody();
 
             if (($length > 0 ? $length : \strlen($body)) > $this->fullFetchMaxBytes) {
-                throw new RuntimeException('cvelistV5 ignored the Range request and the log is larger than the full-fetch cap.');
+                throw new RuntimeException(Text::_('COM_VEL_ERROR_CVELIST_RANGE_IGNORED'));
             }
 
             return ['body' => $body, 'etag' => $newEtag, 'not_modified' => false, 'complete_body' => true];
         }
 
-        throw new RuntimeException('cvelistV5 answered ' . $status . ' for ' . $url);
+        throw new RuntimeException(Text::sprintf('COM_VEL_ERROR_CVELIST_STATUS', $status, $url));
     }
 
     /**
@@ -372,19 +373,19 @@ final class CvelistClient
         try {
             $response = $this->http->get($url, $headers, 30);
         } catch (\Throwable $e) {
-            throw new RuntimeException('cvelistV5 request failed: ' . $e->getMessage(), 0, $e);
+            throw new RuntimeException(Text::sprintf('COM_VEL_ERROR_CVELIST_REQUEST_FAILED', $e->getMessage()), 0, $e);
         }
 
         $status = $response->getStatusCode();
 
         if ($status >= 400) {
-            throw new RuntimeException('cvelistV5 answered ' . $status . ' for ' . $url);
+            throw new RuntimeException(Text::sprintf('COM_VEL_ERROR_CVELIST_STATUS', $status, $url));
         }
 
         $decoded = json_decode((string) $response->getBody(), true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new RuntimeException('cvelistV5 returned invalid JSON for ' . $url);
+            throw new RuntimeException(Text::sprintf('COM_VEL_ERROR_CVELIST_INVALID_JSON', $url));
         }
 
         return $decoded;

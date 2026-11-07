@@ -26,6 +26,7 @@ use Jed\Component\Vel\Site\Helper\VelHelper;
 use Joomla\CMS\Cache\CacheControllerFactoryInterface;
 use Joomla\CMS\Cache\Controller\CallbackController;
 use Joomla\CMS\Factory;
+use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\Model\BaseDatabaseModel;
 
 /**
@@ -87,7 +88,7 @@ class ApiModel extends BaseDatabaseModel
         $root = rtrim(\Joomla\CMS\Uri\Uri::root(), '/') . VelHelper::listPath();
 
         return [
-            'name'        => 'Joomla Vulnerable Extension List API',
+            'name'        => Text::_('COM_VEL_API_NAME'),
             'version'     => '2.0',
             'endpoints'   => [
                 'advisories' => $root . '/api/v2/advisories.json',
@@ -221,13 +222,13 @@ class ApiModel extends BaseDatabaseModel
         $entries = $body['extensions'] ?? null;
 
         if (!\is_array($entries)) {
-            throw new \InvalidArgumentException('The body must carry an "extensions" array.');
+            throw new \InvalidArgumentException(Text::_('COM_VEL_API_ERROR_NO_EXTENSIONS'));
         }
 
         $max = (int) VelHelper::option('check_max_entries', 500);
 
         if (\count($entries) > $max) {
-            throw new \InvalidArgumentException(\sprintf('At most %d extensions per call.', $max));
+            throw new \InvalidArgumentException(Text::sprintf('COM_VEL_API_ERROR_TOO_MANY', $max));
         }
 
         $identities = [];

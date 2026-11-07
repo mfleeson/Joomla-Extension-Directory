@@ -482,6 +482,9 @@ final class CveRecordBuilder
     {
         $timeline = [];
 
+        // English on purpose, like every other string this class writes: the record is
+        // published with `lang: en` and read by the CVE Program, not by a site visitor, so the
+        // site language must not leak into it.
         foreach ([
             'date_reported'        => 'Reported to the Joomla VEL',
             'date_vendor_notified' => 'Vendor notified',

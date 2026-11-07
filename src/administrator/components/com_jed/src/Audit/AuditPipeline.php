@@ -15,6 +15,7 @@ namespace Jed\Component\Jed\Administrator\Audit;
 
 use FilesystemIterator;
 use Joomla\CMS\Factory;
+use Joomla\CMS\Language\Text;
 use Joomla\CMS\Log\Log;
 use Joomla\CMS\Mail\MailTemplate;
 use Joomla\Database\DatabaseInterface;
@@ -154,13 +155,13 @@ class AuditPipeline
     private function downloadExtensionZip(string $url, string $destination): void
     {
         if ($url === '') {
-            throw new RuntimeException('Extension has no download URL.');
+            throw new RuntimeException(Text::_('COM_JED_AUDIT_NO_DOWNLOAD_URL'));
         }
 
         $response = $this->http->get($url, [], 60);
 
         if ($response->getStatusCode() < 200 || $response->getStatusCode() >= 300) {
-            throw new RuntimeException(\sprintf('Failed to download extension zip: HTTP %d', $response->getStatusCode()));
+            throw new RuntimeException(Text::sprintf('COM_JED_AUDIT_DOWNLOAD_FAILED', $response->getStatusCode()));
         }
 
         file_put_contents($destination, (string) $response->getBody());

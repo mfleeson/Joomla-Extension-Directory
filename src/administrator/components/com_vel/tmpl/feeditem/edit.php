@@ -107,7 +107,7 @@ $range = static fn (array $r): string => (string) VersionRange::fromStrings((str
                             <?php endif; ?>
                             <fieldset class="mb-3">
                                 <legend class="fs-6"><?php echo Text::_('COM_VEL_LEGEND_MERGE_INTO'); ?></legend>
-                                <input type="text" class="form-control mb-2" name="advisory_reference" placeholder="VEL-0042">
+                                <input type="text" class="form-control mb-2" name="advisory_reference" placeholder="<?php echo $this->escape(Text::_('COM_VEL_PLACEHOLDER_ADVISORY_REFERENCE')); ?>" aria-label="<?php echo $this->escape(Text::_('COM_VEL_ATTACH_REFERENCE')); ?>">
                                 <button type="button" class="btn btn-outline-primary" onclick="Joomla.submitbutton('feeditem.merge')"><?php echo Text::_('COM_VEL_BUTTON_FEED_MERGE'); ?></button>
                             </fieldset>
                         <?php endif; ?>

@@ -27,6 +27,7 @@ use Jed\Component\Vel\Administrator\Service\VelService;
 use Joomla\CMS\Component\ComponentHelper;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Http\HttpFactory;
+use Joomla\CMS\Language\Text;
 use Joomla\CMS\Log\Log;
 use Joomla\Database\DatabaseInterface;
 use Joomla\Database\ParameterType;
@@ -53,6 +54,9 @@ final class FeedRunner
      */
     public function __construct(private readonly DatabaseInterface $db, private readonly VelService $service)
     {
+        // Run messages and notes are written in the site's language; the scheduler runs this
+        // outside the administrator, where the component's strings are not loaded by default.
+        Factory::getApplication()->getLanguage()->load('com_vel', JPATH_ADMINISTRATOR . '/components/com_vel');
     }
 
     /**
@@ -124,7 +128,7 @@ final class FeedRunner
         if (!$enabled) {
             $run->status   = 'ok';
             $run->finished = $run->started;
-            $run->message  = 'disabled';
+            $run->message  = Text::_('COM_VEL_FEED_RUN_MSG_DISABLED');
 
             return $run;
         }
@@ -183,7 +187,7 @@ final class FeedRunner
         $run    = $this->newRun(FeedSource::CNA, $now);
 
         $run->window_from = null;
-        $run->message     = 'seed';
+        $run->message     = Text::_('COM_VEL_FEED_RUN_MSG_SEED_RUNNING');
 
         $this->db->insertObject('#__vel_feed_runs', $run, 'id');
 
@@ -207,7 +211,9 @@ final class FeedRunner
 
             $status       = $feed->status();
             $run->status  = $status['complete'] ? 'ok' : 'partial';
-            $run->message = 'seed: ' . ($status['complete'] ? 'complete' : $status['reason'] . ' - run Seed again to continue') . ' (' . (int) $status['fetched'] . ' records fetched)';
+            $run->message = $status['complete']
+                ? Text::sprintf('COM_VEL_FEED_RUN_MSG_SEED_COMPLETE', (int) $status['fetched'])
+                : Text::sprintf('COM_VEL_FEED_RUN_MSG_SEED_PARTIAL', $this->reasonText((string) $status['reason'], $status, $run), (int) $status['fetched']);
 
             // A completed seed sets the delta window to now; polling takes over from here.
             if ($status['complete']) {
@@ -218,7 +224,7 @@ final class FeedRunner
             }
         } catch (Throwable $e) {
             $run->status  = 'failed';
-            $run->message = 'seed: ' . mb_substr($e->getMessage(), 0, 2000);
+            $run->message = mb_substr(Text::sprintf('COM_VEL_FEED_RUN_MSG_SEED_FAILED', $e->getMessage()), 0, 2000);
             Log::add('VEL seed failed: ' . $e->getMessage(), Log::ERROR, 'com_vel');
         }
 
@@ -292,13 +298,7 @@ final class FeedRunner
 
             if (!$status['complete']) {
                 $run->status  = 'partial';
-                $run->message = match ($status['reason']) {
-                    'fetch_cap'             => 'per-run fetch cap reached; the next run resumes from ' . (string) ($status['resume_at'] ?? $run->window_from),
-                    'range_under_sized'     => 'delta range cap reached before the gap was covered; raise cna_range_max_kb or run again',
-                    'gap_exceeds_retention' => 'the gap since the last run is older than the delta log keeps (30 days); records before ' . (string) $status['resume_at'] . ' need a Seed run',
-                    'time_budget'           => 'time budget reached; the next run resumes from ' . (string) ($status['resume_at'] ?? $run->window_from),
-                    default                 => (string) $status['reason'],
-                };
+                $run->message = $this->reasonText((string) $status['reason'], $status, $run);
 
                 // Resume from where this run stopped, never from its own end.
                 $run->window_to = (string) ($status['resume_at'] ?? $run->window_from);
@@ -313,7 +313,7 @@ final class FeedRunner
 
         if ($outOfTime) {
             $run->status    = 'partial';
-            $run->message   = 'time budget reached; the next run continues from ' . (string) $run->window_from;
+            $run->message   = Text::sprintf('COM_VEL_FEED_RUN_MSG_TIME_BUDGET', (string) $run->window_from);
             $run->window_to = $run->window_from;
 
             return;
@@ -503,6 +503,31 @@ final class FeedRunner
     }
 
     /**
+     * The operator-facing wording for a source's "not complete" reason. `partial` has several
+     * meanings (feeds PRD §3.2) and the message must say which one applies.
+     *
+     * @param string $reason The source's reason code.
+     * @param array  $status The source's status array.
+     * @param object $run    The run row.
+     *
+     * @return string
+     *
+     * @since 4.0.0
+     */
+    private function reasonText(string $reason, array $status, object $run): string
+    {
+        $resumeAt = (string) ($status['resume_at'] ?? $run->window_from ?? '');
+
+        return match ($reason) {
+            'fetch_cap'             => Text::sprintf('COM_VEL_FEED_RUN_MSG_FETCH_CAP', $resumeAt),
+            'range_under_sized'     => Text::_('COM_VEL_FEED_RUN_MSG_RANGE_UNDER_SIZED'),
+            'gap_exceeds_retention' => Text::sprintf('COM_VEL_FEED_RUN_MSG_GAP_EXCEEDS_RETENTION', $resumeAt),
+            'time_budget'           => Text::sprintf('COM_VEL_FEED_RUN_MSG_TIME_BUDGET', $resumeAt),
+            default                 => $reason,
+        };
+    }
+
+    /**
      * A CVE we carry has been rejected at the Program: the advisory's team must know.
      *
      * @param FeedRecord $record     The record.
@@ -514,7 +539,7 @@ final class FeedRunner
      */
     private function flagRejected(FeedRecord $record, int $advisoryId): void
     {
-        $this->service->appendNote($advisoryId, 'FEED: ' . $record->externalId . ' is REJECTED at the CVE Program: ' . (string) ($record->normalised['description'] ?? '') . ' - review whether this advisory should be retired (reason: CVE rejected).');
+        $this->service->appendNote($advisoryId, Text::sprintf('COM_VEL_NOTE_FEED_REJECTED', $record->externalId, (string) ($record->normalised['description'] ?? '')));
 
         Log::add(\sprintf('Advisory %d: %s has been rejected at the CVE Program', $advisoryId, $record->externalId), Log::WARNING, 'com_vel');
     }

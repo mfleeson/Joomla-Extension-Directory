@@ -17,6 +17,7 @@ use Joomla\Filesystem\Folder;
 use Joomla\Filesystem\Path;
 use Joomla\Github\Github as GithubClient;
 use Joomla\Registry\Registry;
+use Joomla\CMS\Language\Text;
 use RuntimeException;
 use SimpleXMLElement;
 use ZipArchive;
@@ -47,7 +48,7 @@ class Github extends Parser
         $release = $client->repositories->releases->getLatest($owner, $repo);
 
         if (empty($release->zipball_url)) {
-            throw new RuntimeException(sprintf('No release found for %s/%s.', $owner, $repo));
+            throw new RuntimeException(Text::sprintf('COM_JED_PARSER_GITHUB_NO_RELEASE', $owner, $repo));
         }
 
         $zipFile       = $this->download($release->zipball_url);
@@ -134,7 +135,7 @@ class Github extends Parser
         $parts = array_values(array_filter(explode('/', $path)));
 
         if (\count($parts) < 2) {
-            throw new RuntimeException(sprintf('Cannot parse GitHub URL: %s', $url));
+            throw new RuntimeException(Text::sprintf('COM_JED_PARSER_GITHUB_URL_INVALID', $url));
         }
 
         return ['owner' => $parts[0], 'repo' => $parts[1]];
@@ -158,7 +159,7 @@ class Github extends Parser
         $content = file_get_contents($zipUrl, false, $context);
 
         if ($content === false) {
-            throw new RuntimeException(sprintf('Failed to download release zip from: %s', $zipUrl));
+            throw new RuntimeException(Text::sprintf('COM_JED_PARSER_GITHUB_DOWNLOAD_FAILED', $zipUrl));
         }
 
         $tmpFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'jed_github_' . uniqid() . '.zip';
@@ -179,7 +180,7 @@ class Github extends Parser
         $zip = new ZipArchive();
 
         if ($zip->open($zipFile) !== true) {
-            throw new RuntimeException(sprintf('Cannot open zip file: %s', $zipFile));
+            throw new RuntimeException(Text::sprintf('COM_JED_PARSER_ZIP_UNREADABLE', $zipFile));
         }
 
         $zip->extractTo($tmpDir);
@@ -217,7 +218,7 @@ class Github extends Parser
         $dir = Path::clean($dir);
 
         if (!is_dir($dir)) {
-            throw new RuntimeException(sprintf('Extracted source directory not found: %s', $dir));
+            throw new RuntimeException(Text::sprintf('COM_JED_PARSER_GITHUB_SOURCE_MISSING', $dir));
         }
 
         $xmlFiles = Folder::files($dir, '.xml$', true, true);
@@ -246,7 +247,7 @@ class Github extends Parser
         }
 
         if ($bestManifest === null) {
-            throw new RuntimeException(sprintf('No valid Joomla manifest found in: %s', $dir));
+            throw new RuntimeException(Text::sprintf('COM_JED_PARSER_NO_MANIFEST', $dir));
         }
 
         $this->xml = $bestManifest;

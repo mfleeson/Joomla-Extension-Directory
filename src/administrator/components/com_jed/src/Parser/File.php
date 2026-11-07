@@ -14,6 +14,7 @@ namespace Jed\Component\Jed\Administrator\Parser;
 // phpcs:enable PSR1.Files.SideEffects
 
 use Joomla\CMS\Installer\Installer;
+use Joomla\CMS\Language\Text;
 use RuntimeException;
 use SimpleXMLElement;
 use ZipArchive;
@@ -38,7 +39,7 @@ class File extends Parser
     public function __construct(string $filePath)
     {
         if (!is_file($filePath)) {
-            throw new RuntimeException(sprintf('File does not exist: %s', $filePath));
+            throw new RuntimeException(Text::sprintf('COM_JED_PARSER_FILE_MISSING', $filePath));
         }
 
         $this->tempDir = $this->extract($filePath);
@@ -124,7 +125,7 @@ class File extends Parser
         $zip = new ZipArchive();
 
         if ($zip->open($filePath) !== true) {
-            throw new RuntimeException(sprintf('Cannot open zip file: %s', $filePath));
+            throw new RuntimeException(Text::sprintf('COM_JED_PARSER_ZIP_UNREADABLE', $filePath));
         }
 
         $zip->extractTo($tmpDir);
@@ -144,14 +145,14 @@ class File extends Parser
         $installer->setPath('source', $dir);
 
         if (!$installer->findManifest()) {
-            throw new RuntimeException(sprintf('No valid Joomla manifest found in: %s', $dir));
+            throw new RuntimeException(Text::sprintf('COM_JED_PARSER_NO_MANIFEST', $dir));
         }
 
         $manifestPath = $installer->getPath('manifest');
         $xml          = simplexml_load_file($manifestPath);
 
         if ($xml === false) {
-            throw new RuntimeException(sprintf('Cannot parse manifest XML: %s', $manifestPath));
+            throw new RuntimeException(Text::sprintf('COM_JED_PARSER_MANIFEST_INVALID', $manifestPath));
         }
 
         $this->xml = $xml;

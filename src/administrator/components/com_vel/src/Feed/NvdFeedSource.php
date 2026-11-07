@@ -18,6 +18,7 @@ namespace Jed\Component\Vel\Administrator\Feed;
 
 use DateTimeImmutable;
 use Jed\Component\Vel\Administrator\Enum\FeedSource;
+use Joomla\CMS\Language\Text;
 
 /**
  * The NVD feed (VEL2-PRD §6.6.2): discovery by keyword, enrichment by id.
@@ -88,7 +89,7 @@ final class NvdFeedSource implements FeedSourceInterface
                 } catch (\Throwable $e) {
                     // A refused request is our bug (404 + message) or a rate limit; either way
                     // the run must say so, not report a clean empty window.
-                    throw new \RuntimeException('NVD discovery: ' . $e->getMessage(), 0, $e);
+                    throw new \RuntimeException(Text::sprintf('COM_VEL_ERROR_NVD_DISCOVERY', $e->getMessage()), 0, $e);
                 }
 
                 $items = (array) ($page['vulnerabilities'] ?? []);
