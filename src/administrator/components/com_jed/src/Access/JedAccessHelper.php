@@ -105,6 +105,8 @@ final class JedAccessHelper
             return;
         }
 
+        self::loadLanguage();
+
         $row    = self::row($userId);
         $reason = trim((string) ($row['banned_reason'] ?? ''));
 
@@ -212,6 +214,8 @@ final class JedAccessHelper
         $pending = self::countPendingListings($userId);
 
         if ($pending >= self::MAX_PENDING_LISTINGS) {
+            self::loadLanguage();
+
             throw new RuntimeException(
                 Text::sprintf('COM_JED_ACCESS_DENIED_PENDING_LIMIT', self::MAX_PENDING_LISTINGS)
             );
@@ -286,6 +290,8 @@ final class JedAccessHelper
         self::assertMay($userId, Privilege::REVIEW);
 
         if (self::isBarredFromReviewing($userId, $extensionId)) {
+            self::loadLanguage();
+
             throw new RuntimeException(Text::_('COM_JED_ACCESS_DENIED_REVIEW_TARGET'));
         }
     }
@@ -404,5 +410,31 @@ final class JedAccessHelper
     private static function db(): DatabaseInterface
     {
         return Factory::getContainer()->get(DatabaseInterface::class);
+    }
+
+    /**
+     * Make sure com_jed's language strings are loaded before a refusal is translated.
+     *
+     * These checks are not only made on JED pages: the VEL and abandonware report forms call
+     * assertMay(Privilege::REPORT) too, and on their pages only com_vel / com_abandonware is
+     * loaded - so a banned reporter was shown "COM_JED_ACCESS_BANNED" instead of a sentence.
+     * Loads from the application's own side (site or administrator), from the global language
+     * folder first and the component folder second, like Joomla does for a component.
+     * Language::load() remembers what it has loaded, so repeated calls cost nothing.
+     *
+     * @return void
+     *
+     * @since 4.0.0
+     */
+    private static function loadLanguage(): void
+    {
+        try {
+            $language = Factory::getApplication()->getLanguage();
+        } catch (\Exception) {
+            return;
+        }
+
+        $language->load('com_jed', JPATH_BASE)
+            || $language->load('com_jed', JPATH_BASE . '/components/com_jed');
     }
 }

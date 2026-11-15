@@ -128,9 +128,38 @@ final class Jed extends CMSPlugin implements SubscriberInterface
     {
         return [
             'onTaskOptionsList'    => 'advertiseRoutines',
-            'onExecuteTask'        => 'standardRoutineHandler',
+            'onExecuteTask'        => 'executeRoutine',
             'onContentPrepareForm' => 'enhanceTaskItemForm',
         ];
+    }
+
+    /**
+     * Run one of this plugin's routines, with the components' language strings loaded.
+     *
+     * The routines run services from com_jed, com_vel and com_abandonware, and those write their
+     * messages with Text::_() - into the task log and into the database (an update check's
+     * last_update_check_error, a case's ticket). A scheduled task runs outside those components,
+     * where only this plugin's own language file is loaded, so every message came out as its raw
+     * key. Loaded from the administrator side, which carries the full set of strings.
+     *
+     * @param ExecuteTaskEvent $event The `onExecuteTask` event.
+     *
+     * @return void
+     *
+     * @since 4.0.0
+     */
+    public function executeRoutine(ExecuteTaskEvent $event): void
+    {
+        if (\array_key_exists($event->getRoutineId(), self::TASKS_MAP)) {
+            $language = $this->getApplication()->getLanguage();
+
+            foreach (['com_jed', 'com_vel', 'com_abandonware'] as $component) {
+                $language->load($component, JPATH_ADMINISTRATOR)
+                    || $language->load($component, JPATH_ADMINISTRATOR . '/components/' . $component);
+            }
+        }
+
+        $this->standardRoutineHandler($event);
     }
 
     /**

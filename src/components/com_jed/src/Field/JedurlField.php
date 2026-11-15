@@ -120,6 +120,21 @@ class JedurlField extends UrlField
         $wa->getRegistry()->addExtensionRegistryFile('com_jed');
         $wa->useScript('com_jed.jedurl')->useStyle('com_jed.jedurl');
 
+        // jedurl.js reads its messages through Joomla.Text._(), which only knows the strings that
+        // were handed to it here. Without this the format errors rendered as an empty message and
+        // "Checking…" was the script's hard-coded English fallback. One key per UrlFormat error
+        // code, as jedurl.js builds them: 'COM_JED_URLCHECK_FORMAT_' + code.toUpperCase().
+        foreach ([
+            UrlFormat::ERROR_EMPTY, UrlFormat::ERROR_LENGTH, UrlFormat::ERROR_WHITESPACE,
+            UrlFormat::ERROR_CONTROL, UrlFormat::ERROR_SCHEME, UrlFormat::ERROR_NO_SCHEME,
+            UrlFormat::ERROR_CREDENTIALS, UrlFormat::ERROR_HOST, UrlFormat::ERROR_MALFORMED,
+        ] as $code) {
+            Text::script('COM_JED_URLCHECK_FORMAT_' . strtoupper($code));
+        }
+
+        Text::script('COM_JED_URLCHECK_CHECKING');
+        Text::script('COM_JED_URLCHECK_UNAVAILABLE');
+
         // The endpoint is built here, not written into the form XML: the field knows which
         // application it is rendering in, and the token is per session.
         $this->dataAttributes['data-jedurl-endpoint'] = Route::_(

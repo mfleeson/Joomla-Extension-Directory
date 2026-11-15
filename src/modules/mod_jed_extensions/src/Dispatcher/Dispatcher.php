@@ -61,6 +61,29 @@ class Dispatcher extends AbstractModuleDispatcher implements HelperFactoryAwareI
     }
 
     /**
+     * Load the module's language, and com_jed's.
+     *
+     * The module renders the shared extension card (layouts/cards/extension.php) and the "Includes"
+     * and version labels from com_jed's helpers. All of those use com_jed strings, and a module is
+     * shown on any page - on one that is not a JED page com_jed's language is not loaded, and the
+     * cards came out as raw keys ("COM_JED_CARD_BY_DEVELOPER"). Site side, global language folder
+     * first and the component's own folder second, like Joomla loads a component.
+     *
+     * @return void
+     *
+     * @since 4.0.0
+     */
+    protected function loadLanguage()
+    {
+        parent::loadLanguage();
+
+        $language = $this->getApplication()->getLanguage();
+
+        $language->load('com_jed', JPATH_SITE)
+            || $language->load('com_jed', JPATH_SITE . '/components/com_jed');
+    }
+
+    /**
      * Returns the layout data.
      *
      * @return array
