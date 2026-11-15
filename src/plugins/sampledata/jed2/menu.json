@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "menu": {
+    "menutype": "jedmainmenu",
+    "title": "JED Main Menu",
+    "description": "Main navigation for the Joomla! Extensions Directory",
+    "replace_existing": true
+  },
+  "module": {
+    "title": "JED Main Menu",
+    "position": "menu",
+    "showtitle": 0,
+    "access": "public",
+    "menu_class": "nav-pills",
+    "params": {
+      "layout": "_:default",
+      "startLevel": 1,
+      "endLevel": 0,
+      "showAllChildren": 1,
+      "module_tag": "nav"
+    }
+  },
+  "items": [
+    {
+      "title": "Home",
+      "alias": "jed-home",
+      "type": "alias",
+      "alias_target": "home"
+    },
+    {
+      "title": "Browse Extensions",
+      "type": "heading",
+      "children": [
+        { "title": "Top Rated", "link": "index.php?option=com_jed&view=extensions", "params": { "browse_list": "top-rated" } },
+        { "title": "Most Reviewed", "link": "index.php?option=com_jed&view=extensions", "params": { "browse_list": "most-reviewed" } },
+        { "title": "New", "link": "index.php?option=com_jed&view=extensions", "params": { "browse_list": "recently-added" } },
+        { "title": "Recently Updated", "link": "index.php?option=com_jed&view=extensions", "params": { "browse_list": "recently-updated" } },
+        { "title": "Compatible with J4", "link": "index.php?option=com_jed&view=extensions", "params": { "joomla_version": "40" } },
+        { "title": "Compatible with J5", "link": "index.php?option=com_jed&view=extensions", "params": { "joomla_version": "50" } },
+        { "title": "Compatible with J5 (with b/c plugin)", "link": "index.php?option=com_jed&view=extensions", "params": { "joomla_version": "51" } },
+        { "title": "Compatible with J6", "link": "index.php?option=com_jed&view=extensions", "params": { "joomla_version": "60" } }
+      ]
+    },
+    {
+      "title": "Search",
+      "link": "index.php?option=com_jed&view=search"
+    },
+    {
+      "title": "Community",
+      "type": "heading",
+      "children": [
+        { "title": "Meet the JED Team", "link": "index.php?option=com_jed&view=categories&id=0" },
+        { "title": "Blog", "link": "index.php?option=com_jed&view=categories&id=0" },
+        { "title": "JED Newsletter", "link": "index.php?option=com_jed&view=categories&id=0" },
+        { "title": "Terms of Service", "link": "index.php?option=com_jed&view=categories&id=0" },
+        { "title": "Help Joomla!", "link": "index.php?option=com_jed&view=categories&id=0" }
+      ]
+    },
+    {
+      "title": "Support",
+      "type": "heading",
+      "children": [
+        { "title": "Knowledgebase", "link": "index.php?option=com_jed&view=categories&id=0" },
+        { "title": "Sponsor Joomla!", "link": "index.php?option=com_jed&view=categories&id=0" }
+      ]
+    },
+    {
+      "title": "Vulnerable Extensions",
+      "type": "heading",
+      "children": [
+        { "title": "About", "link": "index.php?option=com_jed&view=velliveitems" },
+        { "title": "Vulnerable Extensions", "link": "index.php?option=com_jed&view=velliveitems" },
+        { "title": "Resolved Extensions", "link": "index.php?option=com_jed&view=velpatcheditems" },
+        { "title": "Abandoned Extensions", "link": "index.php?option=com_jed&view=velabandoneditems" },
+        { "title": "Submit a Report", "link": "index.php?option=com_jed&view=velreportform" },
+        { "title": "Submit an Update", "link": "index.php?option=com_jed&view=veldeveloperupdateform" },
+        { "title": "Submit AbandonWare", "link": "index.php?option=com_jed&view=velabandonwareform" },
+        { "title": "JSON Feed", "link": "index.php?option=com_jed&view=categories&id=0" }
+      ]
+    },
+    {
+      "title": "Login",
+      "link": "index.php?option=com_users&view=login",
+      "access": "guest"
+    },
+    {
+      "title": "Register",
+      "link": "index.php?option=com_users&view=registration",
+      "access": "guest"
+    },
+    {
+      "title": "Debug",
+      "type": "heading",
+      "children": [
+        { "title": "Live VEL Items", "link": "index.php?option=com_vel&view=advisories" },
+        { "title": "VEL Report a Vulnerability", "link": "index.php?option=com_vel&view=report" },
+        { "title": "VEL Fix Notice", "link": "index.php?option=com_vel&view=fixnotice" },
+        { "title": "VEL Single Advisory", "link": "index.php?option=com_vel&view=advisory" },
+        { "title": "My Tickets", "link": "index.php?option=com_jed&view=tickets" },
+        { "title": "Show Extension Categories", "link": "index.php?option=com_jed&view=categories&id=0" },
+        { "title": "Submit Extension", "link": "index.php?option=com_jed&view=extensionform" },
+        { "title": "User Control Panel", "link": "index.php?option=com_jed&view=controlpanel" }
+      ]
+    }
+  ]
+}

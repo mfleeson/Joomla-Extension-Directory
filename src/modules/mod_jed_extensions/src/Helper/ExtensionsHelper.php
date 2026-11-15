@@ -82,33 +82,12 @@ class ExtensionsHelper
             $query->where($db->quoteName('a.catid') . ' = ' . $category);
         }
 
-        if ($list === BrowseList::NOTEWORTHY) {
-            // Not a sort of this table: what people have actually been looking at, from P1-12's
-            // aggregate. INNER JOIN, because a listing nobody viewed is not noteworthy.
-            $since = Factory::getDate('-' . BrowseList::NOTEWORTHY_DAYS . ' days')->format('Y-m-d');
-
-            // A derived table, so the "table" is the subquery itself and there is no name for
-            // quoteName() to wrap - only its alias. The join condition is passed separately, as
-            // for any other join.
-            $query->select('hits.views AS noteworthy')
-                ->innerJoin(
-                    '(SELECT ' . $db->quoteName('extension_id') . ', SUM(' . $db->quoteName('views') . ') AS '
-                    . $db->quoteName('views') . ' FROM ' . $db->quoteName('#__jed_hit_stats')
-                    . ' WHERE ' . $db->quoteName('period') . ' >= ' . $db->quote($since)
-                    . ' GROUP BY ' . $db->quoteName('extension_id')
-                    . ' HAVING SUM(' . $db->quoteName('views') . ') > 0) AS ' . $db->quoteName('hits'),
-                    $db->quoteName('hits.extension_id') . ' = ' . $db->quoteName('a.id')
-                )
-                ->order($db->quoteName('noteworthy') . ' DESC');
-        } else {
-            [$column, $direction] = array_pad(explode(' ', $list->ordering(), 2), 2, 'DESC');
-            $query->order($db->escape($column) . ' ' . (strtoupper($direction) === 'ASC' ? 'ASC' : 'DESC'));
-        }
-
-        // The same tie-break the page applies, from the same definition. Without it a module and
-        // a page carrying the same name showed different extensions, because several hundred
-        // listings share a top score and MySQL orders equal rows as it pleases.
-        $query->order($list->tieBreak());
+        // The list's date window ("New" = the last 30 days), ordering and tie-break - and for
+        // New & Noteworthy the hit statistics join - from the same definition the browse page uses.
+        // Without the shared tie-break a module and a page carrying the same name showed different
+        // extensions, because several hundred listings share a top score and MySQL orders equal
+        // rows as it pleases.
+        $list->applyTo($query, $db);
 
         $rows = $db->setQuery($query, 0, $count)->loadObjectList() ?: [];
 
