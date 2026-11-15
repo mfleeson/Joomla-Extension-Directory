@@ -33,7 +33,6 @@ return new class () implements ServiceProviderInterface {
             function (Container $container) {
                 $plugin = new Vel((array) PluginHelper::getPlugin('actionlog', 'vel'));
                 $plugin->setApplication(Factory::getApplication());
-                $plugin->setDatabase($container->get(DatabaseInterface::class));
 
                 return $plugin;
             }
