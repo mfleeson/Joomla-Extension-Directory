@@ -45,6 +45,28 @@
 						<option value="recently-updated">COM_JED_BROWSE_RECENTLY_UPDATED</option>
 						<option value="new-noteworthy">COM_JED_BROWSE_NEW_NOTEWORTHY</option>
 					</field>
+
+					<!--
+						"Compatible with Joomla N" (P1-13). Fixed on the menu item for the same reason
+						as the browse list, and independent of it: "Top Rated" plus "Joomla 5" is a
+						valid page. The values are #__jed_joomla_versions ids; each matches that id
+						only, so "Joomla 5" does not include listings that need the B/C plugin.
+					-->
+					<field
+						name="joomla_version"
+						type="list"
+						label="COM_JED_BROWSE_JOOMLA_VERSION_LABEL"
+						description="COM_JED_BROWSE_JOOMLA_VERSION_DESC"
+						default=""
+						validate="options"
+					>
+						<option value="">COM_JED_BROWSE_JOOMLA_VERSION_ANY</option>
+						<option value="40">COM_JED_BROWSE_JOOMLA_VERSION_40</option>
+						<option value="50">COM_JED_BROWSE_JOOMLA_VERSION_50</option>
+						<option value="51">COM_JED_BROWSE_JOOMLA_VERSION_51</option>
+						<option value="60">COM_JED_BROWSE_JOOMLA_VERSION_60</option>
+						<option value="61">COM_JED_BROWSE_JOOMLA_VERSION_61</option>
+					</field>
 				</fieldset>
 			</fields>
 

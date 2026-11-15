@@ -65,6 +65,20 @@ class HtmlView extends BaseHtmlView
         $this->filterForm    = $model->getFilterForm();
         $this->activeFilters = $model->getActiveFilters();
 
+        // Do not offer controls the menu item has fixed: the model would ignore them, and a
+        // drop-down that visibly does nothing reads as a bug.
+        if ($this->filterForm) {
+            // A browse list (Top Rated, New, ...) is its own ordering.
+            if ($this->state->get('list.browse')) {
+                $this->filterForm->removeField('fullordering', 'list');
+            }
+
+            // "Compatible with Joomla N" menu items fix the version.
+            if ($this->state->get('filter.joomla_version_fixed')) {
+                $this->filterForm->removeField('joomla_version', 'filter');
+            }
+        }
+
         $this->prepareDocument();
         parent::display($tpl);
     }

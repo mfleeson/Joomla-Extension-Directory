@@ -17,6 +17,7 @@ use Joomla\CMS\Factory;
 use Joomla\CMS\Router\Route;
 use Joomla\CMS\Layout\LayoutHelper;
 use Joomla\CMS\Session\Session;
+use Joomla\CMS\Uri\Uri;
 
 /** @var \Jed\Component\Jed\Site\View\Extensions\HtmlView $this */
 
@@ -67,7 +68,17 @@ $heading = ($catid && !empty($this->items)) ? $this->items[0]->category_title . 
             <p class="font-size-s"><?php echo $this->items[0]->category_hierarchy; ?></p>
         <?php endif; ?>
 
-        <?php echo LayoutHelper::render('joomla.searchtools.default', ['view' => $this]); ?>
+        <?php
+        // The search box, sort and Joomla version drop-downs submit this form (searchtools looks
+        // for #adminForm); without it they had nothing to submit. It posts back to the page's own
+        // URL so the menu item - and with it the browse list and the per-menu-item filter state -
+        // is kept. limitstart=0: a new search or filter starts again at page 1.
+        ?>
+        <form action="<?php echo htmlspecialchars(Uri::getInstance()->toString(), ENT_QUOTES, 'UTF-8'); ?>"
+              method="post" name="adminForm" id="adminForm">
+            <?php echo LayoutHelper::render('joomla.searchtools.default', ['view' => $this]); ?>
+            <input type="hidden" name="limitstart" value="0">
+        </form>
 
         <ul class="jed-grid jed-grid--1-1-1">
             <?php foreach ($this->items as $item) : ?>

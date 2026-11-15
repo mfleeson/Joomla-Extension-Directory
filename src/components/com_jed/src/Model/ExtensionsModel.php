@@ -76,6 +76,17 @@ class ExtensionsModel extends ListModel
         }
 
         parent::__construct($config);
+
+        // One user-state context per menu item. ListModel keeps filters, list ordering and the page
+        // number in the session under its context, and with a single "com_jed.extensions" context
+        // every extensions menu item shared them: page 3 of Top Rated opened Most Reviewed on page
+        // 3, and a visit to "Compatible with Joomla 4" left Top Rated filtered to Joomla 4.
+        // (com_content scopes its category lists by Itemid for the same reason.)
+        $itemId = Factory::getApplication()->getInput()->getInt('Itemid', 0);
+
+        if ($itemId > 0) {
+            $this->context .= '.' . $itemId;
+        }
     }
 
 
@@ -106,6 +117,8 @@ class ExtensionsModel extends ListModel
 
         // "Compatible with J4/J5/J6": filters on the joomla_versions column against the ids in
         // #__jed_joomla_versions (40/50/51 = J4/J5/J5 b-c, 60/61 = J6/J6 b-c). See getListQuery().
+        // This is the visitor's own choice (the filter drop-down, or filter_joomla_version in a
+        // link); a menu item's `joomla_version` parameter overrides it further down.
         $joomlaVersion = $this->getUserStateFromRequest($this->context . '.filter.joomla_version', 'filter_joomla_version', '');
         $this->setState('filter.joomla_version', $joomlaVersion);
 
@@ -146,7 +159,22 @@ class ExtensionsModel extends ListModel
             $this->state->set('list.limit', 36);
         }
 
-        $browse = BrowseList::fromKey((string) $app->getParams()->get('browse_list', ''));
+        $params = $app->getParams();
+
+        // "Compatible with Joomla 4/5/6" as a menu item (P1-13, like the browse lists): a version
+        // set on the menu item is fixed for that page and wins over the request. The view drops
+        // the version drop-down on such a page, since it could not change anything.
+        $fixedVersion = self::cleanJoomlaVersion($params->get('joomla_version', ''));
+
+        if ($fixedVersion !== '') {
+            $this->setState('filter.joomla_version', $fixedVersion);
+            $this->setState('filter.joomla_version_fixed', true);
+        } else {
+            $this->setState('filter.joomla_version', self::cleanJoomlaVersion($this->state->get('filter.joomla_version')));
+            $this->setState('filter.joomla_version_fixed', false);
+        }
+
+        $browse = BrowseList::fromKey((string) $params->get('browse_list', ''));
 
         if ($browse !== null) {
             [$column, $dirn] = array_pad(explode(' ', $browse->ordering(), 2), 2, 'DESC');
@@ -229,12 +257,17 @@ class ExtensionsModel extends ListModel
             $query->where('a.catid = ' . (int) $category);
         }
 
-        // "Compatible with J4/J5/J6": a.joomla_versions stores a JSON-ish array of
-        // #__jed_joomla_versions ids, e.g. ["40","50"], so a quoted LIKE reliably matches a
-        // single id regardless of how many other versions are listed alongside it.
-        $joomlaVersion = $this->getState('filter.joomla_version');
-        if (!empty($joomlaVersion)) {
-            $query->where('a.joomla_versions LIKE ' . $db->quote('%"' . $db->escape($joomlaVersion, true) . '"%'));
+        // "Compatible with J4/J5/J6": a.joomla_versions holds a list of #__jed_joomla_versions ids,
+        // normally JSON (["40","50"]) but not reliably so in the imported legacy rows - see
+        // JedHelper::splitStoredList(). Match the id as a whole number in any list format, so
+        // "40" neither misses a row stored as 40,50 nor matches one that only lists "140".
+        // The value was reduced to digits by cleanJoomlaVersion(), so it is safe in the pattern.
+        $joomlaVersion = (string) $this->getState('filter.joomla_version');
+
+        if ($joomlaVersion !== '') {
+            $query->where(
+                $db->quoteName('a.joomla_versions') . ' REGEXP ' . $db->quote('(^|[^0-9])' . $joomlaVersion . '([^0-9]|$)')
+            );
         }
 
         // Confirmed add-ons of one product (P1-23). parent_confirmed is required here for the
@@ -247,49 +280,46 @@ class ExtensionsModel extends ListModel
                 ->where($db->quoteName('a.parent_confirmed') . ' = 1');
         }
 
-        // Add the list ordering clause.
-        $orderCol  = $this->state->get('list.ordering', 'a.id');
-        $orderDirn = $this->state->get('list.direction', 'DESC');
+        // A browse list (Top Rated, Most Reviewed, New, Recently Updated, New & Noteworthy) brings
+        // its own date window, ordering and tie-break, from the one definition the module uses too,
+        // so the page and the module of the same name always agree. See BrowseList::applyTo().
+        $browse = BrowseList::fromKey((string) $this->getState('list.browse', ''));
 
-        // "New & Noteworthy" is not a sort of this table at all - it is what people have been
-        // looking at in the last fortnight, so it joins P1-12's aggregate. An INNER JOIN, because
-        // a listing nobody has viewed is not noteworthy; that is the definition, not an omission.
-        if ($orderCol === 'noteworthy') {
-            $since = Factory::getDate('-' . BrowseList::NOTEWORTHY_DAYS . ' days')->format('Y-m-d');
-
-            // A derived table, so the "table" is the subquery itself and there is no name for
-            // quoteName() to wrap - only its alias. The join condition is passed separately, as
-            // for any other join.
-            $query->select('hits.views AS noteworthy')
-                ->innerJoin(
-                    '(SELECT ' . $db->quoteName('extension_id') . ', SUM(' . $db->quoteName('views') . ') AS '
-                    . $db->quoteName('views') . ' FROM ' . $db->quoteName('#__jed_hit_stats')
-                    . ' WHERE ' . $db->quoteName('period') . ' >= ' . $db->quote($since)
-                    . ' GROUP BY ' . $db->quoteName('extension_id')
-                    . ' HAVING SUM(' . $db->quoteName('views') . ') > 0) AS ' . $db->quoteName('hits'),
-                    $db->quoteName('hits.extension_id') . ' = ' . $db->quoteName('a.id')
-                );
-
-            $query->order($db->quoteName('noteworthy') . ' ' . ($orderDirn === 'ASC' ? 'ASC' : 'DESC'))
-                ->order($db->quoteName('a.id') . ' ASC');
+        if ($browse !== null) {
+            $browse->applyTo($query, $db);
 
             return $query;
         }
+
+        // The ordinary list: the visitor's sort, validated against filter_fields by populateState().
+        $orderCol  = $this->state->get('list.ordering', 'a.id');
+        $orderDirn = $this->state->get('list.direction', 'DESC');
 
         if ($orderCol && $orderDirn) {
             $query->order($db->escape($orderCol . ' ' . $orderDirn));
         }
 
-        // A browse list has to answer the same way twice, and the same way as the module of the
-        // same name. Several hundred listings share a score_overall of 5.00, and without this the
-        // page and the sidebar showed different "Top Rated" extensions.
-        $browse = BrowseList::fromKey((string) $this->getState('list.browse', ''));
-
-        if ($browse !== null) {
-            $query->order($browse->tieBreak());
-        }
-
         return $query;
+    }
+
+    /**
+     * Reduce a Joomla version filter value to a #__jed_joomla_versions id ("40", "51", ...) or "".
+     *
+     * The value arrives from the request, the session or a menu item parameter, and ends up inside
+     * a REGEXP pattern, so anything that is not a plain positive number is dropped rather than
+     * escaped.
+     *
+     * @param mixed $value The raw value.
+     *
+     * @return string  The id as a string of digits, or "" for no filter.
+     *
+     * @since 4.0.0
+     */
+    private static function cleanJoomlaVersion(mixed $value): string
+    {
+        $value = \is_scalar($value) ? trim((string) $value) : '';
+
+        return preg_match('/^[1-9][0-9]{0,3}$/', $value) ? $value : '';
     }
 
     /**
