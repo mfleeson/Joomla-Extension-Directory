@@ -1,0 +1,18 @@
+.pagenavigation,
+.pager {
+  clear: both;
+  .pagination {
+    justify-content: space-between;
+    padding: 0;
+    margin: $grid-gutter-width 0;
+
+    .next:only-child {
+      margin-left: auto;
+    }
+
+    [dir="rtl"] &>.next:only-child {
+      margin-right: auto;
+      margin-left: $grid-gutter-width;
+    }
+  }
+}

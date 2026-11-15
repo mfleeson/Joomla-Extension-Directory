@@ -1,0 +1,54 @@
+/*!
+ * Joomla.org site template
+ *
+ * @copyright  Copyright (C) 2005-2023 Open Source Matters, Inc. All rights reserved
+ * @license    GNU General Public License version 2 or later
+ */
+
+// Bootstrap functions
+@import "../node_modules/bootstrap/scss/functions";
+
+// Bootstrap
+@import "variable-init-overrides";
+@import "../node_modules/bootstrap/scss/variables";
+@import "../node_modules/bootstrap/scss/variables-dark";
+@import "variable-overrides";
+@import "../node_modules/bootstrap/scss/bootstrap";
+
+// Base Overrides
+@import "fonts";
+@import "base";
+
+// Blocks
+@import "blocks/top-header";
+@import "blocks/site-header";
+@import "blocks/site-subnav";
+@import "blocks/editor";
+@import "blocks/forms";
+@import "blocks/frontend-edit";
+@import "blocks/footer";
+@import "blocks/body";
+@import "blocks/modifiers";
+@import "blocks/navigation";
+@import "blocks/blog-image";
+@import "blocks/skipto";
+
+// Pages
+@import "pages/com_content";
+@import "pages/com_contact";
+@import "pages/mod_menu";
+
+// Vendor overrides
+@import "vendor/awesomplete";
+@import "vendor/bootstrap";
+@import "vendor/choices";
+@import "vendor/chosen";
+@import "vendor/dragula";
+@import "vendor/joomla-custom-elements/joomla-alert";
+@import "vendor/joomla-custom-elements/joomla-tab";
+@import "vendor/rl_sliders";
+@import "vendor/metismenu";
+@import "vendor/minicolors";
+@import "vendor/rrssb_icons";
+@import "vendor/tinymce";
+@import "vendor/icomoon";

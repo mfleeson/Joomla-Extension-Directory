@@ -1,0 +1,21 @@
+.com_content {
+  .blog-item figure img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .item-title a {
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  &.view-article {
+    .item-image img {
+      max-width: 100%;
+      height: auto;
+    }
+  }
+}

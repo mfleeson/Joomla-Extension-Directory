@@ -1,0 +1,37 @@
+.mod-menu {
+  .nav-item.current > .nav-link {
+    font-weight: bold;
+  }
+
+  /**
+   * Set some second level menu display properties up.
+   * Then reset the top border of the first element and bottom border of the last element in order to get a better
+   * hover effect.
+   *
+   * TODO: Use the not operator on the border-top/border-bottom elements to achieve the same thing without multiple
+   *       cascading items (hopefully more maintainable!)
+   */
+  &.nav-tabs.flex-column .mod-menu__sub {
+    .nav-link {
+      border-top: none;
+      border-bottom: none;
+      padding: 0.1rem 0 0.1rem 2rem;
+    }
+
+    .nav-item:first-of-type .nav-link {
+      border-top: var(--#{$prefix}nav-tabs-border-width) solid var(--#{$prefix}secondary-color);
+
+      &:hover {
+        border-color: var(--#{$prefix}nav-tabs-link-hover-border-color);
+      }
+    }
+
+    .nav-item:last-of-type .nav-link {
+      border-bottom: var(--#{$prefix}nav-tabs-border-width) solid var(--#{$prefix}secondary-color);
+
+      &:hover {
+        border-color: var(--#{$prefix}nav-tabs-link-hover-border-color)
+      }
+    }
+  }
+}

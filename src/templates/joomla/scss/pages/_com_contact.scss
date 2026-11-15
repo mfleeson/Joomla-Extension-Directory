@@ -1,0 +1,21 @@
+.com_contact {
+  .dl-horizontal {
+    dt {
+      float: left;
+      width: 20px;
+    }
+    dd {
+      margin-left: 40px;
+    }
+  }
+
+  &.view-contact {
+    /* Wraps the copy email field onto a single line for small screens */
+    @include media-breakpoint-down(md) {
+      #jform_contact_email_copy-lbl {
+        margin-right: 1rem;
+        float: left;
+      }
+    }
+  }
+}

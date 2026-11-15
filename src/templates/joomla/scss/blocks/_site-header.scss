@@ -1,0 +1,46 @@
+.header {
+  padding: 9px;
+  background-color: #1a3867;
+  background-image: radial-gradient(circle,#17568c,#1a3867);
+  background-repeat: no-repeat;
+
+  .page-title {
+    padding: 0 10px;
+    margin: 0;
+    font-weight: normal;
+    line-height: 50px;
+    color: white;
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.8);
+
+    a {
+      color: #fff;
+      text-decoration: none;
+    }
+
+    @include media-breakpoint-down(md) {
+      text-align: center;
+      // Shrink text a little bit more than the stylesheet so it fits on one line
+      font-size: calc(1.375rem + 1.0vw);
+    }
+  }
+
+  .btn-toolbar {
+    @include media-breakpoint-down(md) {
+      justify-content: center;
+    }
+
+    @include media-breakpoint-down(sm) {
+      .btn-group {
+        width: 80%;
+      }
+    }
+
+    [class*=" icon-"], [class^="icon-"] {
+      margin-left: 0.5rem;
+
+      @include media-breakpoint-between(md, lg) {
+        margin-left: 0.2rem;
+      }
+    }
+  }
+}

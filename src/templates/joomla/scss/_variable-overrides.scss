@@ -1,0 +1,5 @@
+// Variables that affect mixins and are therefore set after the bootstrap variables are loaded
+$color-mode-type: media-query;
+$enable-rounded:  false;
+$enable-important-utilities: false;
+$headings-color-dark: $white;

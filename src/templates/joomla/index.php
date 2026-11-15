@@ -16,28 +16,29 @@ use Joomla\CMS\Uri\Uri;
 /** @var \Joomla\CMS\Document\HtmlDocument $this */
 
 // Load the template helper
-require_once __DIR__ . '/helpers/template.php';
+JLoader::register('JoomlaTemplateHelper', __DIR__ . '/helpers/template.php');
 
+// Declare the template as HTML5
+$this->setHtml5(true);
 $this->addScriptOptions(
     'skipto-settings',
     [
         'settings' => [
             'skipTo' => [
-                'attachElement' => '.navigation',
-            ],
-        ],
+                'attachElement' => '.navigation'
+            ]
+        ]
     ]
 );
 
-$app   = Factory::getApplication();
-$input = $app->getInput();
+$app = Factory::getApplication();
 
 // Detecting Active Variables
-$option   = $input->getCmd('option', '');
-$view     = $input->getCmd('view', '');
-$layout   = $input->getCmd('layout', 'default');
-$task     = $input->getCmd('task', 'display');
-$itemid   = $input->getUint('Itemid', 0);
+$option   = $app->input->getCmd('option', '');
+$view     = $app->input->getCmd('view', '');
+$layout   = $app->input->getCmd('layout', 'default');
+$task     = $app->input->getCmd('task', 'display');
+$itemid   = $app->input->getUint('Itemid', 0);
 $sitename = $app->get('sitename');
 $wa       = $this->getWebAssetManager();
 
@@ -52,7 +53,7 @@ $wa->useStyle('template.joomla.custom.' . ($this->direction === 'rtl' ? 'rtl' : 
 // Override 'template.active' asset to set correct ltr/rtl dependency and with CDN Dependency
 $wa->registerStyle('template.active', '', [], [], [((!JDEBUG && $this->params->get('useCdn', '1')) ? 'cdn.' : '') . 'template.joomla.' . ($this->direction === 'rtl' ? 'rtl' : 'ltr')]);
 
-$fontName        = 'Open Sans';
+$fontName = 'Open Sans';
 $escapedFontName = str_replace(' ', '+', $fontName);
 
 $this->getPreloadManager()->preconnect('https://fonts.googleapis.com/', ['crossorigin' => 'anonymous']);
@@ -71,15 +72,18 @@ $rightColumnWidth = $this->params->get('rightColumnWidth', 3);
 $span = 'col-md-12';
 
 // Width if both columns are displayed
-if ($this->countModules($rightPosition) && $this->countModules($leftPosition)) {
+if ($this->countModules($rightPosition) && $this->countModules($leftPosition))
+{
     $span  = 'col-md-' . (12 - $leftColumnWidth - $rightColumnWidth);
 }
 // Width if right column is displayed only
-elseif ($this->countModules($rightPosition) && !$this->countModules($leftPosition)) {
+elseif ($this->countModules($rightPosition) && !$this->countModules($leftPosition))
+{
     $span  = 'col-md-' . (12 - $rightColumnWidth);
 }
 // Width if left column is displayed only
-elseif (!$this->countModules($rightPosition) && $this->countModules($leftPosition)) {
+elseif (!$this->countModules($rightPosition) && $this->countModules($leftPosition))
+{
     $span  = 'col-md-' . (12 - $leftColumnWidth);
 }
 
@@ -101,35 +105,43 @@ $this->addHeadLink("$templateBaseUrl/images/apple-touch-icon.png", 'apple-touch-
 
 // Check if social metadata was set by content otherwise add template defaults
 // Note: Even though Open Graph may support multiple tags, Joomla doesn't, so we need to check them anyway or go to custom tags
-if (!$this->getMetaData('twitter:card')) {
+if (!$this->getMetaData('twitter:card'))
+{
     $this->setMetaData('twitter:card', 'summary_large_image');
 }
 
-if (!$this->getMetaData('twitter:site')) {
+if (!$this->getMetaData('twitter:site'))
+{
     $this->setMetaData('twitter:site', '@joomla');
 }
 
-if (!$this->getMetaData('og:site_name', 'property')) {
+if (!$this->getMetaData('og:site_name', 'property'))
+{
     $this->setMetaData('og:site_name', $sitename, 'property');
 }
 
-if (!$this->getMetaData('og:image', 'property')) {
+if (!$this->getMetaData('og:image', 'property'))
+{
     $this->setMetaData('og:image', $this->params->get('ogImage', 'https://cdn.joomla.org/images/joomla-org-og.jpg'), 'property');
 }
 
-if (!$this->getMetaData('twitter:description')) {
+if (!$this->getMetaData('twitter:description'))
+{
     $this->setMetaData('twitter:description', $this->params->get('twitterCardDescription', 'The Platform Millions of Websites Are Built On'));
 }
 
-if (!$this->getMetaData('twitter:image')) {
+if (!$this->getMetaData('twitter:image'))
+{
     $this->setMetaData('twitter:image', $this->params->get('twitterCardImage', 'https://cdn.joomla.org/images/joomla-twitter-card.jpg'));
 }
 
-if (!$this->getMetaData('twitter:title')) {
+if (!$this->getMetaData('twitter:title'))
+{
     $this->setMetaData('twitter:title', $this->params->get('twitterCardTitle', $sitename));
 }
 
-if (!$this->getMetaData('referrer')) {
+if (!$this->getMetaData('referrer'))
+{
     $this->setMetaData('referrer', 'unsafe-url');
 }
 
@@ -178,14 +190,14 @@ if ($gtmId) : ?>
     <div class="container-md">
         <div class="row">
             <div class="col-md-7">
-                <h1 class="page-title">
+                <div class="page-title h1">
                     <a href="<?php echo $this->baseurl; ?>/">
                         <?php $headerLogo = $this->params->get('headerLogo', 'https://cdn.joomla.org/images/joomla-colours-logo.svg'); ?>
                         <img height="50px;" src="<?php echo $headerLogo; ?>" alt="Joomla!" class="site-logo me-2 mb-1">
                         <?php $customHeaderTitle = $this->params->get('customHeaderTitle', null); ?>
                         <?php echo $customHeaderTitle ? HTMLHelper::_('string.truncate', $customHeaderTitle, 40, false, false) : ''; ?>
                     </a>
-                </h1>
+                </div>
             </div>
             <div class="col-md-5">
                 <div class="btn-toolbar pt-md-1 row">
@@ -193,136 +205,37 @@ if ($gtmId) : ?>
                         <a href="https://downloads.joomla.org/" class="btn btn-lg btn-warning"><?php echo Text::_('TPL_JOOMLA_DOWNLOAD_BUTTON'); ?></a>
                     </div>
                     <div class="btn-group col-6">
-                        <a href="https://launch.joomla.org" class="btn btn-lg btn-primary"><?php echo Text::_('TPL_JOOMLA_DEMO_BUTTON'); ?><span aria-hidden="true" class="fa-solid fa-rocket ms-2"></span></a>
+                        <a href="https://launch.joomla.org" class="btn btn-lg btn-primary"><?php echo Text::_('TPL_JOOMLA_DEMO_BUTTON'); ?><span aria-hidden="true" class="icon-rocket"></span></a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </header>
-
-
-<nav class="subnav-wrapper navigation" role="navigation" aria-label="<?php echo Text::_('TPL_JOOMLA_NAV_CROSS_SITE'); ?>">
-    <div id="mega-menu" class="subnav navbar-expand-md py-md-1">
-        <div class="container-xxl">
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#primaryMenu" aria-controls="primaryMenu" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-
-            <div class="navbar-collapse collapse" id="subMenu">
-                <ul id="nav-jed" class="navbar-nav">
-                    <li >
-                        <button type="button" class="btn">
-                            <span dir="ltr">Home</span>
-                        </button>
-
-                    </li>
-                    <li class="dropdown">
-                        <button type="button" class="btn dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                            Browse Extensions <span class="caret"></span>
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="index.php?option=com_jed&view=categories&id=0">Top Rated</a></li>
-                            <li><a class="dropdown-item" href="index.php?option=com_jed&view=categories&id=0">Most Reviewed</a></li>
-                            <li><a class="dropdown-item" href="index.php?option=com_jed&view=categories&id=0">New</a></li>
-                            <li><a class="dropdown-item" href="index.php?option=com_jed&view=categories&id=0">Recently Updated</a></li>
-                            <li><a class="dropdown-item" href="index.php?option=com_jed&view=categories&id=0">Compatible with J4</a></li>
-                            <li><a class="dropdown-item" href="index.php?option=com_jed&view=categories&id=0">Compatible with J5</a></li>
-                            <li><a class="dropdown-item" href="index.php?option=com_jed&view=categories&id=0">Compatible with J5 (with b/c plugin)</a></li>
-                        </ul>
-                    </li>
-                    <li>
-                        <button type="button" class="btn"><span dir="ltr">Search</span></button>
-                    </li>
-
-                    <li class="dropdown">
-                        <button type="button" class="btn dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                            Community <span class="caret"></span>
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="index.php?option=com_jed&view=categories&id=0">Meet the JED Team</a></li>
-                            <li><a class="dropdown-item" href="index.php?option=com_jed&view=categories&id=0">Blog</a></li>
-                            <li><a class="dropdown-item" href="index.php?option=com_jed&view=categories&id=0">JED Newsletter</a></li>
-                            <li><a class="dropdown-item" href="index.php?option=com_jed&view=categories&id=0">Terms of Service</a></li>
-                            <li><a class="dropdown-item" href="index.php?option=com_jed&view=categories&id=0">Help Joomla!</a></li>
-                        </ul>
-                    </li>
-                    <li class="dropdown">
-                        <button type="button" class="btn dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                            Support <span class="caret"></span>
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="index.php?option=com_jed&view=categories&id=0">Knowledgebase</a></li>
-                            <li><a class="dropdown-item" href="index.php?option=com_jed&view=categories&id=0">Sponsor Joomla!</a></li>
-                        </ul>
-                    </li>
-                    <li class="dropdown">
-                        <button type="button" class="btn dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                            Vulnerable Extensions <span class="caret"></span>
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="index.php?option=com_jed&view=categories&id=0">About</a></li>
-                            <li><a class="dropdown-item" href="index.php?option=com_jed&view=velliveitems">Vulnerable Extensions</a></li>
-                            <li><a class="dropdown-item" href="index.php?option=com_jed&view=velpatcheditems">Resolved Extensions</a></li>
-                            <li><a class="dropdown-item" href="index.php?option=com_jed&view=velabandoneditems">Abandoned Extensions</a></li>
-                            <li><a class="dropdown-item" href="index.php?option=com_jed&view=velreportform">Submit a Report</a></li>
-                            <li><a class="dropdown-item" href="index.php?option=com_jed&view=veldeveloperupdateform">Submit an Update</a></li>
-                            <li><a class="dropdown-item" href="index.php?option=com_jed&view=velabandonedreportform">Submit AbandonWare</a></li>
-                            <li><a class="dropdown-item" href="index.php?option=com_jed&view=categories&id=0">JSON Feed</a></li>
-                        </ul>
-                    </li>
-                    <li >
-                        <button type="button" class="btn">
-                            <span dir="ltr">Login</span>
-                        </button>
-                    </li>
-                    <li >
-                        <button type="button" class="btn">
-                            <span dir="ltr">Register</span>
-                        </button>
-                    </li>
-                    <li class="dropdown">
-                        <button type="button" class="btn dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                            Debug <span class="caret"></span>
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="index.php?option=com_vel&view=advisories">Live VEL Items</a></li>
-                            <li><a class="dropdown-item" href="index.php?option=com_vel&view=report">VEL Report a Vulnerability</a></li>
-                            <li><a class="dropdown-item" href="index.php?option=com_vel&view=fixnotice">VEL Fix Notice</a></li>
-                            <li><a class="dropdown-item" href="index.php?option=com_vel&view=advisory">VEL Single Advisory</a></li>
-                            <li><a class="dropdown-item" href="index.php?option=com_jed&view=tickets">My Tickets</a></li>
-                            <li><a class="dropdown-item" href="index.php?option=com_jed&view=categories&id=0">Show Extension Categories</a></li>
-                            <li><a class="dropdown-item" href="index.php?option=com_jed&view=extensionform">Submit Extension</a></li>
-                            <li><a class="dropdown-item" href="index.php?option=com_jed&view=controlpanel">User Control Panel</a></li>
-
-                        </ul>
-                    </li>
-
-                </ul>
-                <div id="nav-search" class="navbar-search float-md-end">
-                    <jdoc:include type="modules" name="position-0" style="none" />
-                </div>
-            </div>
+<nav class="subnav-wrapper" aria-label="<?php echo Text::_('TPL_JOOMLA_NAV_MAIN_MENU'); ?>">
+    <div class="subnav">
+        <div class="container-md">
+            <jdoc:include type="modules" name="position-1" style="none" />
         </div>
     </div>
 </nav>
 <!-- Body -->
 <div class="body">
     <div class="container<?php echo $this->params->get('fluidContainer') ? '-fluid g-0' : ''; ?>">
-        <jdoc:include type="modules" name="banner" style="html5" />
+        <jdoc:include type="modules" name="banner" style="xhtml" />
         <div class="row">
             <?php if ($this->countModules($leftPosition)): ?>
                 <!-- Begin Sidebar -->
                 <div id="sidebar" class="<?php echo "col-md-$leftColumnWidth"; ?> sidebar-left">
                     <div class="sidebar-nav">
-                        <jdoc:include type="modules" name="position-8" style="html5" />
+                        <jdoc:include type="modules" name="position-8" style="xhtml" />
                     </div>
                 </div>
                 <!-- End Sidebar -->
             <?php endif; ?>
             <main id="content" class="<?php echo $span;?>">
                 <!-- Begin Content -->
-                <jdoc:include type="modules" name="position-3" style="html5" />
+                <jdoc:include type="modules" name="position-3" style="xhtml" />
                 <jdoc:include type="message" />
                 <jdoc:include type="component" />
                 <jdoc:include type="modules" name="position-2" style="none" />
@@ -338,7 +251,7 @@ if ($gtmId) : ?>
         </div>
         <?php if ($this->countModules('position-5')) : ?>
             <div class="row">
-                <jdoc:include type="modules" name="position-5" style="html5" />
+                <jdoc:include type="modules" name="position-5" style="xhtml" />
             </div>
         <?php endif; ?>
     </div>

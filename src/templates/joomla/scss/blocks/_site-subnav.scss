@@ -1,0 +1,48 @@
+.subnav-wrapper {
+  @include media-breakpoint-up(sm) {
+    // We use javascript to add the top property here so it's accurate in all browsers and will work if we tweak padding
+    // and margins in the future
+    position: sticky;
+    // This value needs to be lower than the one in _top-header.scss
+    z-index: 1000;
+  }
+
+  .subnav {
+    background-color: #1b63a2;
+    background-image: linear-gradient(0deg, rgba(0, 0, 0, 0.03), rgba(255, 255, 255, 0.05));
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 0 1px rgba(0, 0, 0, 0.2), 0 1px 0 #2f89d3 inset, 0 -1px 0 #368ad8 inset;
+
+    .nav.nav-pills {
+      --#{$prefix}nav-link-padding-x: 0.75rem;
+      --#{$prefix}nav-link-color: #{$white};
+      --#{$prefix}nav-link-hover-color: #{$white};
+
+      /** Shrink the font size down a bit on smaller screens to keep the nav items in a single line **/
+      @include media-breakpoint-between(sm, md) {
+        --#{$prefix}nav-link-font-size: 0.89rem;
+      }
+
+      > li > a {
+        margin-right: 1px;
+        text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+        border: 1px solid transparent;
+        transition: all .2s ease-in-out;
+
+        &:focus-visible {
+          /** Default box shadow is the primary color which is the same as our background. So override here to be white */
+          box-shadow: 0 0 $focus-ring-blur $focus-ring-width rgba($white, $focus-ring-opacity)
+        }
+      }
+
+      > li.active > a, > li.focus > a, > li:hover > a, > li:focus > a {
+        background-color: rgba(19, 42, 76, 0.5);
+        box-shadow: inset 3px 0 2px -2px rgba(0, 0, 0, 0.15), inset -3px 0 2px -2px rgba(0, 0, 0, 0.15);
+      }
+
+      /** Override default mod_menu styling as we have a background colour marker above */
+      > li.current > a {
+        font-weight: normal;
+      }
+    }
+  }
+}

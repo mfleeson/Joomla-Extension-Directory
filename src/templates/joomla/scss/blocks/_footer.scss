@@ -1,0 +1,93 @@
+$joomla-footer-color: $white;
+
+.footer {
+  --joomla-footer-color: #{$joomla-footer-color};
+  margin-top: 10px;
+  background-color: #0e1e36;
+  background-image: linear-gradient(to bottom, #10223e, #0b172a);
+  background-repeat: repeat-x;
+  border-top: 1px solid #0b172a;
+
+  // Remove double padding between the navbars so it looks consistent
+  .navbar:first-of-type {
+    padding-bottom: 0;
+  }
+
+  .navbar + .navbar {
+    padding-top: 0;
+  }
+
+  .navbar-nav {
+    --#{$prefix}nav-link-color: var(--joomla-footer-color);
+    --#{$prefix}nav-link-hover-color: #{shift-color($joomla-footer-color, 20%)};
+
+    @include media-breakpoint-down(xs) {
+      --#{$prefix}nav-link-padding-y: 0;
+      margin-bottom: 1rem;
+      justify-content: center;
+    }
+  }
+
+  p {
+    color: var(--joomla-footer-color);
+  }
+
+  // TODO: WHY!?!?!?! Just delete it???
+  hr {
+    border: 0;
+  }
+
+  #adblock-msg .navbar-inner {
+    background: #da4f49;
+    min-height: 20px;
+    color: #fff;
+    padding: 10px 50px;
+    font-size: 16px;
+    border: none;
+    position: relative;
+    margin: 0;
+
+    .close {
+      position: absolute;
+      left: 20px;
+      top: 10px;
+      right: auto;
+      opacity: .9;
+      font-size: 30px;
+      text-shadow: none;
+    }
+  }
+
+  .soc li {
+    display: inline-block;
+
+    a, svg {
+      position: relative;
+      z-index: 1;
+      display: block;
+      width: 32px;
+      height: 32px;
+      overflow: hidden;
+      font-size: 22px;
+      font-style: normal;
+      font-weight: 400;
+      line-height: 32px;
+      color: #1b63a2;
+      text-align: center;
+      text-decoration: none;
+      box-sizing: border-box;
+    }
+  }
+
+  #adblock-msg {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    margin-bottom: 0;
+    z-index: 1030;
+  }
+
+  .rochen {
+    width: 287px;
+  }
+}

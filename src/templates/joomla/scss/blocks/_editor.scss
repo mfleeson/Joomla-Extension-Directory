@@ -1,0 +1,18 @@
+/** Ensure the tabs are visable in dark mode */
+joomla-tab .wf-editor-tabs button[role="tab"] {
+  color: var(--#{$prefix}body-color)
+}
+
+// TODO: More work required to make tinymce work in dark mode
+//.mceModernSkin {
+//  --#{$prefix}tinymce-toolbar-color: var(--#{$prefix}body-color);
+//  --#{$prefix}tinymce-toolbar-bg: var(--#{$prefix}body-bg);
+//
+//  .mceToolbar, .mceMenu {
+//    background: var(--#{$prefix}tinymce-toolbar-bg);
+//  }
+//
+//  .mceButton .mceIcon, .mceMenuItem .mceIcon, .mceSplitButton .mceAction {
+//    color: var(--#{$prefix}tinymce-toolbar-color);
+//  }
+//}

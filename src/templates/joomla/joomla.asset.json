@@ -1,7 +1,7 @@
 {
   "$schema": "https://developer.joomla.org/schemas/json-schema/web_assets.json",
   "name": "joomla",
-  "version": "6.0.0",
+  "version": "4.0.0",
   "description": "This file contains details of the assets used by Joomla dot org template.",
   "license": "GPL-2.0-or-later",
   "assets": [
@@ -10,18 +10,18 @@
       "description": "The css file to be used when the site is left to right (LTR).",
       "type": "style",
       "uri": "template.min.css",
-      "version": "4.0.9",
+      "version": "4.0.10",
       "dependencies": [
-        "template.joomla.fontawesome"
+        "fontawesome"
       ]
     },
     {
       "name": "cdn.template.joomla.ltr",
       "description": "The css file to be used when the site is left to right (LTR).",
       "type": "style",
-      "uri": "https://cdn.joomla.org/template/css/template_4.0.9.min.css",
+      "uri": "https://cdn.joomla.org/template/css/template_4.0.10.min.css",
       "dependencies": [
-        "template.joomla.fontawesome"
+        "fontawesome"
       ]
     },
     {
@@ -29,18 +29,18 @@
       "description": "The css file to be used when the site is right to left (RTL).",
       "type": "style",
       "uri": "template-rtl.min.css",
-      "version": "4.0.9",
+      "version": "4.0.10",
       "dependencies": [
-        "template.joomla.fontawesome"
+        "fontawesome"
       ]
     },
     {
       "name": "cdn.template.joomla.rtl",
       "description": "The CSS file to be used when the site is right to left (RTL).",
       "type": "style",
-      "uri": "https://cdn.joomla.org/template/css/template-rtl_4.0.9.min.css",
+      "uri": "https://cdn.joomla.org/template/css/template-rtl_4.0.10.min.css",
       "dependencies": [
-        "template.joomla.fontawesome"
+        "fontawesome"
       ]
     },
     {
@@ -114,8 +114,7 @@
       ]
     },
     {
-      "name": "template.joomla.fontawesome",
-      "description": "The Joomla FontAwesome build, which adds the .icon-* aliases that the core 'fontawesome' asset does not ship. Declared under its own name so the core asset is not shadowed for other extensions.",
+      "name": "fontawesome",
       "type": "style",
       "uri": "system/joomla-fontawesome.min.css"
     },
