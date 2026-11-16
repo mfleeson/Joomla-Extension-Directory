@@ -31,7 +31,7 @@ use Joomla\Event\SubscriberInterface;
  * Sample data - JED Knowledgebase.
  *
  * Builds a knowledgebase in com_content - one parent category, its subcategories and their articles - from
- * knowledgebase.json in this plugin's folder, the way plg_sampledata_jed2 builds the JED menu from menu.json.
+ * knowledgebase.json in this plugin's folder, the way plg_sampledata_jed_menu builds the JED menu from menu.json.
  *
  * JSON structure:
  *

@@ -22,7 +22,7 @@
 		<file type="module" id="mod_jed_extensions" client="site">mod_jed_extensions.zip</file>
 		<file type="template" id="joomla" client="site">tpl_joomla.zip</file>
 		<file type="plugin" id="jed_sampledata" group="sampledata">plg_sampledata_jed.zip</file>
-		<file type="plugin" id="jed_sampledata2" group="sampledata">plg_sampledata_jed2.zip</file>
+		<file type="plugin" id="jed_menu" group="sampledata">plg_sampledata_jed_menu.zip</file>
 		<file type="plugin" id="jed_migrate" group="sampledata">plg_sampledata_jed_migrate.zip</file>
 		<file type="plugin" id="jed_knowledgebase" group="sampledata">plg_sampledata_jed_knowledgebase.zip</file>
 		<file type="plugin" id="jed_finder" group="finder">plg_finder_jed.zip</file>
@@ -31,7 +31,7 @@
 		<file type="plugin" id="jed_actionlog" group="actionlog">plg_actionlog_jed.zip</file>
 		<file type="plugin" id="jedidentity" group="system">plg_system_jedidentity.zip</file>
 		<file type="plugin" id="jed_privacy" group="privacy">plg_privacy_jed.zip</file>
-	<file type="plugin" id="vel" group="task">plg_task_vel.zip</file>
+		<file type="plugin" id="vel" group="task">plg_task_vel.zip</file>
 		<file type="plugin" id="vel" group="privacy">plg_privacy_vel.zip</file>
 		<file type="plugin" id="vel" group="actionlog">plg_actionlog_vel.zip</file>
 	</files>
