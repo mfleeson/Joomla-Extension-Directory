@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <extension type="plugin" group="sampledata" method="upgrade">
-	<name>plg_sampledata_jed2</name>
+	<name>plg_sampledata_jed_menu</name>
 	<author>Joomla! Project</author>
 	<creationDate>##DATE##</creationDate>
 	<copyright>(C) ##YEAR## Open Source Matters, Inc.</copyright>
@@ -8,7 +8,9 @@
 	<authorEmail>admin@joomla.org</authorEmail>
 	<authorUrl>www.joomla.org</authorUrl>
 	<version>##VERSION##</version>
-	<description>PLG_SAMPLEDATA_JED2_XML_DESCRIPTION</description>
+	<description>PLG_SAMPLEDATA_JED_MENU_XML_DESCRIPTION</description>
+	<namespace path="src">Joomla\Plugin\SampleData\JedMenu</namespace>
+	<scriptfile>script.php</scriptfile>
 	<files>
 		##FILES##
 	</files>

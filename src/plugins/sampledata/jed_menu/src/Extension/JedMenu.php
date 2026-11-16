@@ -2,32 +2,33 @@
 
 /**
  * @package     JED
- * @subpackage  Sampledata.jed2
+ * @subpackage  Sampledata.jed_menu
  *
  * @copyright   (C) 2022 Open Source Matters, Inc. <https://www.joomla.org>
  * @license     GNU General Public License version 2 or later; see LICENSE.txt
  */
 
-// phpcs:disable PSR1.Files.SideEffects
-\defined('_JEXEC') or die;
-// phpcs:enable PSR1.Files.SideEffects
+namespace Joomla\Plugin\SampleData\JedMenu\Extension;
 
 use Joomla\CMS\Application\ApplicationHelper;
-use Joomla\CMS\Application\CMSApplicationInterface;
 use Joomla\CMS\Component\ComponentHelper;
+use Joomla\CMS\Event\Plugin\AjaxEvent;
+use Joomla\CMS\Event\SampleData\GetOverviewEvent;
 use Joomla\CMS\Extension\ExtensionHelper;
-use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Multilanguage;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\Plugin\CMSPlugin;
 use Joomla\CMS\Session\Session;
 use Joomla\Component\Menus\Administrator\Table\MenuTypeTable;
-use Joomla\Database\DatabaseInterface;
-use Joomla\Event\Event;
+use Joomla\Database\DatabaseAwareTrait;
 use Joomla\Event\SubscriberInterface;
 
+// phpcs:disable PSR1.Files.SideEffects
+\defined('_JEXEC') or die;
+// phpcs:enable PSR1.Files.SideEffects
+
 /**
- * Sampledata - JED2 Plugin
+ * Sampledata - JED Menu Plugin
  *
  * Builds the JED front-end menu (and optionally a mod_menu module to display it) from a JSON definition.
  *
@@ -50,13 +51,17 @@ use Joomla\Event\SubscriberInterface;
  *   },
  *   "module": {                              // Optional. Omit to create the menu without a module.
  *     "title":     "JED Main Menu",
- *     "position":  "menu",                   // Template position
+ *     "position":  "position-1",             // Template position. position-1 is the menu bar of the
+ *                                            // "joomla" template.
  *     "showtitle": 0,
  *     "access":    "public",
  *     "ordering":  1,
  *     "menu_class": "nav-pills",            // "Menu Class" (Advanced tab): added to the menu <ul> next to "nav".
  *                                            // Space separated CSS classes, "" for none. Default "nav-pills"
- *     "params":    { ... }                   // Any mod_menu params; menutype is filled in automatically
+ *     "params":    { ... }                   // Any mod_menu params; menutype is filled in automatically.
+ *                                            // "layout": "joomla:dropdown" opens submenus as dropdowns
+ *                                            // (templates/joomla/html/mod_menu/dropdown.php); it needs
+ *                                            // "showAllChildren": 1
  *   },
  *   "items": [                               // Menu items, in display order
  *     {
@@ -91,8 +96,10 @@ use Joomla\Event\SubscriberInterface;
  *
  * @since  4.0.0
  */
-class PlgSampledataJed2 extends CMSPlugin implements SubscriberInterface
+final class JedMenu extends CMSPlugin implements SubscriberInterface
 {
+    use DatabaseAwareTrait;
+
     /**
      * Name of the JSON file (in this plugin's folder) that defines the menu.
      *
@@ -150,12 +157,12 @@ class PlgSampledataJed2 extends CMSPlugin implements SubscriberInterface
   },
   "module": {
     "title": "JED Main Menu",
-    "position": "menu",
+    "position": "position-1",
     "showtitle": 0,
     "access": "public",
     "menu_class": "nav-pills",
     "params": {
-      "layout": "_:default",
+      "layout": "joomla:dropdown",
       "startLevel": 1,
       "endLevel": 0,
       "showAllChildren": 1,
@@ -307,50 +314,50 @@ JSON;
     /**
      * Get an overview of the proposed sampledata.
      *
-     * @param   Event  $event  The event (GetOverviewEvent on Joomla 5+)
+     * @param   GetOverviewEvent  $event  The event.
      *
      * @return  void
      *
      * @since   4.0.0
      */
-    public function onSampledataGetOverview(Event $event): void
+    public function onSampledataGetOverview(GetOverviewEvent $event): void
     {
-        if (!$this->app()->getIdentity()->authorise('core.create', 'com_menus')) {
+        if (!$this->getApplication()->getIdentity()->authorise('core.create', 'com_menus')) {
             return;
         }
 
         $data              = new \stdClass();
         $data->name        = $this->_name;
-        $data->title       = $this->text('PLG_SAMPLEDATA_JED2_OVERVIEW_TITLE', 'JED Menu');
+        $data->title       = $this->text('PLG_SAMPLEDATA_JED_MENU_OVERVIEW_TITLE', 'JED Menu');
         $data->description = $this->text(
-            'PLG_SAMPLEDATA_JED2_OVERVIEW_DESC',
-            'Creates the JED front-end menu (and its menu module) from plugins/sampledata/jed2/menu.json.'
+            'PLG_SAMPLEDATA_JED_MENU_OVERVIEW_DESC',
+            'Creates the JED front-end menu (and its menu module) from plugins/sampledata/jed_menu/menu.json.'
         );
         $data->icon        = 'bars';
         $data->steps       = 2;
 
-        $this->addResult($event, $data);
+        $event->addResult($data);
     }
 
     /**
      * Step 1: create the menu and its menu items.
      *
-     * @param   Event  $event  The event (AjaxEvent on Joomla 5+)
+     * @param   AjaxEvent  $event  The event.
      *
      * @return  void
      *
      * @since   4.0.0
      */
-    public function onAjaxSampledataApplyStep1(Event $event): void
+    public function onAjaxSampledataApplyStep1(AjaxEvent $event): void
     {
         if (!$this->isOurRequest(true)) {
             return;
         }
 
-        $app = $this->app();
+        $app = $this->getApplication();
 
         if (!ComponentHelper::isEnabled('com_menus') || !$app->getIdentity()->authorise('core.create', 'com_menus')) {
-            $this->addResult($event, $this->response(true, $this->stepSkipped(1, 'com_menus')));
+            $event->addResult($this->response(true, $this->stepSkipped(1, 'com_menus')));
 
             return;
         }
@@ -377,29 +384,29 @@ JSON;
 
             $count = $this->addMenuItems($definition['items'], $menuType, 1, 1);
         } catch (\Exception $e) {
-            $this->addResult($event, $this->response(false, $this->stepFailed(1, $e->getMessage())));
+            $event->addResult($this->response(false, $this->stepFailed(1, $e->getMessage())));
 
             return;
         }
 
         // Remember what we created for step 2.
-        $app->setUserState('sampledata.jed2.menutype', $menuType);
-        $app->setUserState('sampledata.jed2.module', $definition['module']);
+        $app->setUserState('sampledata.jed_menu.menutype', $menuType);
+        $app->setUserState('sampledata.jed_menu.module', $definition['module']);
 
         if ($removed > 0) {
             $message = $this->text(
-                'PLG_SAMPLEDATA_JED2_STEP1_REPLACED',
+                'PLG_SAMPLEDATA_JED_MENU_STEP1_REPLACED',
                 'Menu "%1$s" already existed: removed %3$d old menu items and created %2$d new menu items.'
             );
         } else {
-            $message = $this->text('PLG_SAMPLEDATA_JED2_STEP1_SUCCESS', 'Created menu "%1$s" with %2$d menu items.');
+            $message = $this->text('PLG_SAMPLEDATA_JED_MENU_STEP1_SUCCESS', 'Created menu "%1$s" with %2$d menu items.');
         }
 
         $message = \sprintf($message, $menuType, $count, $removed);
 
         if ($usedFallback) {
             $this->warnings[] = \sprintf(
-                $this->text('PLG_SAMPLEDATA_JED2_WARNING_DEFAULT_USED', '%s was not found, the built-in default menu was used.'),
+                $this->text('PLG_SAMPLEDATA_JED_MENU_WARNING_DEFAULT_USED', '%s was not found, the built-in default menu was used.'),
                 self::MENU_FILE
             );
         }
@@ -408,46 +415,46 @@ JSON;
             $message .= '<br>' . implode('<br>', array_map('htmlspecialchars', $this->warnings));
         }
 
-        $this->addResult($event, $this->response(true, $message));
+        $event->addResult($this->response(true, $message));
     }
 
     /**
      * Step 2: create the mod_menu module that displays the new menu.
      *
-     * @param   Event  $event  The event (AjaxEvent on Joomla 5+)
+     * @param   AjaxEvent  $event  The event.
      *
      * @return  void
      *
      * @since   4.0.0
      */
-    public function onAjaxSampledataApplyStep2(Event $event): void
+    public function onAjaxSampledataApplyStep2(AjaxEvent $event): void
     {
         if (!$this->isOurRequest(true)) {
             return;
         }
 
-        $app      = $this->app();
-        $menuType = (string) $app->getUserState('sampledata.jed2.menutype', '');
-        $module   = $app->getUserState('sampledata.jed2.module');
+        $app      = $this->getApplication();
+        $menuType = (string) $app->getUserState('sampledata.jed_menu.menutype', '');
+        $module   = $app->getUserState('sampledata.jed_menu.module');
 
         // Clear the state so a later run starts clean.
-        $app->setUserState('sampledata.jed2.menutype', null);
-        $app->setUserState('sampledata.jed2.module', null);
+        $app->setUserState('sampledata.jed_menu.menutype', null);
+        $app->setUserState('sampledata.jed_menu.module', null);
 
         if (empty($module)) {
-            $this->addResult($event, $this->response(true, $this->text('PLG_SAMPLEDATA_JED2_STEP2_NO_MODULE', 'No module defined in the menu definition, so no menu module was created.')));
+            $event->addResult($this->response(true, $this->text('PLG_SAMPLEDATA_JED_MENU_STEP2_NO_MODULE', 'No module defined in the menu definition, so no menu module was created.')));
 
             return;
         }
 
         if ($menuType === '') {
-            $this->addResult($event, $this->response(false, $this->stepFailed(2, 'Menu type from step 1 not found.')));
+            $event->addResult($this->response(false, $this->stepFailed(2, 'Menu type from step 1 not found.')));
 
             return;
         }
 
         if (!ComponentHelper::isEnabled('com_modules') || !$app->getIdentity()->authorise('core.create', 'com_modules')) {
-            $this->addResult($event, $this->response(true, $this->stepSkipped(2, 'com_modules')));
+            $event->addResult($this->response(true, $this->stepSkipped(2, 'com_modules')));
 
             return;
         }
@@ -455,16 +462,16 @@ JSON;
         try {
             $updated = $this->saveMenuModule($module, $menuType);
         } catch (\Exception $e) {
-            $this->addResult($event, $this->response(false, $this->stepFailed(2, $e->getMessage())));
+            $event->addResult($this->response(false, $this->stepFailed(2, $e->getMessage())));
 
             return;
         }
 
         $message = $updated
-            ? $this->text('PLG_SAMPLEDATA_JED2_STEP2_UPDATED', 'Updated the existing menu module "%s" in position "%s".')
-            : $this->text('PLG_SAMPLEDATA_JED2_STEP2_SUCCESS', 'Created menu module "%s" in position "%s".');
+            ? $this->text('PLG_SAMPLEDATA_JED_MENU_STEP2_UPDATED', 'Updated the existing menu module "%s" in position "%s".')
+            : $this->text('PLG_SAMPLEDATA_JED_MENU_STEP2_SUCCESS', 'Created menu module "%s" in position "%s".');
 
-        $this->addResult($event, $this->response(true, \sprintf($message, $module['title'], $module['position'])));
+        $event->addResult($this->response(true, \sprintf($message, $module['title'], $module['position'])));
     }
 
     /**
@@ -479,7 +486,7 @@ JSON;
      */
     private function loadDefinition(&$usedFallback = false): array
     {
-        $file         = __DIR__ . '/' . self::MENU_FILE;
+        $file         = JPATH_PLUGINS . '/sampledata/' . $this->_name . '/' . self::MENU_FILE;
         $usedFallback = !is_file($file);
 
         if ($usedFallback) {
@@ -502,7 +509,7 @@ JSON;
         }
 
         // Backwards compatibility: { "menu": [ ...items... ] }
-        if (isset($data['menu']) && \is_array($data['menu']) && self::isList($data['menu'])) {
+        if (isset($data['menu']) && \is_array($data['menu']) && array_is_list($data['menu'])) {
             $data['items'] = $data['menu'];
             $data['menu']  = [];
         }
@@ -657,8 +664,8 @@ JSON;
             throw new \RuntimeException('"menu.menutype" is empty or contains no usable characters.');
         }
 
-        $table = new MenuTypeTable($this->db());
-        $table->setCurrentUser($this->app()->getIdentity());
+        $table = new MenuTypeTable($this->getDatabase());
+        $table->setCurrentUser($this->getApplication()->getIdentity());
 
         if (!$table->load(['menutype' => $menuType])) {
             // A new menu: hand back an empty table that already carries the menutype to create.
@@ -701,12 +708,12 @@ JSON;
      */
     private function removeMenuItems(MenuTypeTable $menuTable): int
     {
-        $db       = $this->db();
-        $user     = $this->app()->getIdentity();
+        $db       = $this->getDatabase();
+        $user     = $this->getApplication()->getIdentity();
         $menuType = (string) $menuTable->menutype;
         $asset    = 'com_menus.menu.' . (int) $menuTable->id;
 
-        $query = method_exists($db, 'createQuery') ? $db->createQuery() : $db->getQuery(true);
+        $query = $db->createQuery();
         $query->select($db->quoteName(['id', 'title', 'home', 'checked_out']))
             ->from($db->quoteName('#__menu'))
             ->where($db->quoteName('menutype') . ' = :menutype')
@@ -772,7 +779,7 @@ JSON;
 
         // Belt and braces: the models report some refusals only to the log, so make sure the menu really is empty
         // before new items (with the same aliases) are added to it.
-        $query = method_exists($db, 'createQuery') ? $db->createQuery() : $db->getQuery(true);
+        $query = $db->createQuery();
         $query->select('COUNT(*)')
             ->from($db->quoteName('#__menu'))
             ->where($db->quoteName('menutype') . ' = :menutype')
@@ -812,7 +819,7 @@ JSON;
         ];
 
         if (!$table->bind($data) || !$table->check() || !$table->store()) {
-            $this->app()->getLanguage()->load('com_menus');
+            $this->getApplication()->getLanguage()->load('com_menus');
 
             throw new \RuntimeException(Text::_($table->getError()));
         }
@@ -835,7 +842,7 @@ JSON;
      */
     private function addMenuItems(array $items, string $menuType, int $parentId, int $level): int
     {
-        $app   = $this->app();
+        $app   = $this->getApplication();
         $user  = $app->getIdentity();
         $count = 0;
 
@@ -969,7 +976,7 @@ JSON;
      */
     private function saveMenuModule(array $module, string $menuType): bool
     {
-        $app = $this->app();
+        $app = $this->getApplication();
 
         [$language] = $this->languageInfo();
 
@@ -1046,10 +1053,10 @@ JSON;
      */
     private function findMenuModule(string $menuType, string $title): int
     {
-        $db     = $this->db();
+        $db     = $this->getDatabase();
         $search = '%"menutype":' . json_encode($menuType) . '%';
 
-        $query = method_exists($db, 'createQuery') ? $db->createQuery() : $db->getQuery(true);
+        $query = $db->createQuery();
         $query->select($db->quoteName(['id', 'title', 'params']))
             ->from($db->quoteName('#__modules'))
             ->where($db->quoteName('module') . ' = ' . $db->quote('mod_menu'))
@@ -1214,8 +1221,8 @@ JSON;
         if ($this->accessLevels === null) {
             $this->accessLevels = self::CORE_ACCESS_LEVELS;
 
-            $db    = $this->db();
-            $query = method_exists($db, 'createQuery') ? $db->createQuery() : $db->getQuery(true);
+            $db    = $this->getDatabase();
+            $query = $db->createQuery();
             $query->select($db->quoteName(['id', 'title']))
                 ->from($db->quoteName('#__viewlevels'));
 
@@ -1254,7 +1261,7 @@ JSON;
             throw new \RuntimeException(\sprintf('Unsupported alias_target "%s". Use "home" or a menu item id.', $target));
         }
 
-        $home = $this->app()->getMenu('site')->getDefault();
+        $home = $this->getApplication()->getMenu('site')->getDefault();
         $id   = $home ? (int) $home->id : 0;
 
         if (Multilanguage::isEnabled()) {
@@ -1287,7 +1294,7 @@ JSON;
         $alias = ApplicationHelper::stringURLSafe($title, $language);
 
         if (trim(str_replace('-', '', $alias)) === '') {
-            $app     = $this->app();
+            $app     = $this->getApplication();
             $unicode = $app->set('unicodeslugs', 1);
             $alias   = ApplicationHelper::stringURLSafe($title, $language);
             $app->set('unicodeslugs', $unicode);
@@ -1305,7 +1312,7 @@ JSON;
      */
     private function languageInfo(): array
     {
-        $language = Multilanguage::isEnabled() ? $this->app()->getLanguage()->getTag() : '*';
+        $language = Multilanguage::isEnabled() ? $this->getApplication()->getLanguage()->getTag() : '*';
 
         return [$language, $language !== '*' ? ' (' . $language . ')' : ''];
     }
@@ -1321,35 +1328,11 @@ JSON;
      */
     private function isOurRequest(bool $checkToken): bool
     {
-        if ($this->app()->getInput()->get('type') !== $this->_name) {
+        if ($this->getApplication()->getInput()->get('type') !== $this->_name) {
             return false;
         }
 
         return !$checkToken || Session::checkToken('get');
-    }
-
-    /**
-     * Add a result to an event, on both Joomla 4 (generic events) and Joomla 5+ (result aware events).
-     *
-     * @param   Event  $event   The event.
-     * @param   mixed  $result  The result.
-     *
-     * @return  void
-     *
-     * @since   4.0.0
-     */
-    private function addResult(Event $event, $result): void
-    {
-        if (method_exists($event, 'addResult')) {
-            $event->addResult($result);
-
-            return;
-        }
-
-        $results   = (array) $event->getArgument('result', []);
-        $results[] = $result;
-
-        $event->setArgument('result', $results);
     }
 
     /**
@@ -1379,7 +1362,7 @@ JSON;
      */
     private function stepSkipped(int $step, string $component): string
     {
-        $format = $this->text('PLG_SAMPLEDATA_JED2_STEP_SKIPPED', 'Step %1$d skipped: %2$s is disabled or you lack permission to use it.');
+        $format = $this->text('PLG_SAMPLEDATA_JED_MENU_STEP_SKIPPED', 'Step %1$d skipped: %2$s is disabled or you lack permission to use it.');
 
         return \sprintf($format, $step, $component);
     }
@@ -1396,7 +1379,7 @@ JSON;
      */
     private function stepFailed(int $step, string $message): string
     {
-        $format = $this->text('PLG_SAMPLEDATA_JED2_STEP_FAILED', 'Step %1$d failed: %2$s');
+        $format = $this->text('PLG_SAMPLEDATA_JED_MENU_STEP_FAILED', 'Step %1$d failed: %2$s');
 
         return \sprintf($format, $step, $message);
     }
@@ -1413,21 +1396,9 @@ JSON;
      */
     private function text(string $key, string $fallback): string
     {
-        $language = $this->app()->getLanguage();
+        $language = $this->getApplication()->getLanguage();
 
         return $language->hasKey($key) ? $language->_($key) : $fallback;
-    }
-
-    /**
-     * The application. Legacy (non service provider) plugins do not get it injected, so fall back to the Factory.
-     *
-     * @return  CMSApplicationInterface
-     *
-     * @since   4.0.0
-     */
-    private function app(): CMSApplicationInterface
-    {
-        return $this->getApplication() ?: Factory::getApplication();
     }
 
     /**
@@ -1459,31 +1430,5 @@ JSON;
         }
 
         return true;
-    }
-
-    /**
-     * array_is_list() replacement for PHP < 8.1 (Joomla 4 supports PHP 7.2.5+).
-     *
-     * @param   array  $array  The array.
-     *
-     * @return  boolean
-     *
-     * @since   4.0.0
-     */
-    private static function isList(array $array): bool
-    {
-        return $array === [] || array_keys($array) === range(0, \count($array) - 1);
-    }
-
-    /**
-     * The database driver.
-     *
-     * @return  DatabaseInterface
-     *
-     * @since   4.0.0
-     */
-    private function db(): DatabaseInterface
-    {
-        return Factory::getContainer()->get(DatabaseInterface::class);
     }
 }

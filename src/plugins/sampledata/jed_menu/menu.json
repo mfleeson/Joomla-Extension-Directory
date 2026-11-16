@@ -8,12 +8,12 @@
   },
   "module": {
     "title": "JED Main Menu",
-    "position": "menu",
+    "position": "position-1",
     "showtitle": 0,
     "access": "public",
     "menu_class": "nav-pills",
     "params": {
-      "layout": "_:default",
+      "layout": "joomla:dropdown",
       "startLevel": 1,
       "endLevel": 0,
       "showAllChildren": 1,
