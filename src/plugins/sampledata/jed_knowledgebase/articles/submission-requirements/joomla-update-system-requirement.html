@@ -1,0 +1,102 @@
+<h2>What is the Joomla! Update System?</h2>
+<p>Starting with Joomla! 1.6, Joomla! has featured an update system to help keep systems up to date. The Joomla! Update System is mainly driven by the <strong>Extensions Manager</strong>. You can learn more about the Extensions Manager at <a href="https://docs.joomla.org/Help36:Extensions_Extension_Manager_Update" target="_blank" rel="alternate noopener">https://docs.joomla.org/Help36:Extensions_Extension_Manager_Update</a></p>
+<p><img src="https://extensions.joomla.org/images/knowledgebase/submittinglisting/update-2.png" alt="" /></p>
+<h2>Update Notifications</h2>
+<p>The Joomla! Update System provides a handy way to update the installed extensions, but it also implements a notification system from the extension developer to inform you about the availability of new versions. In this way, website administrators can be informed about them and choose how to manage the system.</p>
+<h3>Sample image: Notification of available updates</h3>
+<p><img src="https://extensions.joomla.org/images/knowledgebase/submittinglisting/update-1.png" alt="" /></p>
+<h3>Sample image: A new extension version has been installed</h3>
+<p><img src="https://extensions.joomla.org/images/knowledgebase/submittinglisting/update-3.png" alt="" /></p>
+<h2>The new JED requirement</h2>
+<p><strong>New Listing Requirement</strong>: All extensions uploaded to JED after 10th January 2017 are required to use the Joomla Update System. This will help to ensure that site owners are always notified when a new version of any extensions they have installed is available. Keeping extensions up to date is crucial to website security.</p>
+<p>In this guideline, we include a brief detail about how to implement the Joomla Update System for free and paid extensions. All developers are encouraged to visit <a href="https://docs.joomla.org/Deploying_an_Update_Server" target="_blank" rel="alternate noopener">Joomla Docs</a> for more information or check how other extensions have already to adopted the update system.</p>
+<p><em>With regards to extensions already listed on JED, they will not be unpublished if they are not in compliance with this new requirement. Instead, a popup warning will be shown to users when clicking the Download button, informing them that the extension doesn't support update servers and therefore must be updated manually.</em></p>
+<p><strong>Don’t forget to check if your extensions use the Joomla! Update System.</strong></p>
+<h3>Joomla Update System</h3>
+<p>One of the most powerful features of Joomla! is the possibility to extend it with third-party extensions. To keep these extensions updated, the Joomla Update System allows to quickly automate the process to check all installed extensions and update them from the extension manager.</p>
+<p>From the developer point of view, extensions are linked to the source, via the extension manifest, to a feed of available updates.</p>
+<p>To deliver the updates, there are two main use cases: Free extension or Paid extension. The first case is simple and updates could be directly distributed via the same download stream than the initial download. In the paid extension case, since updates are restricted to valid subscriptions/ memberships, then a method to check it must be integrated into the updating process.</p>
+<p>In the following chapters, we describe the most common practices to distribute extensions updates.</p>
+<h3>Joomla Update System - Free extension</h3>
+<p>In this case, the Extension Update System requires adding a tag in the extension manifest to define a URI to publish the available updates:</p>
+<h3>Defining an update server</h3>
+<p>In order to use this feature, an update server must be defined in your extension's manifest.</p>
+<pre class="de1"><span class="sc3"><span class="re1">&lt;extension<span class="re2">&gt;</span></span></span>
+ <span class="sc3">&lt;...<span class="re2">&gt;</span></span>
+ <span class="sc3"><span class="re1">&lt;updateservers<span class="re2">&gt;</span></span></span>
+    <span class="sc3"><span class="re1">&lt;server</span> <span class="re0">type</span>=<span class="st0">"collection"</span><span class="re2">&gt;</span></span>http://example.com/list.xml<span class="sc3"><span class="re1">&lt;/server<span class="re2">&gt;</span></span></span>
+    <span class="sc3"><span class="re1">&lt;server</span> <span class="re0">type</span>=<span class="st0">"extension"</span> <span class="re0">priority</span>=<span class="st0">"2"</span> <span class="re0">name</span>=<span class="st0">"My Extension's Updates"</span><span class="re2">&gt;</span></span>http://example.com/extension.xml<span class="sc3"><span class="re1">&lt;/server<span class="re2">&gt;</span></span></span>
+ <span class="sc3"><span class="re1">&lt;/updateservers<span class="re2">&gt;</span></span></span>
+ <span class="sc3"><span class="re1">&lt;/extension<span class="re2">&gt;<br /><br /></span></span></span></pre>
+<h3>Updates XML file</h3>
+<p>The extension server type allows developers to define an extension's manifest to pull updates from a single extension's manifest.</p>
+<pre class="de1"><span class="sc3"><span class="re1">update<span class="re2">&gt;</span></span></span>
+    <span class="sc3"><span class="re1">&lt;name<span class="re2">&gt;</span></span></span>Joomla! 1.7<span class="sc3"><span class="re1">&lt;/name<span class="re2">&gt;</span></span></span>
+    <span class="sc3"><span class="re1">&lt;description<span class="re2">&gt;</span></span></span>Joomla! 1.7 CMS<span class="sc3"><span class="re1">&lt;/description<span class="re2">&gt;</span></span></span>
+    <span class="sc3"><span class="re1">&lt;element<span class="re2">&gt;</span></span></span>joomla<span class="sc3"><span class="re1">&lt;/element<span class="re2">&gt;</span></span></span>
+    <span class="sc3"><span class="re1">&lt;type<span class="re2">&gt;</span></span></span>file<span class="sc3"><span class="re1">&lt;/type<span class="re2">&gt;</span></span></span>
+    <span class="sc3"><span class="re1">&lt;version<span class="re2">&gt;</span></span></span>1.7.0<span class="sc3"><span class="re1">&lt;/version<span class="re2">&gt;</span></span></span>
+    <span class="sc3"><span class="re1">&lt;infourl</span> <span class="re0">title</span>=<span class="st0">"Joomla!"</span><span class="re2">&gt;</span></span>http://www.joomla.org/<span class="sc3"><span class="re1">&lt;/infourl<span class="re2">&gt;</span></span></span>
+    <span class="sc3"><span class="re1">&lt;downloads<span class="re2">&gt;</span></span></span>
+        <span class="sc3"><span class="re1">&lt;downloadurl</span> <span class="re0">type</span>=<span class="st0">"full"</span> <span class="re0">format</span>=<span class="st0">"zip"</span><span class="re2">&gt;</span></span>http://joomlacode.org/gf/download/frsrelease/15279/66552/Joomla_1.6.5_to_1.7.0_Package.zip<span class="sc3"><span class="re1">&lt;/downloadurl<span class="re2">&gt;</span></span></span>
+    <span class="sc3"><span class="re1">&lt;/downloads<span class="re2">&gt;</span></span></span>
+    <span class="sc3"><span class="re1">&lt;tags<span class="re2">&gt;</span></span></span>
+        <span class="sc3"><span class="re1">&lt;tag<span class="re2">&gt;</span></span></span>stable<span class="sc3"><span class="re1">&lt;/tag<span class="re2">&gt;</span></span></span>
+    <span class="sc3"><span class="re1">&lt;/tags<span class="re2">&gt;</span></span></span>
+    <span class="sc3"><span class="re1">&lt;maintainer<span class="re2">&gt;</span></span></span>Sam Moffatt<span class="sc3"><span class="re1">&lt;/maintainer<span class="re2">&gt;</span></span></span>
+    <span class="sc3"><span class="re1">&lt;maintainerurl<span class="re2">&gt;</span></span></span>http://sammoffatt.com.au<span class="sc3"><span class="re1">&lt;/maintainerurl<span class="re2">&gt;</span></span></span>
+    <span class="sc3"><span class="re1">&lt;section<span class="re2">&gt;</span></span></span>Testing<span class="sc3"><span class="re1">&lt;/section<span class="re2">&gt;</span></span></span>
+    <span class="sc3"><span class="re1">&lt;targetplatform</span> <span class="re0">name</span>=<span class="st0">"joomla"</span> <span class="re0">version</span>=<span class="st0">"1.6"</span><span class="re2">/&gt;</span></span>
+ <span class="sc3"><span class="re1">&lt;/update<span class="re2">&gt;</span></span></span>
+</pre>
+<h3>Sample case: Joomla! Weblinks</h3>
+<p>At this time, Joomla! Weblinks extension is distributed in the same way as a third-party extension. Since it's updated in the same way as a third-party extension, it is a perfect reference for the implementation of the update system: <a href="https://github.com/joomla-extensions/weblinks" target="_blank" rel="alternate noopener">joomla-extensions/weblinks</a></p>
+<p>weblinks/src/pkg_weblinks.xml</p>
+<pre>..
+	&lt;updateservers&gt;
+		&lt;!-- Note: No spaces or linebreaks allowed between the server tags --&gt;
+		&lt;server type="extension" name="Web Links Update Site"&gt;https://raw.githubusercontent.com/joomla-extensions/weblinks/master/manifest.xml&lt;/server&gt;
+	&lt;/updateservers&gt;
+&lt;/extension&gt;<br /><br /></pre>
+<p>As shown in this manifest, the extension updates are distributed from a manually maintained XML file. If you prefer to create the XML update streams from a download manager, several alternatives can be found in JED.</p>
+<h3>NOTE: Double check the targetplatform</h3>
+<p>The common issue when Joomla does not detect a new version in the definition of the targetplatform.</p>
+<p>Please, check this <a href="https://raw.githubusercontent.com/joomla-extensions/weblinks/master/manifest.xml" target="_blank" rel="alternate noopener">https://raw.githubusercontent.com/joomla-extensions/weblinks/master/manifest.xml</a></p>
+<p>Reference:</p>
+<ul>
+<li><a href="https://docs.joomla.org/Joomla_Update_System" target="_blank" rel="alternate noopener">Extension Update System - Joomla! Documentation</a></li>
+<li><a href="https://docs.joomla.org/Deploying_an_Update_Server" target="_blank" rel="alternate noopener">Deploying an Update Server</a></li>
+</ul>
+<h3>Joomla Update System - Paid extensions</h3>
+<p>This case is similar to a Free extension. However, an additional validation is required to check if the user is entitled to receive the update. This validation is performed online and it must be supported by the extension developer system.</p>
+<p>To identify the user updating his/her system, Joomla has an additional parameter called <strong>extra_query </strong>in the <strong>#__update_sites</strong> table. This parameter will be added to the declared download URL, providing the opportunity to accept or reject the download.</p>
+<p>You can manage the <strong>extra_query</strong> parameter according to your requirements and Joomla does not impose any restriction on the field information. It has to valid as a URL parameter.</p>
+<h3>Sample case: Akeeba Release System and Akeeba Subscriptions</h3>
+<p>Akeeba Release System and Akeeba Subscriptions are the extensions that the Akeeba extension developer implements to manage its own extensions. They are free alternatives to build upon your own release system.</p>
+<p>In this context, a Download Id (dlid) must be defined in the extension to be updated and stored in the <strong>extra_query</strong> field. For example: <em>dlid=1234567890123456789012.</em></p>
+<p>When the Joomla update manager calls your site to download the update, it includes the Download Id. Akeeba ARS and Subs work together to check the membership and return the proper response.</p>
+<p><a id="3rdparty"></a></p>
+<h3>Concerning Third-party Update Systems</h3>
+<p>Thrid-party update systems, created to deliver updates in a safe and convenient way, similar to the Joomla Update system are considered to comply with the requirement. However, as our aim is to centralize information about updates in the <strong>Extensions -&gt; Update</strong> area, then a third-party update system must also provide the version availability information for the Joomla! Update Manager. <em>Users must not be required to visit each extension to know its status.</em></p>
+<h4>Concerning to Add-ons distributed via Third-party Update Systems</h4>
+<p>Add-ons are a special case of extensions managed by a parent extension. Addons are installed, managed and uninstalled with a Third-party Update System.</p>
+<p>Since these particular type of extensions are published in JED but they can't be integrated with the Joomla! Update System, they are exempted from the integration requirement. This exception includes extensions that are not installable via the Joomla Installer and are parent-extension specific.</p>
+<p>Such extensions will be approved on a case by case basis.</p>
+<h3>Sample Screenshots</h3>
+<h4>Extension View - Joomla! Update System compliance</h4>
+<p><img src="https://extensions.joomla.org/images/knowledgebase/submittinglisting/jed-download-req-2017.png" alt="" /></p>
+<h4>Extension Form - Joomla! Update System requirement</h4>
+<p><img src="https://extensions.joomla.org/images/knowledgebase/submittinglisting/jed-updater-2017.png" alt="" /></p>
+<h4>Extension View - Joomla! Update System not supported</h4>
+<p><img src="https://extensions.joomla.org/images/knowledgebase/submittinglisting/jed-download-req-warning-2017.png" alt="" /></p>
+<h4>Extension View - Joomla! Update System not supported - Confirmation Dialog</h4>
+<p><img src="https://extensions.joomla.org/images/knowledgebase/submittinglisting/jed-reminder-2017.png" alt="" /></p>
+<h4>Which is the best way to comply with VAT-MOSS, delivering e-services that are electronically supplied? <a id="vat-moss"></a></h4>
+<p>The administrative aspects of how an extension developer manages their business is beyond the scope of what the JED can regulate. It is the responsibility of the developer to ensure that he or she is operating within any legal requirements that are imposed by their local government. We can only recommend consulting with a local accountant and/or lawyer to ensure that you are meeting any local legal requirements.<br /><br />You can implement the Update Servers in a similar way to how Paid Extensions manage it - you can implement the Update Servers to inform the users about the available updates and display a message saying that the update is available through contacting them via your website. The key point here is to inform users about the updates - the decision to provide them automatically or not is your decision.<br /><br />In the same way, that there are several download managers that help to manage updates, there are also subscription managers that can help you to manage VAT. Alternatively, there are also e-commerce platforms that can consolidate sales.</p>
+<p>Reference:</p>
+<ul>
+<li><a href="http://www.timplummer.com.au/38-how-to-add-joomler-updater-to-commercial-component" target="_blank" rel="alternate noopener">Tim's Joomla! News - How to add Joomler Updater to commercial component </a></li>
+<li><a href="https://github.com/akeeba/release-system" target="_blank" rel="alternate noopener">Akeeba Release System - A software dissemination / download repository component for Joomla!</a></li>
+<li><a href="https://github.com/akeeba/akeebasubs" target="_blank" rel="alternate noopener"> Akeeba Subscriptions</a></li>
+<li><a href="https://github.com/joomla/joomla-cms/pull/2508" target="_blank" rel="alternate noopener">Allow commercial (for a fee) components to use the Joomla! extensions update feature [Tracker 32684] #2508</a> - There are some additional references linked off the pull request.</li>
+</ul>

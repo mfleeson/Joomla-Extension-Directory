@@ -1,0 +1,117 @@
+<div style="width: 90%;">
+<p>The following list defines error codes you may see if there is an issue with your listing submission.</p>
+<p><strong>Please use the <a href="extensions/extension/miscellaneous/development/jedchecker" rel="alternate">JEDchecker</a> tool to screen your extension before resubmitting. </strong></p>
+<p> </p>
+<h2><a name="GL1"></a>GL1 - General listing error</h2>
+<p>General listing don’t occur often. Please see the notes left by the JED team member. In special circumstances, you may also receive an email from a JED team member. Feel free to contact us, by opening a support ticket from the listings page if you have received the GL1 error message and you would like more details.</p>
+<p> </p>
+<h2><a name="LC1"></a>LC1 - Licensing violation</h2>
+<p>Every listing must comply with the current GPL License that Joomla is distributed as. Currently, Joomla is distributed using GPL v2. There are other licenses that are compatible with the GPL v2, and those are acceptable as well. Additionally, the JED does not allow "additional restrictions" on top of the GPL. For example, you cannot limit the usage of your extension to limited number of domains. You may, however, sell "support" based on a limited number of domains.</p>
+<p> </p>
+<h2><a name="LC2"></a>LC2 - Extension is Paid, but doesn’t include a link to a terms of service or license agreement</h2>
+<p>As the JED grows, new opportunities and questions arise. One issue that plagues the JED and its users is arriving at a site from a listing that is "Paid" only to find out that additional restrictions have been placed on the extension. To help monitor this, if your listing is Paid, you must include a link to your terms of service or license agreement.</p>
+<p> </p>
+<h2><a name="LC3"></a>LC3 - License link does not mention extensions</h2>
+<p>The license link provided does not mention an extension. Your license page should reference specifically how your extensions are licensed.</p>
+<p> </p>
+<h2><a name="LC4"></a>LC4 - Invalid license type</h2>
+<p>Extensions are required to be GNU/GPL or AGPL licensed. <em><strong>LGPL is for library extensions only.</strong></em> Any other license type is unacceptable.</p>
+<p> </p>
+<h2><a name="LK1"></a>LK1 - Invalid project link</h2>
+<p>Project links need to point to the developer’s main site. Links to social media are not permitted.</p>
+<p> </p>
+<h2><a name="LK2"></a>LK2 - Invalid download link</h2>
+<p>Download links must point directly to the download or product page. You may point directly to the file itself if registration isn’t required. Download links may not point to "Extension Installers". If you offer multiple versions of an extension (for example, a Paid version and a Free version) you must only point the download link on your listing to a page that the version promoted is the one displayed on the JED.</p>
+<p>Links pointing to distribution sites that also distribute non-GPL Joomla extensions will not be accepted.</p>
+<p> </p>
+<h2><a name="LK3"></a>LK3 - Demo link points to a production site</h2>
+<p>Demo links can only point to a non-production website. It has to be an actual demo and not a live site. This field is optional and can be left blank.</p>
+<p> </p>
+<h2><a name="LK4"></a>LK4 - Invalid documentation link</h2>
+<p>Documentation links need to point to actual documents about the extension. This field is optional and can be left blank.</p>
+<p> </p>
+<h2><a name="LK5"></a>LK5 - Invalid license link</h2>
+<p>Paid extensions require a link to the developer’s license on their site. Links pointing to the GPL website are not acceptable. The requirement is to ensure you aren’t adding any additional restrictions on top of the GPL. The page on your site can be as simple as “Our extensions are published under the GNU/GPL.”</p>
+<p> </p>
+<h2><a name="LK6"></a>LK6 - Invalid support link</h2>
+<p>Support links need to point to a ticket system, forum or any other type of support system. This field is optional and can be left blank.</p>
+<p> </p>
+<h2><a name="MK1"></a> MK1 - Unapproved marketing techniques</h2>
+<p>Promotional text (i.e. “free”) is used in the listing or a listing that is posted as non-commercial even though the extension is commercial is not permitted. If a user is required to make a payment, like, or tweet at any point in order to use the extension it must be marked as paid.</p>
+<p> </p>
+<h2><a name="PE1"></a>PE1 - Internal processing error</h2>
+<p>There has been an internal processing error with your file attachment. Please open a support ticket so the JED Team can review your listing and determine if any further action is needed from you.</p>
+<p> </p>
+<h2><a name="PH1"></a>PH1 - Headers missing GPL license notice</h2>
+<p>A notice is required in the header each PHP file stating that the file is licensed GPL (or other compatible accepted license). We recommend a format similar to:</p>
+<pre>// Licensed under the GPL v2&amp;</pre>
+<p> </p>
+<h2><a name="PH2"></a>PH2 - Files missing JEXEC security</h2>
+<p>Security is extremely important in Open Source Software, so to help prevent execution of files outside of the framework, the following code is required in all of your PHP files unless they are external library files:</p>
+<pre>// no direct access defined( '_JEXEC' ) or die( 'Restricted access' ); <br /><br /></pre>
+<h2><a id="PH3"></a>PH3 - License tag missing or incorrect in the XML install file</h2>
+<p>The XML manifest of the extension does not include the license of the extension. For instance, this is a valid license tag:</p>
+<pre> &lt;license&gt;GNU/GPLv3 www.gnu.org/licenses/gpl-3.0.html&lt;/license&gt;</pre>
+<p> </p>
+<h2><a name="NM1"></a>NM1 - Listing name does not match install name</h2>
+<p>Listing titles/names must match the install name. Found in the install xml as:</p>
+<pre>&lt;name&gt;Your awesome extension name&lt;/name&gt;</pre>
+<p>Using a language string for a name is not recommended.</p>
+<p> </p>
+<h2><a name="NM2"></a>NM2 - Listing name does not follow naming conventions for extension-specific listings</h2>
+<p>Extension names for extensions-specific extensions must include the name of the extension that it is meant to be used with. This naming convention is in place to help protect the extension names of the other developers.</p>
+<p>See the rules for <a href="index.php?option=com_content&amp;view=article&amp;id=46:extension-names&amp;catid=10504:for-jed-developers">Extension Names</a> for more details. You will need to open a support ticket from the page of the extension in question to request the name field to be updated.</p>
+<p> </p>
+<h2><a name="NM3"></a>NM3 - Listing name contains “module” or “plugin”</h2>
+<p>Extension names cannot contain the words “module” or “plugin”. See the rules for <a href="index.php?option=com_content&amp;view=article&amp;id=46:extension-names&amp;catid=10504:for-jed-developers">Extension Names</a> for more details. You will need to open a support ticket from the page of the extension in question to request the name field to be updated.</p>
+<p> </p>
+<h2><a name="NM4"></a>NM4 - Name/Title is a description</h2>
+<p>Names/titles shouldn’t be a description. See the rules for <a href="index.php?option=com_content&amp;view=article&amp;id=46:extension-names&amp;catid=10504:for-jed-developers">Extension Names</a> for more details. You will need to open a support ticket from the page of the extension in question to request the name field to be updated.</p>
+<p> </p>
+<h2><a name="NM5"></a>NM5 - Version in name/title</h2>
+<p>Versions are not permitted in names (for example: My Extension Version 1.3).</p>
+<p> </p>
+<h2><a name="NM6"></a>NM6 - Name already taken</h2>
+<p>An important goal of the JED is to provide end users with the ability to find solutions easily. To maintain consistency of listings, protect copyrights and enable brands to be built, we require that all Extension/Listing Names be unique and not too similar to others already in the directory.</p>
+<p> </p>
+<h2><a name="TM1"></a>TM1 - Domain Violation</h2>
+<p>All domains in your listing that use a version of the trademark in the URL, must be registered and approved by Open Source Matters prior to listing approval. Also, the disclaimer required must be clearly visible on your site. This includes domains that have Joo, Joom, Joomla or something similar (for example: thejoomlasiteibuiltyesterday.com, thesiteofjoom.com, joodontknowjoomla.com, etc.).</p>
+<p> </p>
+<h2><a name="TM2"></a>TM2 - Extension Name Violation</h2>
+<p>The same restrictions for domain names also apply for extension names. All extension names in your listing that use a version of the trademark in the URL, must be registered and approved by Open Source Matters prior to listing approval. However, using "Joomla XYZ Product" is not allowed (as of 2009). You may use MyProduct for Joomla as long as it's registered with OSM.</p>
+<p> </p>
+<h2><a name="TM3"></a>TM3 - Logo Usage Violation</h2>
+<p>Using the Joomla logo and the requirements surrounding its usage are often confusing. To help with this, we are working on a "Simple Guide to the Joomla! Trademark". In the meantime, read the information on Open Source Matters' website concerning the Joomla! name and logo use. See <a href="http://opensourcematters.org/joomla-name-and-logo-use-requests.html">http://opensourcematters.org/joomla-name-and-logo-use-requests.html</a> for more details.</p>
+<p> </p>
+<h2><a name="TM4"></a>TM4 - Name/title contains a registered trademark</h2>
+<p>The extension name contains trademarked name (for example: Instagram, Dropbox, Google, Adsense, etc). The extension description should mention that trademarked names are only acceptable if the developer opens a support ticket against the submission and provides proof of authorization from the trademark holder.</p>
+<p> </p>
+<h2><a name="TM5"></a>TM5 - Improper fork</h2>
+<p>The listing does not meet guidelines for forked extensions. See the rules for <a href="index.php?option=com_content&amp;view=article&amp;id=48:forked-extensions&amp;catid=10504:for-jed-developers">Forked Extensions</a> for more details.</p>
+<p> </p>
+<h2><a name="SE2"></a>SE2 - Extension does not install/uninstall on a basic setup</h2>
+<p>Every extension must install/uninstall in a basic setup. This must work on all current Joomla versions you indicate in your listing details.</p>
+<p> </p>
+<h2><a name="SE3"></a>SE3 - Extension is a hack</h2>
+<p>Having a "clean upgrade path" is critical to both security and maintainability of a site. Extensions that "hack" the core or other extensions are not allowed. The only exception is if they perform the "hack" after backing up the original file, and then restoring the original file on uninstall. As nearly every extension can be installed and many have built-in "add-on installers", hacks are frowned upon more and more. Additionally, it takes extra volunteer time to review these, so the approval time could increase greatly.</p>
+<p> </p>
+<h2><a name="SE4"></a>SE4 - Extension modifies the permissions of files/folders without warning</h2>
+<p>An extension that modifies folder and/or file permissions can be dangerous to a website and/or server. While it is sometimes necessary to change permissions, this must be explained during the install process so that the end user is aware of what the extension is doing to their files/server.</p>
+<p> </p>
+<h2><a id="SY1"></a>SY1 - Internal System Error</h2>
+<p>There was a system error that prevented your submission from being processed automatically. Please open a support ticket.</p>
+<p> </p>
+<h2><a name="XM1"></a>XM1 - License tag missing or incorrect in XML install file(s)</h2>
+<p>All install files should include the license information. In the install XML file: &lt;license&gt; GPL Version &lt;/license&gt;</p>
+<p> </p>
+<h2><a id="ZP1"></a>ZP1 - ZIP Archive Failure</h2>
+<p>Your .zip file is not packaged properly or is corrupt and cannot be opened.</p>
+<p> </p>
+<h2><a name="ER1"></a> ER1 - Error Reporting Disabled</h2>
+<p>Your extension disables Error Reporting. Core Joomla has a function in the Global Configuration to disable Error Reporting. Disabling it globally from your extension files is not recommended.</p>
+<p> </p>
+<h2><a name="ER1"></a> US1 - Update Servers missing or incorrect in XML file(s).</h2>
+<p>The update servers tag in your XML file(s) is missing or incorrect. This is a requirement of all extensions uploaded after 10th January 2017.</p>
+<p> </p>
+<p> </p>
+</div>

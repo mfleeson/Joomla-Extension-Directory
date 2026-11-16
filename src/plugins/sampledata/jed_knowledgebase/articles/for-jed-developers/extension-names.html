@@ -1,0 +1,116 @@
+<p>Naming your extension is very important. Extension names impact the extension structure and URLs that are displayed after the extension is installed, so plan ahead! This article contains a few recommendations for naming extensions derived from best practices in the Joomla community.</p>
+<h2>Choosing a Name</h2>
+<h3>Using a Name Similar to Another Extension</h3>
+<ul>
+<li>Users could mix up the two extensions and report your extension or write a bad review for your extension even though it was intended for another</li>
+<li>Security reports for an extension with similar names could confuse users</li>
+<li>Simply adding a company name might not be sufficient enough change to make users aware of the differences</li>
+<li>Try to avoid brand disputes with other developers</li>
+</ul>
+<h3>Creating a Good Extension Name</h3>
+<p>Be creative and think about branding and marketing <strong>your</strong> extension.</p>
+<ul>
+<li>Create an original brand name</li>
+<li>Choose a name that's easy to pronounce</li>
+<li>The name should be short as your XML and PHP files are named after the extension name. URLs on Joomla sites are also impacted by extension names.</li>
+<li>Avoid overly descriptive names</li>
+<li>Make it easy to search for your extension based on functionality, not by name</li>
+</ul>
+<h2>Extension Names in the JED</h2>
+<p>Each listing in the JED gets it's own unique ID (the number at the end of the URL on the edit page).</p>
+<ul>
+<li>This ID is used as the main identifier for listings</li>
+<li>Each entry will get an alias, also called "Name", to be easy to remember</li>
+</ul>
+<h3>First Come, First Served</h3>
+<p>The JED listing name is approved by JED Editors on a first come, first served basis.</p>
+<ul>
+<li>Your extension name needs to be different from any extension already submitted to the JED (company names not included)</li>
+<li>The extension name must be stated at the XML file tag NAME</li>
+<li>You should use the same name in your site and download page</li>
+</ul>
+<h3>Extension Name Conflicts</h3>
+<p>An extension name will be considered in conflict when its too similar to other extension, at the discretion of JED Editors.</p>
+<ul>
+<li>When extension names are found to be in conflict, the JED will consider the first listing submitted, even if it's unpublished</li>
+<li>More recent listings are required to change their extension name</li>
+<li>Conflicts are considred on a case-by-case basis</li>
+</ul>
+<h2>Extension Name Aliases</h2>
+<p>The alias (name) is created by a JED editor, using the following pieces of information:</p>
+<ul>
+<li>Proposal of developer in the field called "name" (the proposal should be the same to XML file tag "NAME" and MENU")</li>
+<li>Some words are not allowed</li>
+<li>Some words may be added by JED editors, acting as tags.</li>
+</ul>
+<h3 style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333333;">Alias Disclaimer</h3>
+<p>Alias (names) can be edited by JED editors at any time if it's considered necessary for the maintainance of the directory.</p>
+<ul>
+<li>The alias names used at the JED do not represent an endorsement of trademarks used by the product by Joomla.org or OSM</li>
+<li>The JED will not be involved in trademark disputes as they need to be addressed by the users.</li>
+</ul>
+<h3>Registered Names</h3>
+<p>The JED looks for extension names in the XML tags and code file names. Some special tags need to be the same (spaces not included).</p>
+<h4>XML example:</h4>
+<pre>* &lt;name&gt;jedilightsaber&lt;/name&gt;
+* &lt;menu&gt;Jedi Lightsaber&lt;/menu&gt;</pre>
+<h4>File names example:</h4>
+<pre>* mod_jedilightsaber.xml
+* mod_jedilightsaber.php</pre>
+<h4>Light and Pro Versions</h4>
+<p>The words "Light" and "Pro" can be added to differentiate two extensions from the same developer, but the extensions must have different features and distribution plans (like a free Lite version and paid Pro version). The word "Free" is considered promotional text and cannot be used.</p>
+<p>When adding the "Light" and "Pro" tags:</p>
+<ul>
+<li><strong>For Components:</strong> in the XML name tag and file names or just to the menu tag name and JED alias name.</li>
+<li><strong>For Modules and Plugins:</strong> in the XML name tag and file names or just at JED alias name.</li>
+</ul>
+<h2>Using the Word "Joomla"</h2>
+<p>The JED has a direct interest in maintaining the integrity of the Joomla brand. The JED team will not allow violations fo the Joomla trademark, logo, brand, etc. to be placed in or linked from the JED.</p>
+<ul>
+<li>An extension name can't start with the word "Joomla"</li>
+<li>Extensions that use "Joomla" or a derivative of Joomla in the extension name need to be licensed by OSM</li>
+<li>Extensions that use "Joomla" or a derivative of Joomla in the domain name need to be licensed by OSM</li>
+<li>It's a best practice to completely avoid the full word Joomla.</li>
+</ul>
+<p>Please note that extensions should not be named "Joomla! x". Instead, they should be named "x for Joomla!" or something similar that will not be confused with Joomla. <a href="http://extensions.joomla.org/support/knowledgebase/submission-requirements/jed-entries-checklists#trademarkchecklist" target="_blank" rel="noopener">Review the Trademark Checkist</a> for more help.</p>
+<h2>Special Cases</h2>
+<h3>Extension Specific Plugins</h3>
+<p>Extension Specific Plugins are extensions that require another extension to be installed in order to run. These plugins must have "for MAIN-EXTENSION-NAME" at the end of the extension name, even if it's not in the XML file.</p>
+<h3>Rebranding</h3>
+<p>If you need to re-brand an old extension, but you want to avoid conflicts with sites where the older extension is already installed, please talk with JED Team first. After choosing the new name:</p>
+<ol>
+<li>Update your XML file tags NAME and MENU</li>
+<li>Rename your files to reflect the new extension name</li>
+<li>Repack and re-attach the file to your JED entry</li>
+<li>Revise the mentions to the extension at your website</li>
+</ol>
+<p><strong>Note:</strong> If #1 or #2 are not possible in respects to compatibility issues with installed sites, please include the new name in the description tag or in a comments line at your XML file.</p>
+<h3>Forks</h3>
+<p>Forked extensions have special rules to be listed at JED. <a href="http://extensions.joomla.org/support/knowledgebase/for-jed-developers/forked-extensions" target="_blank" rel="noopener">Read more about Forked Extensions</a>.</p>
+<h3>Scripts or Libraries</h3>
+<p>The name must be included at the main file.</p>
+<ul>
+<li>In the headers script you need to include comments with the script name, copyright and license</li>
+<li>A TXT file must be included with the name, copyright, license and URL to download</li>
+</ul>
+<h2>Extension Names Dos and Don'ts</h2>
+<h3>Do:</h3>
+<ul>
+<li>Name the XML file tag NAME the same as the extension name</li>
+<li>Name the Component's admin menu (the tag MENU in the XML) the same as the extension name</li>
+</ul>
+<h3>Don't:</h3>
+<ul>
+<li>Use offensive words, political or religious statements</li>
+<li>Use extension types as part of the extension name (only used for the module and plugin versions of the same extension from the same developer). Keywords such as <strong>module</strong>, <strong>plugin</strong> or <strong>template</strong> are considered reserved words and can't be used in the extension names.</li>
+<li>Use the version number in the name (there is a field for that)</li>
+<li>Use price tags, commercial promotions or URL domains in the name</li>
+<li>Use the author or company name in the extension name (there is a field for that)</li>
+</ul>
+<p>&nbsp;</p>
+<h2>Install name and Entry Name</h2>
+<p>Please, remember to define the install name in the manifest file the same than the entry name.</p>
+<h2>Plugins install name</h2>
+<p>In the particular case of plugins, Joomla! has a general convention of adding the plugin group in the extension name.</p>
+<p>The name of your plugin must comply with the JED naming conventions - plugins in the form “{Type} - {Extension Name}”.</p>
+<p>For instance: Authentication - Joomla</p>

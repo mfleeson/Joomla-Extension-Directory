@@ -1,0 +1,124 @@
+<h2>GPL License</h2>
+<p style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">""GPL" stands for "General Public License". The most widespread such license is the GNU General Public License:, or GNU GPL for short. This can be further shortened to "GPL", when it is understood that the GNU GPL is the one intended."</p>
+<p style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">&nbsp;</p>
+<h2><span class="mw-headline">Joomla! &amp; the GPL</span></h2>
+<p style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">The Joomla Project is a GPL community, which means not just that a particular Free and Open Source license is used for Joomla software, but also that we believe in the <a href="http://opensourcematters.org/policies/104-mission-vision-and-values.html" target="_blank" rel="noopener">mission and values</a> behind that license. These include collaboration, community, and freedom. The GPL license embodies these values. Joomla! is licensed under GPL version 2 or later.</p>
+<p style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">&nbsp;</p>
+<h2><span class="mw-headline">The JED &amp; the GPL</span></h2>
+<p style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">The JED is important for many reasons. It makes it easier for users to find extensions, and it helps support the development of a vibrant and healthy commercial and non-commercial development community around Joomla. However, it may also be unintentionally undermining our support of the GPL by including extensions and other applications that run counter to it. The JED is also guided by the mission and values of the The Joomla! Project, which has determined that the JED should be a community resource that fully embodies the project's values, especially freedom as embodied by the GPL license.</p>
+<ul>
+<li style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">Since March 31, 2009 the Joomla! Extensions Directory (JED) hasn't accepted non GPL listings.</li>
+<li style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">Since July 1, 2009 only GPL extensions have been listed.</li>
+<li style="margin-bottom: 0.1em;">These changes were designed to strengthen the project's commitment to its core mission, vision and values as articulated in September 2008.</li>
+</ul>
+<p>&nbsp;</p>
+<h2>GPL License Requirements</h2>
+<p style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">Extensions must be licensed as GPL in order to be listed. Additional restrictions may not be placed on top of the GPL. Please note that the GPL does allow developers to charge for their products.</p>
+<p style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">&nbsp;</p>
+<h2 style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">Extensions Pack - General Requirements</h2>
+<p style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">The JED needs to be able to monitor files and make it easier for users to understand the terms under which they purchase/download extensions. This is why, to be listed at JED, you need to comply with additional terms that will improve directory maintenance and trust form directory users. This terms include:</p>
+<ol style="line-height: 1.5em; list-style-image: none; padding: 0px; margin: 0.3em 0px 0px 3.2em;">
+<li style="margin-bottom: 0.1em;">Published under a GPL license - <a class="external text" style="text-decoration: none; color: #3366bb; background-image: url('http://docs.joomla.org/skins/monobook/external.png'); background-attachment: initial; background-origin: initial; background-clip: initial; background-color: initial; padding-right: 13px; background-position: 100% 50%; background-repeat: no-repeat no-repeat;" title="http://www.gnu.org/licenses/licenses.html" href="http://www.gnu.org/licenses/licenses.html" rel="nofollow">See: Versions of the license</a></li>
+<li style="margin-bottom: 0.1em;">Include GPL notices on XML and PHP files</li>
+<li style="margin-bottom: 0.1em;">Provide a copy of the GPL license within your package - the file doesn't need to be installed with the extension, only included with the package as a text file</li>
+<li style="margin-bottom: 0.1em;">Copyright notice in all files as required by GPL license</li>
+<li style="margin-bottom: 0.1em;">Encrypted or encoded extensions, whether or not they are GPL licensed, will also be excluded</li>
+</ol>
+<h2>GPL Compliance Requirements</h2>
+<p><span style="line-height: 18px;">To list your file in JED under a GPL license, you must include proper notices for the license chosen. This includes making modifcations to the XML file, PHP files and the TXT file. </span></p>
+<h3>XML File</h3>
+<p style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">A &lt;license&gt; tag in your extension's XML file and state it is licensed under the GPL. For example:</p>
+<div dir="ltr" style="text-align: left;">
+<pre class="source-php" style="color: black; background-color: #f9f9f9; line-height: normal; padding: 1em; border: 1px dashed #2f6fab;">&lt;?xml version=<span class="st0" style="color: #ff0000;">"1.0"</span> encoding=<span class="st0" style="color: #ff0000;">"utf-8"</span><span class="kw2" style="color: #000000; font-weight: bold;">?&gt;</span>
+&lt;install type=<span class="st0" style="color: #ff0000;">"module"</span> version=<span class="st0" style="color: #ff0000;">"1.5.0"</span>&gt;
+        &lt;name&gt;Extension name goes here&lt;/name&gt;
+        &lt;creationDate&gt;<span class="nu0" style="color: #cc66cc;">20</span> April <span class="nu0" style="color: #cc66cc;">2010</span>&lt;/creationDate&gt;
+        &lt;author&gt;Author name goes here&lt;/author&gt;
+        &lt;copyright&gt;Copyright holder name goes here&lt;/copyright&gt;
+        &lt;license&gt;GNU/GPLv3 http:<span class="co1" style="color: #808080; font-style: italic;">//www.gnu.org/licenses/gpl-3.0.html&lt;/license&gt;</span>
+        &lt;authorEmail&gt;you@youremail.com&lt;/authorEmail&gt;
+        &lt;authorUrl&gt;http:<span class="co1" style="color: #808080; font-style: italic;">//www.yoursite.com&lt;/authorUrl&gt;</span>
+        &lt;version&gt;<span class="nu0" style="color: #cc66cc;">1.0</span>&lt;/version&gt;
+        &lt;description&gt;DESCRIPTION GOES HERE&lt;/description&gt;
+</pre>
+</div>
+<p style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">For GPL you can use other versions of the license, but GNU/GPLv3 is preferable.</p>
+<ul>
+<li style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">GNU/GPL <span style="color: #3366bb;"><span style="padding-right: 13px; background-image: url('http://docs.joomla.org/skins/monobook/external.png'); background-attachment: initial; background-origin: initial; background-clip: initial; background-position: 100% 50%; background-repeat: no-repeat;"><a href="http://www.gnu.org/copyleft/gpl.html">http://www.gnu.org/copyleft/gpl.html</a></span></span></li>
+<li style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">GNU/GPL v2 or later <a class="external free" style="text-decoration: none; color: #3366bb; background-image: url('http://docs.joomla.org/skins/monobook/external.png'); background-attachment: initial; background-origin: initial; background-clip: initial; background-color: initial; padding-right: 13px; background-position: 100% 50%; background-repeat: no-repeat no-repeat;" title="http://www.gnu.org/licenses/gpl-2.0.html" href="http://www.gnu.org/licenses/gpl-2.0.html" rel="nofollow">http://www.gnu.org/licenses/gpl-2.0.html</a></li>
+<li style="margin-bottom: 0.1em;">GNU/GPLv3 <a class="external free" style="text-decoration: none; color: #3366bb; background-image: url('http://docs.joomla.org/skins/monobook/external.png'); background-attachment: initial; background-origin: initial; background-clip: initial; background-color: initial; padding-right: 13px; background-position: 100% 50%; background-repeat: no-repeat no-repeat;" title="http://www.gnu.org/licenses/gpl-3.0.html" href="http://www.gnu.org/licenses/gpl-3.0.html" rel="nofollow">http://www.gnu.org/licenses/gpl-3.0.html</a></li>
+</ul>
+<h3 style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">PHP Files</h3>
+<p>The file headers of an extension should contain a copyright notice and a notice that the file and extension is distributed under the terms of the GPL, as in this comment block:</p>
+<div dir="ltr" style="text-align: left;">
+<pre class="source-php" style="color: black; background-color: #f9f9f9; line-height: normal; padding: 1em; border: 1px dashed #2f6fab;"><span class="kw2" style="color: #000000; font-weight: bold;">&lt;?php</span>
+<span class="coMULTI" style="color: #808080; font-style: italic;">/**
+ * @package Module XYZ for Joomla! 1.5
+ * @version $Id: mod_XYZ.php 599 2010-03-20 23:26:33Z you $
+ * @author YOUR NAME HERE
+ * @copyright (C) 2010- YOUR NAME HERE
+ * @license GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
+**/</span>
+</pre>
+</div>
+<p style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">Note: Additional information about the extension, author, copyright and version date are considered good practices.</p>
+<p style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">&nbsp;</p>
+<h3 style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">TXT File</h3>
+<p style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">Provide a copy of the GPL license within your package</p>
+<ul>
+<li style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">GNU GPL v2 text</li>
+</ul>
+<p style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">Note: this file doesn't need to be installed with the extension, just included with the package as a text file.</p>
+<p style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">&nbsp;</p>
+<h2 style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">Special Cases</h2>
+<h3 style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">Independent Libraries</h3>
+<ul>
+<li style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">Single-packed libraries can be licensed under a GPL compatible license listed by the Free Software Foundation - see LGPLv3 - <span style="color: #3366bb;"><span style="padding-right: 13px; background-image: url('http://docs.joomla.org/skins/monobook/external.png'); background-attachment: initial; background-origin: initial; background-clip: initial; background-position: 100% 50%; background-repeat: no-repeat;"><a href="http://www.gnu.org/licenses/lgpl-3.0.html">http://www.gnu.org/licenses/lgpl-3.0.html</a></span></span></li>
+<li style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">You must include a TXT file for license information</li>
+</ul>
+<h3 style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">Libraries Packed with Extensions</h3>
+<ul>
+<li style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">Stand-alone libraries can be licensed <span style="line-height: 18.2399997711182px;">under a GPL compatible license listed by the Free Software Foundation - see </span><span style="line-height: 18.2399997711182px;">LGPLv3 - </span><span style="color: #3366bb;"><span style="padding-right: 13px; background-image: url('http://docs.joomla.org/skins/monobook/external.png'); background-attachment: initial; background-origin: initial; background-clip: initial; background-position: 100% 50%; background-repeat: no-repeat;"><span style="color: #0000cc;"><span style="text-decoration: underline;"><a href="http://www.gnu.org/licenses/lgpl-3.0.html">http://www.gnu.org/licenses/lgpl-3.0.html</a></span></span></span></span></li>
+<li style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">You must include a TXT file for license info and a statement in the extension XML file license tag</li>
+</ul>
+<h3>Other File Types</h3>
+<ul>
+<li style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">Stand-alone file (like images, compiled flash files) that are packed with extensions, can be licensed under other licenses</li>
+<li style="margin-bottom: 0.1em;">You must include a TXT file for license info and a statement in the extension XML file license tag</li>
+</ul>
+<h2 style="line-height: 15.8079996109009px;">&nbsp;</h2>
+<h2 style="line-height: 15.8079996109009px;">Forked Extensions</h2>
+<p style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">We support the original project/developer whenever possible to maintain the integrity of the listings and also support developers who are building and innovating using the Joomla platform.</p>
+<p style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">Forked projects must represent a significant code improvement, either in features or security and structure in order to be listed. See the Forked Extension requirements.</p>
+<h2 style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">&nbsp;</h2>
+<h2 style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">FAQ</h2>
+<h3 style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">How does the JED support developers?</h3>
+<p style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">The Joomla team is strongly committed to supporting both commercial and non-commercial Joomla developers. We have implemented some policy changes to enhance our support for developers. Therefore we will not link to collections of GPL extensions that are not submitted by the original developer.</p>
+<p style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">&nbsp;</p>
+<h3 style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">Does this mean there will be no more commercial extensions in the JED?</h3>
+<p style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">No! Commercial extensions with the GNU GPL license and that are not encrypted are welcomed and encouraged in the JED.</p>
+<p style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">&nbsp;</p>
+<h3 style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">Who will be able to submit extensions?</h3>
+<p style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">Only the original developer! We think that the best place to get an extension is from the original developer of that extension.</p>
+<p style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">&nbsp;</p>
+<h3 style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;"><strong>What if I think my extension doesn't violate the Joomla license?</strong></h3>
+<p style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">This is a policy in favor of software freedom and the mission, vision and values of the Joomla! Project, not one about technical issues in licensing.</p>
+<p style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">&nbsp;</p>
+<h3 style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;"><strong>Can I use a GPL compatible license?</strong></h3>
+<p style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">No. The JED will only list extensions licensed using the GNU GPL.</p>
+<p style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">&nbsp;</p>
+<h3 style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;"><strong>Can I use libraries in my GPL extension that are GPL compatible?</strong></h3>
+<p style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">Yes.</p>
+<p style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">&nbsp;</p>
+<h2 style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">Additional Reading</h2>
+<p style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">To know more about licensing your software:</p>
+<ul>
+<li style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">Free Software Foundation: <a class="external text" style="text-decoration: none; color: #3366bb; background-image: url('http://docs.joomla.org/skins/monobook/external.png'); background-attachment: initial; background-origin: initial; background-clip: initial; background-color: initial; padding-right: 13px; background-position: 100% 50%; background-repeat: no-repeat no-repeat;" title="http://www.gnu.org/licenses/gpl-howto.html" href="http://www.gnu.org/licenses/gpl-howto.html" rel="nofollow">How to use GNU licenses for your own software</a></li>
+<li style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">Open Source Matters: <a class="external text" style="text-decoration: none; color: #3366bb; background-image: url('http://docs.joomla.org/skins/monobook/external.png'); background-attachment: initial; background-origin: initial; background-clip: initial; background-color: initial; padding-right: 13px; background-position: 100% 50%; background-repeat: no-repeat no-repeat;" title="Joomla! License FAQ" href="https://tm.joomla.org/joomla-license-faq" rel="nofollow">Joomla! License FAQ</a></li>
+<li style="margin-bottom: 0.1em;">Open Source Matters: <a class="external text" style="text-decoration: none; color: #3366bb; background-image: url('http://docs.joomla.org/skins/monobook/external.png'); background-attachment: initial; background-origin: initial; background-clip: initial; background-color: initial; padding-right: 13px; background-position: 100% 50%; background-repeat: no-repeat no-repeat;" title="Licensing your extension" href="https://tm.joomla.org/licensing-your-extension" rel="nofollow">Licensing your extension</a></li>
+</ul>
+<p style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">Before submitting an extension to JED, please read the following:</p>
+<ul>
+<li style="line-height: 1.5em; margin: 0.4em 0px 0.5em 0px;">FAQ: <a style="text-decoration: none; color: #002bb8; background-image: none; background-attachment: initial; background-origin: initial; background-clip: initial; background-color: initial; background-position: initial initial; background-repeat: initial initial;" title="Extensions GPL notices" href="http://docs.joomla.org/Extensions_GPL_notices">Extensions GPL notices</a></li>
+<li style="margin-bottom: 0.1em;">JED Editors Checklist: <a style="text-decoration: none; color: #002bb8; background-image: none; background-attachment: initial; background-origin: initial; background-clip: initial; background-color: initial; background-position: initial initial; background-repeat: initial initial;" title="JED Entries License Checklist" href="http://docs.joomla.org/JED_Entries_License_Checklist">JED_Entries_License_Checklist</a></li>
+</ul>

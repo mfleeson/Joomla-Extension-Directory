@@ -1,0 +1,212 @@
+{
+  "_comment": "The JED knowledgebase, imported from the JED 3 site (categories 10501-10507). Article texts are in articles/<category>/<alias>.html. \"_catid\" keeps the JED 3 category id for reference and is ignored by the plugin. See the top of src/Extension/JedKnowledgebase.php for every key. Running the sample data again rebuilds everything below the parent category from this file.",
+  "schema_version": 1,
+  "replace_existing": true,
+  "parent_path": "",
+  "defaults": {
+    "access": "public",
+    "language": "*",
+    "published": 1,
+    "author_alias": "JED Team"
+  },
+  "category": {
+    "_catid": 10501,
+    "title": "Knowledgebase",
+    "alias": "knowledgebase",
+    "description": "<div class=\"row-fluid\">\n<div class=\"span4\">{slider title=\"<em class=\"fa fa-lightbulb-o fa-4x blue\" style=\"color: #2384d3;\" aria-hidden=\"true\"></em> ABOUT THE JED\" class=\"blue\" open=\"true\" scroll=\"false\"}\n<div>{loadposition kb-about-jed}</div>\n{/sliders} {slider title=\"<em class=\"fa fa-users fa-4x\" style=\"color: #378137;\" aria-hidden=\"true\"></em> FOR JED USERS\" class=\"success\" open=\"true\" scroll=\"false\"}\n<div>{loadposition kb-jed-users}</div>\n{/sliders}</div>\n<div class=\"span4\">{slider title=\"<em class=\"fa fa-user fa-4x\" style=\"color: #c67605;\" aria-hidden=\"true\"></em> FOR JED DEVELOPERS\" class=\"orange\" open=\"true\" scroll=\"false\"}\n<div>{loadposition kb-jed-devs}</div>\n{/sliders} {slider title=\"<em class=\"fa fa-file-code-o fa-4x\" style=\"color: #942a25;\" aria-hidden=\"true\"></em> SUBMISSION REQUIREMENTS \" class=\"red\" open=\"true\" scroll=\"false\"}\n<div>{loadposition kb-submissions}</div>\n{/sliders}</div>\n<div class=\"span4\">{slider title=\"<em class=\"fa fa-bullseye fa-4x\" style=\"color: grey;\" aria-hidden=\"true\"></em> REVIEWS\" class=\"grey\" open=\"true\" scroll=\"false\"}\n<div>{loadposition kb-reviews}</div>\n{/sliders} {slider title=\"<em class=\"fa fa-chain-broken fa-4x\" style=\"color: #378137;\" aria-hidden=\"true\"></em> ERROR CODES\" class=\"success\" open=\"true\" scroll=\"false\"}\n<div>{loadposition kb-error-codes}</div>\n{/sliders}</div>\n</div>",
+    "children": [
+      {
+        "_catid": 10502,
+        "title": "About the JED",
+        "alias": "about-the-jed",
+        "articles": [
+          {
+            "title": "JED Terms of Service",
+            "alias": "terms-of-service",
+            "file": "articles/about-the-jed/terms-of-service.html"
+          },
+          {
+            "title": "Welcome to the New JED",
+            "alias": "welcome-to-the-new-jed",
+            "file": "articles/about-the-jed/welcome-to-the-new-jed.html"
+          },
+          {
+            "title": "Contributing Code to the JED",
+            "alias": "contributing-code-to-the-jed",
+            "file": "articles/about-the-jed/contributing-code-to-the-jed.html"
+          },
+          {
+            "title": "JED Release Cycle",
+            "alias": "jed-release-cycle",
+            "file": "articles/about-the-jed/jed-release-cycle.html"
+          }
+        ]
+      },
+      {
+        "_catid": 10503,
+        "title": "For JED Users",
+        "alias": "for-jed-users",
+        "articles": [
+          {
+            "title": "Getting Started with the JED",
+            "alias": "getting-started-with-the-jed",
+            "file": "articles/for-jed-users/getting-started-with-the-jed.html"
+          },
+          {
+            "title": "Extension Types",
+            "alias": "extension-types",
+            "file": "articles/for-jed-users/extension-types.html"
+          },
+          {
+            "title": "Locating Extensions",
+            "alias": "locating-extensions",
+            "file": "articles/for-jed-users/locating-extensions.html"
+          },
+          {
+            "title": "Installing Extensions",
+            "alias": "installing-extensions",
+            "file": "articles/for-jed-users/installing-extensions.html"
+          },
+          {
+            "title": "Uninstalling Extensions",
+            "alias": "uninstalling-extensions",
+            "file": "articles/for-jed-users/uninstalling-extensions.html"
+          },
+          {
+            "title": "Choosing Secure Extensions",
+            "alias": "choosing-secure-extensions",
+            "file": "articles/for-jed-users/choosing-secure-extensions.html"
+          }
+        ]
+      },
+      {
+        "_catid": 10504,
+        "title": "For JED Developers",
+        "alias": "for-jed-developers",
+        "articles": [
+          {
+            "title": "Submitting an Extension",
+            "alias": "submitting-an-extension",
+            "file": "articles/for-jed-developers/submitting-an-extension.html"
+          },
+          {
+            "title": "Extension Names",
+            "alias": "extension-names",
+            "file": "articles/for-jed-developers/extension-names.html"
+          },
+          {
+            "title": "Free vs. Paid Extensions",
+            "alias": "free-vs-paid-extensions",
+            "file": "articles/for-jed-developers/free-vs-paid-extensions.html"
+          },
+          {
+            "title": "Forked Extensions",
+            "alias": "forked-extensions",
+            "file": "articles/for-jed-developers/forked-extensions.html"
+          },
+          {
+            "title": "Extension Distribution",
+            "alias": "extension-distribution",
+            "file": "articles/for-jed-developers/extension-distribution.html"
+          },
+          {
+            "title": "Extension Installation Packages",
+            "alias": "extension-installation-packages",
+            "file": "articles/for-jed-developers/extension-installation-packages.html"
+          },
+          {
+            "title": "Backlinks in Extensions",
+            "alias": "backlinks-in-extensions",
+            "file": "articles/for-jed-developers/backlinks-in-extensions.html"
+          },
+          {
+            "title": "The Update XML File",
+            "alias": "the-update-xml-file",
+            "file": "articles/for-jed-developers/the-update-xml-file.html"
+          },
+          {
+            "title": "Best Practices: Deter spammers from targeting your extension",
+            "alias": "best-practices-deter-spammers-from-targeting-your-extension",
+            "file": "articles/for-jed-developers/best-practices-deter-spammers-from-targeting-your-extension.html"
+          },
+          {
+            "title": "Editing & Deleting Listings",
+            "alias": "editing-deleting-listings",
+            "file": "articles/for-jed-developers/editing-deleting-listings.html"
+          }
+        ]
+      },
+      {
+        "_catid": 10505,
+        "title": "Submission Requirements",
+        "alias": "submission-requirements",
+        "articles": [
+          {
+            "title": "JED Entries Checklists",
+            "alias": "jed-entries-checklists",
+            "file": "articles/submission-requirements/jed-entries-checklists.html"
+          },
+          {
+            "title": "Joomla License Guidelines",
+            "alias": "joomla-license-guidelines",
+            "file": "articles/submission-requirements/joomla-license-guidelines.html"
+          },
+          {
+            "title": "The GPL & the JED",
+            "alias": "the-gpl-the-jed",
+            "file": "articles/submission-requirements/the-gpl-the-jed.html"
+          },
+          {
+            "title": "Submission Requirements Made Easy",
+            "alias": "submission-requirements-made-easy",
+            "file": "articles/submission-requirements/submission-requirements-made-easy.html"
+          },
+          {
+            "title": "Joomla! Update System Requirement",
+            "alias": "joomla-update-system-requirement",
+            "file": "articles/submission-requirements/joomla-update-system-requirement.html"
+          }
+        ]
+      },
+      {
+        "_catid": 10506,
+        "title": "Reviews",
+        "alias": "reviews",
+        "articles": [
+          {
+            "title": "Submitting a Review",
+            "alias": "submitting-a-review",
+            "file": "articles/reviews/submitting-a-review.html"
+          },
+          {
+            "title": "Review Scoring Overview",
+            "alias": "review-scoring-overview",
+            "file": "articles/reviews/review-scoring-overview.html"
+          },
+          {
+            "title": "Edited, Removed or Unpublished Reviews",
+            "alias": "edited-removed-or-unpublished-reviews",
+            "file": "articles/reviews/edited-removed-or-unpublished-reviews.html"
+          }
+        ]
+      },
+      {
+        "_catid": 10507,
+        "title": "Error Codes",
+        "alias": "error-codes",
+        "articles": [
+          {
+            "title": "Submission Error Codes",
+            "alias": "submission-error-codes",
+            "file": "articles/error-codes/submission-error-codes.html"
+          },
+          {
+            "title": "Unpublished Extensions Error Codes",
+            "alias": "unpublished-extensions-error-codes",
+            "file": "articles/error-codes/unpublished-extensions-error-codes.html"
+          }
+        ]
+      }
+    ]
+  }
+}
