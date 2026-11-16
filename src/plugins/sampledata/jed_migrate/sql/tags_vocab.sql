@@ -21,7 +21,7 @@
 -- #__ucm_content row and the imported assignments are orphaned from that moment on.
 --
 -- The content type row itself is written by this step's PHP "before" hook (ContentTypeHelper), and
--- the tag nested set is repaired by its "after" hook - see jed_migrate.php. The deletes below run
+-- the tag nested set is repaired by its "after" hook - see src/Extension/JedMigrate.php. The deletes below run
 -- here rather than in the later steps so that a re-run is clean from its first statement: after
 -- this step the target holds the new vocabulary and no assignments at all.
 --

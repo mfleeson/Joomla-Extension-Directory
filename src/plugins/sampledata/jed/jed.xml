@@ -9,6 +9,7 @@
 	<authorUrl>www.joomla.org</authorUrl>
 	<version>##VERSION##</version>
 	<description>PLG_SAMPLEDATA_JED_XML_DESCRIPTION</description>
+	<namespace path="src">Joomla\Plugin\SampleData\Jed</namespace>
 	<files>
 		##FILES##
 	</files>

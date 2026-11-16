@@ -2,22 +2,24 @@
 
 /**
  * @package     Joomla.Plugin
- * @subpackage  Sampledata.Jed_Migrate
+ * @subpackage  Sampledata.jed_migrate
  *
  * @copyright   (C) 2026 Open Source Matters, Inc. <https://www.joomla.org>
  * @license     GNU General Public License version 2 or later; see LICENSE.txt
- * @phpcs:disable PSR1.Classes.ClassDeclaration.MissingNamespace
  */
+
+namespace Joomla\Plugin\SampleData\JedMigrate\Extension;
 
 use Jed\Component\Jed\Administrator\Helper\ContentTypeHelper;
 use Jed\Component\Jed\Administrator\Parser\VideoParser;
 use Joomla\CMS\Component\ComponentHelper;
-use Joomla\CMS\Factory;
+use Joomla\CMS\Event\Plugin\AjaxEvent;
+use Joomla\CMS\Event\SampleData\GetOverviewEvent;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\Plugin\CMSPlugin;
-use Joomla\Component\Categories\Administrator\Table\CategoryTable;
+use Joomla\CMS\Session\Session;
 use Joomla\Database\DatabaseAwareTrait;
-use Joomla\Database\DatabaseDriver;
+use Joomla\Event\SubscriberInterface;
 
 // phpcs:disable PSR1.Files.SideEffects
 \defined('_JEXEC') or die;
@@ -35,7 +37,7 @@ use Joomla\Database\DatabaseDriver;
  * Here each <task> of the old file is one sampledata step, so each step is its own AJAX
  * request with its own time and memory budget, reports success or failure on its own, and
  * can be retried without redoing the steps before it. The SQL is unchanged and lives in
- * sql/step1.sql .. sql/step16.sql.
+ * the plugin's sql folder.
  *
  * The connection to the JED3 database comes from the com_jed component options
  * (jed3_db_database_name and jed3_db_prefix). Both databases must live on the same server,
@@ -43,18 +45,9 @@ use Joomla\Database\DatabaseDriver;
  *
  * @since  4.0.0
  */
-class PlgSampledataJed_Migrate extends CMSPlugin
+final class JedMigrate extends CMSPlugin implements SubscriberInterface
 {
     use DatabaseAwareTrait;
-
-    /**
-     * Database object
-     *
-     * @var    DatabaseDriver
-     *
-     * @since  4.0.0
-     */
-    protected $db;
 
     /**
      * Load language files automatically.
@@ -121,7 +114,7 @@ class PlgSampledataJed_Migrate extends CMSPlugin
     private const STATUS_BATCHES = 24;
 
     /**
-     * Total number of steps.
+     * Number of steps that always run.
      *
      * Twenty-two fixed steps - the ten original migration tasks, the two prepare steps, the
      * baseline revision, the hit aggregate, the RSForms staging, the two non-batched thirds of the
@@ -133,6 +126,28 @@ class PlgSampledataJed_Migrate extends CMSPlugin
      * @since  4.0.0
      */
     private const STEP_COUNT = 22 + self::HISTORY_BATCHES + self::STATUS_BATCHES + self::TAG_UCM_BATCHES;
+
+    /**
+     * Number of steps that only run when an optional sibling component is installed.
+     *
+     * Currently one: the VEL legacy report import, which needs com_vel's tables. The overview
+     * reports the real number of steps for this installation (see stepPlan()); this only sizes the
+     * list of AJAX events the plugin subscribes to, which has to be fixed up front.
+     *
+     * @var    integer
+     *
+     * @since  4.0.0
+     */
+    private const OPTIONAL_STEP_COUNT = 1;
+
+    /**
+     * The event every step is dispatched as, followed by the 1 based step number.
+     *
+     * @var    string
+     *
+     * @since  4.0.0
+     */
+    private const STEP_EVENT = 'onAjaxSampledataApplyStep';
 
     /**
      * How many surviving assignments a legacy tag needs before it is imported (`P1-16`).
@@ -149,382 +164,101 @@ class PlgSampledataJed_Migrate extends CMSPlugin
     private const TAG_MIN_USES = 2;
 
     /**
-     * Constructor.
+     * Returns an array of events this subscriber will listen to.
      *
-     * @param   object  $subject  The object to observe.
-     * @param   array   $config   An optional associative array of configuration settings.
+     * The sampledata module dispatches step N as onAjaxSampledataApplyStepN, so there is one
+     * event per step. They all go to the same handler, which reads the step number back out of
+     * the event name. Enough events are subscribed for the largest plan - the overview tells the
+     * module how many of them are actually used on this installation.
+     *
+     * @return  array
      *
      * @since   4.0.0
      */
-    public function __construct(&$subject, $config = [])
+    public static function getSubscribedEvents(): array
     {
-        $this->setDatabase(Factory::getContainer()->get(DatabaseDriver::class));
-        parent::__construct($subject, $config);
-        $this->setApplication(Factory::getApplication());
+        $events = ['onSampledataGetOverview' => 'onSampledataGetOverview'];
+
+        for ($step = 1; $step <= self::STEP_COUNT + self::OPTIONAL_STEP_COUNT; $step++) {
+            $events[self::STEP_EVENT . $step] = 'onAjaxSampledataApplyStep';
+        }
+
+        return $events;
     }
 
     /**
      * Get an overview of the proposed sampledata.
      *
-     * @return  stdClass  Object containing the name, title, description, icon and steps.
+     * @param   GetOverviewEvent  $event  Event instance.
+     *
+     * @return  void
      *
      * @since   4.0.0
      */
-    public function onSampledataGetOverview()
+    public function onSampledataGetOverview(GetOverviewEvent $event): void
     {
-        $data              = new stdClass();
+        $data              = new \stdClass();
         $data->name        = $this->_name;
         $data->title       = Text::_('PLG_SAMPLEDATA_JED_MIGRATE_OVERVIEW_TITLE');
         $data->description = Text::_('PLG_SAMPLEDATA_JED_MIGRATE_OVERVIEW_DESC');
         $data->icon        = 'database';
-        $data->steps       = self::STEP_COUNT;
 
-        return $data;
-    }
-
-    // The sampledata API dispatches to onAjaxSampledataApplyStepN, so each step needs its own
-    // method. They all defer to applyStep(), which resolves the step through stepPlan().
-    // Step 1 additionally checks that the source database is configured and reachable, so a
-    // misconfiguration is reported before anything is written.
-
-    public function onAjaxSampledataApplyStep1()
-    {
-        return $this->applyStep(1);
-    }
-
-    public function onAjaxSampledataApplyStep2()
-    {
-        return $this->applyStep(2);
-    }
-
-    public function onAjaxSampledataApplyStep3()
-    {
-        return $this->applyStep(3);
-    }
-
-    public function onAjaxSampledataApplyStep4()
-    {
-        return $this->applyStep(4);
-    }
-
-    public function onAjaxSampledataApplyStep5()
-    {
-        return $this->applyStep(5);
-    }
-
-    public function onAjaxSampledataApplyStep6()
-    {
-        return $this->applyStep(6);
-    }
-
-    public function onAjaxSampledataApplyStep7()
-    {
-        return $this->applyStep(7);
-    }
-
-    public function onAjaxSampledataApplyStep8()
-    {
-        return $this->applyStep(8);
-    }
-
-    public function onAjaxSampledataApplyStep9()
-    {
-        return $this->applyStep(9);
-    }
-
-    public function onAjaxSampledataApplyStep10()
-    {
-        return $this->applyStep(10);
-    }
-
-    public function onAjaxSampledataApplyStep11()
-    {
-        return $this->applyStep(11);
-    }
-
-    public function onAjaxSampledataApplyStep12()
-    {
-        return $this->applyStep(12);
-    }
-
-    public function onAjaxSampledataApplyStep13()
-    {
-        return $this->applyStep(13);
-    }
-
-    public function onAjaxSampledataApplyStep14()
-    {
-        return $this->applyStep(14);
-    }
-
-    public function onAjaxSampledataApplyStep15()
-    {
-        return $this->applyStep(15);
-    }
-
-    public function onAjaxSampledataApplyStep16()
-    {
-        return $this->applyStep(16);
-    }
-
-    public function onAjaxSampledataApplyStep17()
-    {
-        return $this->applyStep(17);
-    }
-
-    public function onAjaxSampledataApplyStep18()
-    {
-        return $this->applyStep(18);
-    }
-
-    public function onAjaxSampledataApplyStep19()
-    {
-        return $this->applyStep(19);
-    }
-
-    public function onAjaxSampledataApplyStep20()
-    {
-        return $this->applyStep(20);
-    }
-
-    public function onAjaxSampledataApplyStep21()
-    {
-        return $this->applyStep(21);
-    }
-
-    public function onAjaxSampledataApplyStep22()
-    {
-        return $this->applyStep(22);
-    }
-
-    public function onAjaxSampledataApplyStep23()
-    {
-        return $this->applyStep(23);
-    }
-
-    public function onAjaxSampledataApplyStep24()
-    {
-        return $this->applyStep(24);
-    }
-
-    public function onAjaxSampledataApplyStep25()
-    {
-        return $this->applyStep(25);
-    }
-
-    public function onAjaxSampledataApplyStep26()
-    {
-        return $this->applyStep(26);
-    }
-
-    public function onAjaxSampledataApplyStep27()
-    {
-        return $this->applyStep(27);
-    }
-
-    public function onAjaxSampledataApplyStep28()
-    {
-        return $this->applyStep(28);
-    }
-
-    public function onAjaxSampledataApplyStep29()
-    {
-        return $this->applyStep(29);
-    }
-
-    public function onAjaxSampledataApplyStep30()
-    {
-        return $this->applyStep(30);
-    }
-
-    public function onAjaxSampledataApplyStep31()
-    {
-        return $this->applyStep(31);
-    }
-
-    public function onAjaxSampledataApplyStep32()
-    {
-        return $this->applyStep(32);
-    }
-
-    public function onAjaxSampledataApplyStep33()
-    {
-        return $this->applyStep(33);
-    }
-
-    public function onAjaxSampledataApplyStep34()
-    {
-        return $this->applyStep(34);
-    }
-
-    public function onAjaxSampledataApplyStep35()
-    {
-        return $this->applyStep(35);
-    }
-
-    public function onAjaxSampledataApplyStep36()
-    {
-        return $this->applyStep(36);
-    }
-
-    public function onAjaxSampledataApplyStep37()
-    {
-        return $this->applyStep(37);
-    }
-
-    public function onAjaxSampledataApplyStep38()
-    {
-        return $this->applyStep(38);
-    }
-
-    public function onAjaxSampledataApplyStep39()
-    {
-        return $this->applyStep(39);
-    }
-
-    public function onAjaxSampledataApplyStep40()
-    {
-        return $this->applyStep(40);
-    }
-
-    public function onAjaxSampledataApplyStep41()
-    {
-        return $this->applyStep(41);
-    }
-
-    public function onAjaxSampledataApplyStep42()
-    {
-        return $this->applyStep(42);
-    }
-
-    public function onAjaxSampledataApplyStep43()
-    {
-        return $this->applyStep(43);
-    }
-
-    public function onAjaxSampledataApplyStep44()
-    {
-        return $this->applyStep(44);
-    }
-
-    public function onAjaxSampledataApplyStep45()
-    {
-        return $this->applyStep(45);
-    }
-
-    public function onAjaxSampledataApplyStep46()
-    {
-        return $this->applyStep(46);
-    }
-
-    public function onAjaxSampledataApplyStep47()
-    {
-        return $this->applyStep(47);
-    }
-
-    public function onAjaxSampledataApplyStep48()
-    {
-        return $this->applyStep(48);
-    }
-
-    public function onAjaxSampledataApplyStep49()
-    {
-        return $this->applyStep(49);
-    }
-
-    public function onAjaxSampledataApplyStep50()
-    {
-        return $this->applyStep(50);
-    }
-
-    public function onAjaxSampledataApplyStep51()
-    {
-        return $this->applyStep(51);
-    }
-
-    public function onAjaxSampledataApplyStep52()
-    {
-        return $this->applyStep(52);
-    }
-
-    public function onAjaxSampledataApplyStep53()
-    {
-        return $this->applyStep(53);
-    }
-
-    public function onAjaxSampledataApplyStep54()
-    {
-        return $this->applyStep(54);
-    }
-
-    public function onAjaxSampledataApplyStep55()
-    {
-        return $this->applyStep(55);
-    }
-
-    public function onAjaxSampledataApplyStep56()
-    {
-        return $this->applyStep(56);
-    }
-
-    public function onAjaxSampledataApplyStep57()
-    {
-        return $this->applyStep(57);
-    }
-
-    public function onAjaxSampledataApplyStep58()
-    {
-        return $this->applyStep(58);
-    }
-
-    public function onAjaxSampledataApplyStep59()
-    {
-        return $this->applyStep(59);
-    }
-
-    public function onAjaxSampledataApplyStep60()
-    {
-        return $this->applyStep(60);
-    }
-
-    public function onAjaxSampledataApplyStep61()
-    {
-        return $this->applyStep(61);
-    }
-
-    public function onAjaxSampledataApplyStep62()
-    {
-        return $this->applyStep(62);
-    }
-
-    public function onAjaxSampledataApplyStep63()
-    {
-        return $this->applyStep(63);
-    }
-
-    public function onAjaxSampledataApplyStep64()
-    {
-        return $this->applyStep(64);
-    }
-
-    public function onAjaxSampledataApplyStep65()
-    {
-        return $this->applyStep(65);
-    }
-
-    public function onAjaxSampledataApplyStep66()
-    {
-        return $this->applyStep(66);
-    }
-
-    public function onAjaxSampledataApplyStep67()
-    {
-        return $this->applyStep(67);
-    }
-
-    public function onAjaxSampledataApplyStep68()
-    {
-        return $this->applyStep(68);
+        // Counted from the plan rather than taken from STEP_COUNT, because the plan has an
+        // optional step: with com_vel installed there is one more, and a fixed count would stop
+        // the run one step early - before the cleanup.
+        $data->steps       = \count($this->stepPlan());
+
+        $event->addResult($data);
+    }
+
+    /**
+     * Run one migration step.
+     *
+     * Step 1 additionally checks that the source database is configured and reachable, so a
+     * misconfiguration is reported before anything is written.
+     *
+     * @param   AjaxEvent  $event  Event instance, named onAjaxSampledataApplyStepN.
+     *
+     * @return  void
+     *
+     * @since   4.0.0
+     */
+    public function onAjaxSampledataApplyStep(AjaxEvent $event): void
+    {
+        if (!$this->isOurRequest()) {
+            return;
+        }
+
+        $step = (int) substr($event->getName(), \strlen(self::STEP_EVENT));
+
+        $event->addResult($this->applyStep($step));
+    }
+
+    /**
+     * Whether the current AJAX request is a step of this plugin that may run.
+     *
+     * Every sampledata plugin receives every step event, so the type check is what keeps this
+     * plugin out of the other plugins' runs. The token check stops a forged GET link from
+     * starting the migration, and only a Super User may run it at all.
+     *
+     * @return  bool
+     *
+     * @throws  \RuntimeException  When the request is ours but the user is not a Super User.
+     *
+     * @since   4.0.0
+     */
+    private function isOurRequest(): bool
+    {
+        if (!Session::checkToken('get') || $this->getApplication()->getInput()->get('type') !== $this->_name) {
+            return false;
+        }
+
+        // The migration wipes and reloads the directory: Super Users only.
+        if (!$this->getApplication()->getIdentity()->authorise('core.admin')) {
+            throw new \RuntimeException(Text::_('JERROR_ALERTNOAUTHOR'), 403);
+        }
+
+        return true;
     }
 
     /**
@@ -681,25 +415,16 @@ class PlgSampledataJed_Migrate extends CMSPlugin
     }
 
     /**
-     * Run one migration step.
+     * Run one step of the plan. The request has already been checked by isOurRequest().
      *
      * @param   integer  $step  The step number, 1 based.
      *
-     * @return  array|void  Will be converted into the JSON response to the module.
+     * @return  array{success: bool, message: string}  Will be converted into the JSON response to the module.
      *
      * @since   4.0.0
      */
-    private function applyStep(int $step)
+    private function applyStep(int $step): array
     {
-        if ($this->getApplication()->getInput()->get('type') !== $this->_name) {
-            return;
-        }
-
-        // Sample data wipes and reloads the directory: Super Users only.
-        if (!$this->getApplication()->getIdentity()->authorise('core.admin')) {
-            throw new \RuntimeException(Text::_('JERROR_ALERTNOAUTHOR'), 403);
-        }
-
         if ($step === 1) {
             $configError = $this->checkSourceDatabase();
 
@@ -718,7 +443,7 @@ class PlgSampledataJed_Migrate extends CMSPlugin
         }
 
         $spec = $plan[$step];
-        $file = __DIR__ . '/sql/' . $spec['file'];
+        $file = JPATH_PLUGINS . '/sampledata/' . $this->_name . '/sql/' . $spec['file'];
 
         if (!is_file($file)) {
             return [
@@ -837,7 +562,7 @@ class PlgSampledataJed_Migrate extends CMSPlugin
             // com_categories owns the table class, and its namespace is only registered once
             // the component has been booted - instantiating the class directly fails outside a
             // request that already loaded it.
-            $table = Factory::getApplication()
+            $table = $this->getApplication()
                 ->bootComponent('com_categories')
                 ->getMVCFactory()
                 ->createTable('Category', 'Administrator', ['dbo' => $this->getDatabase()]);
@@ -951,7 +676,7 @@ class PlgSampledataJed_Migrate extends CMSPlugin
                 $done++;
             }
 
-            Factory::getApplication()->enqueueMessage(
+            $this->getApplication()->enqueueMessage(
                 Text::sprintf('PLG_SAMPLEDATA_JED_MIGRATE_TICKET_EVENTS', $done, \count((array) $rows) - $done)
             );
         } catch (\Throwable $e) {
@@ -1012,7 +737,7 @@ class PlgSampledataJed_Migrate extends CMSPlugin
                 $converted++;
             }
 
-            Factory::getApplication()->enqueueMessage(
+            $this->getApplication()->enqueueMessage(
                 Text::sprintf(
                     'PLG_SAMPLEDATA_JED_MIGRATE_VIDEOS_NORMALISED',
                     $converted,
@@ -1048,7 +773,7 @@ class PlgSampledataJed_Migrate extends CMSPlugin
             // Booted for the same reason rebuildCategoryTree() boots com_categories: the helper
             // lives in com_jed's namespace, and that namespace is only guaranteed to resolve once
             // the component has been booted in this request.
-            Factory::getApplication()->bootComponent('com_jed');
+            $this->getApplication()->bootComponent('com_jed');
 
             ContentTypeHelper::ensureExtensionContentType($this->getDatabase());
         } catch (\Throwable $e) {
@@ -1074,7 +799,7 @@ class PlgSampledataJed_Migrate extends CMSPlugin
     private function rebuildTagTree(): ?string
     {
         try {
-            $table = Factory::getApplication()
+            $table = $this->getApplication()
                 ->bootComponent('com_tags')
                 ->getMVCFactory()
                 ->createTable('Tag', 'Administrator', ['dbo' => $this->getDatabase()]);
@@ -1164,7 +889,7 @@ class PlgSampledataJed_Migrate extends CMSPlugin
 
             $path = $this->writeTagReport($imported, $skipped, $categoryTitled, $unpublished, $droppedAssignments, $taggedItems);
 
-            Factory::getApplication()->enqueueMessage(
+            $this->getApplication()->enqueueMessage(
                 Text::sprintf(
                     'PLG_SAMPLEDATA_JED_MIGRATE_TAGS_REPORT',
                     \count($imported),
@@ -1178,7 +903,7 @@ class PlgSampledataJed_Migrate extends CMSPlugin
                 )
             );
         } catch (\Throwable $e) {
-            Factory::getApplication()->enqueueMessage(
+            $this->getApplication()->enqueueMessage(
                 Text::sprintf('PLG_SAMPLEDATA_JED_MIGRATE_ERROR_TAG_REPORT', $e->getMessage()),
                 'warning'
             );
@@ -1209,7 +934,7 @@ class PlgSampledataJed_Migrate extends CMSPlugin
         array $droppedAssignments,
         int $taggedItems
     ): string {
-        $logPath = Factory::getApplication()->get('log_path', JPATH_ADMINISTRATOR . '/logs');
+        $logPath = $this->getApplication()->get('log_path', JPATH_ADMINISTRATOR . '/logs');
         $file    = rtrim((string) $logPath, '/\\') . '/jed_tag_migration_report.txt';
 
         $lines = [
