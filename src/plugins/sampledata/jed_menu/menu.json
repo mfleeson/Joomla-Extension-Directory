@@ -66,12 +66,14 @@
     },
     {
       "title": "Vulnerable Extensions",
-      "type": "heading",
+      "alias": "vulnerable-extensions",
+      "link": "index.php?option=com_vel&view=advisories",
+      "params": { "default_status": "live" },
       "children": [
         { "title": "About", "link": "index.php?option=com_jed&view=velliveitems" },
-        { "title": "Vulnerable Extensions", "link": "index.php?option=com_jed&view=velliveitems" },
-        { "title": "Resolved Extensions", "link": "index.php?option=com_jed&view=velpatcheditems" },
-        { "title": "Abandoned Extensions", "link": "index.php?option=com_jed&view=velabandoneditems" },
+        { "title": "Live", "link": "index.php?option=com_vel&view=advisories", "params": { "default_status": "live", "page_title": "Vulnerable Extensions: Live" } },
+        { "title": "Patched", "link": "index.php?option=com_vel&view=advisories", "params": { "default_status": "patched", "page_title": "Vulnerable Extensions: Patched" } },
+        { "title": "Abandoned", "link": "index.php?option=com_vel&view=advisories", "params": { "default_status": "abandoned", "page_title": "Vulnerable Extensions: Abandoned" } },
         { "title": "Submit a Report", "link": "index.php?option=com_jed&view=velreportform" },
         { "title": "Submit an Update", "link": "index.php?option=com_jed&view=veldeveloperupdateform" },
         { "title": "Submit AbandonWare", "link": "index.php?option=com_jed&view=velabandonwareform" },
