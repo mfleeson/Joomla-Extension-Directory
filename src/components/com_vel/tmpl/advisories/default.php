@@ -28,7 +28,6 @@ $wa = $this->getDocument()->getWebAssetManager();
 $wa->registerAndUseStyle('com_vel.site', 'com_vel/css/vel.css');
 
 $f        = $this->filters;
-$listUrl  = Route::_('index.php?option=com_vel&view=advisories');
 $showCvss = (int) $this->params->get('show_cvss_in_list', 1) === 1;
 
 // Everything except the status, for the tab links - a tab switch keeps the other filters.
@@ -43,14 +42,17 @@ $carry = array_filter([
     'dir'      => $f['dir'] !== 'DESC' ? 'asc' : '',
 ], static fn ($v): bool => $v !== null && $v !== '');
 
-$tabUrl = static fn (string $status): string => $listUrl . '?' . http_build_query(array_merge(['status' => $status], $carry));
+// A tab with its own menu item (Live, Patched, Abandoned in the main menu) links to that menu item.
+$tabUrl = fn (string $status): string => $this->statusUrl($status, $carry);
 
 $sortKey = match ($f['sort']) { 'a.date_updated' => 'updated', 'a.title' => 'title', 'a.cvss_score' => 'score', default => 'published' };
-$sortUrl = static function (string $key) use ($listUrl, $f, $carry, $sortKey): string {
+$sortUrl = function (string $key) use ($f, $carry, $sortKey): string {
     $dir = $sortKey === $key && $f['dir'] === 'DESC' ? 'asc' : 'desc';
 
-    return $listUrl . '?' . http_build_query(array_merge($carry, ['status' => $f['status'], 'sort' => $key, 'dir' => $dir]));
+    return $this->statusUrl($f['status'], array_merge($carry, ['sort' => $key, 'dir' => $dir]));
 };
+
+[$formAction, $formHidden] = $this->filterFormTarget();
 ?>
 <div class="com-vel-list">
     <div class="page-header">
@@ -62,7 +64,7 @@ $sortUrl = static function (string $key) use ($listUrl, $f, $carry, $sortKey): s
         <p class="mb-0 small">
             <a href="<?php echo Route::_('index.php?option=com_vel&view=report'); ?>"><?php echo Text::_('COM_VEL_LINK_REPORT'); ?></a> &middot;
             <a href="<?php echo Route::_('index.php?option=com_vel&view=fixnotice'); ?>"><?php echo Text::_('COM_VEL_LINK_FIXNOTICE'); ?></a> &middot;
-            <a href="<?php echo Route::_('index.php?option=com_vel&view=advisories&format=feed&type=rss'); ?>"><?php echo Text::_('COM_VEL_LINK_RSS'); ?></a> &middot;
+            <a href="<?php echo $this->feedUrl('rss'); ?>"><?php echo Text::_('COM_VEL_LINK_RSS'); ?></a> &middot;
             <a href="<?php echo Route::_('index.php?option=com_vel&view=api&resource=index'); ?>"><?php echo Text::_('COM_VEL_LINK_API'); ?></a>
         </p>
     </div>
@@ -81,8 +83,10 @@ $sortUrl = static function (string $key) use ($listUrl, $f, $carry, $sortKey): s
         <?php endforeach; ?>
     </ul>
 
-    <form action="<?php echo $listUrl; ?>" method="get" class="com-vel-filters card card-body mb-3" role="search">
-        <input type="hidden" name="status" value="<?php echo $this->escape($f['status']); ?>">
+    <form action="<?php echo $this->escape($formAction); ?>" method="get" class="com-vel-filters card card-body mb-3" role="search">
+        <?php foreach ($formHidden as $name => $value) : ?>
+            <input type="hidden" name="<?php echo $this->escape((string) $name); ?>" value="<?php echo $this->escape((string) $value); ?>">
+        <?php endforeach; ?>
         <div class="row g-2 align-items-end">
             <div class="col-md-4">
                 <label class="form-label" for="vel-search"><?php echo Text::_('COM_VEL_FILTER_SEARCH_LABEL'); ?></label>
@@ -123,7 +127,7 @@ $sortUrl = static function (string $key) use ($listUrl, $f, $carry, $sortKey): s
         </div>
         <?php if ($f['search'] !== '' || $f['severity'] !== [] || $f['cvss_min'] !== null || $f['cvss_max'] !== null || $f['vendor'] !== '' || $f['type'] !== '') : ?>
             <div class="mt-2 small">
-                <a href="<?php echo $listUrl . '?status=' . $this->escape($f['status']); ?>"><?php echo Text::_('JSEARCH_FILTER_CLEAR'); ?></a>
+                <a href="<?php echo $this->statusUrl($f['status']); ?>"><?php echo Text::_('JSEARCH_FILTER_CLEAR'); ?></a>
             </div>
         <?php endif; ?>
     </form>

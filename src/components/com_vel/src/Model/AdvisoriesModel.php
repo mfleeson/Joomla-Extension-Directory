@@ -22,6 +22,7 @@ use Jed\Component\Vel\Administrator\Enum\AdvisoryStatus;
 use Jed\Component\Vel\Administrator\Enum\ExtensionType;
 use Jed\Component\Vel\Administrator\Enum\Severity;
 use Jed\Component\Vel\Administrator\Service\AdvisoryRepository;
+use Jed\Component\Vel\Site\Helper\VelHelper;
 use Joomla\CMS\Factory;
 use Joomla\CMS\MVC\Model\ListModel;
 use Joomla\Database\ParameterType;
@@ -81,8 +82,9 @@ class AdvisoriesModel extends ListModel
 
         $this->setState('params', $params);
 
-        $status = strtolower($input->getCmd('status', (string) $params->get('default_status', 'live')));
-        $this->setState('filter.status', $status === 'all' || AdvisoryStatus::tryFrom($status) !== null ? $status : 'live');
+        // ?status= picks a tab; without it the list opens on the menu item's "Default tab", which
+        // is how the Live, Patched and Abandoned menu items each open on their own tab.
+        $this->setState('filter.status', VelHelper::listStatus($input->getCmd('status', (string) $params->get('default_status', 'live'))));
 
         $this->setState('filter.search', trim($input->getString('search', '')));
 

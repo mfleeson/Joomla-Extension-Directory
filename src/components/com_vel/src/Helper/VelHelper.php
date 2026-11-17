@@ -16,6 +16,7 @@ namespace Jed\Component\Vel\Site\Helper;
 \defined('_JEXEC') or die;
 // phpcs:enable PSR1.Files.SideEffects
 
+use Jed\Component\Vel\Administrator\Enum\AdvisoryStatus;
 use Jed\Component\Vel\Administrator\Service\AdvisorySerializer;
 use Joomla\CMS\Component\ComponentHelper;
 use Joomla\CMS\Router\Route;
@@ -38,6 +39,26 @@ final class VelHelper
     public static function route(object $advisory): string
     {
         return Route::_('index.php?option=com_vel&view=advisory&id=' . (int) $advisory->id . ':' . (string) $advisory->alias);
+    }
+
+    /**
+     * A tab of the public list: one of the advisory statuses or "all". Anything else - a typo in a
+     * URL, a menu item saved before a status was renamed - is the default tab, "live".
+     *
+     * Shared by the list model, which reads it from the request or the menu item's "Default tab",
+     * and the list view, which needs to know which tab each list menu item opens on.
+     *
+     * @param string|null $status The requested tab.
+     *
+     * @return string
+     *
+     * @since 4.0.0
+     */
+    public static function listStatus(?string $status): string
+    {
+        $status = strtolower(trim((string) $status));
+
+        return $status === 'all' || AdvisoryStatus::tryFrom($status) !== null ? $status : AdvisoryStatus::LIVE->value;
     }
 
     /**
