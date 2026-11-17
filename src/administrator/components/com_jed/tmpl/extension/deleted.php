@@ -21,23 +21,27 @@ use Joomla\CMS\Language\Text;
 // for read-only by absence of the action, not for a disabled form whose controller is still
 // reachable, so this page carries no editable field and no save task - the only thing offered is
 // Restore, from the toolbar.
+// field => label. The labels the edit form uses for the same fields (forms/extension.xml), named
+// here rather than built as 'COM_JED_EXTENSION_' . strtoupper($field) . '_LABEL' - five of the built
+// keys (alias, catid, intro, extension_version, download_url) did not exist, so the page showed
+// them raw.
 $fields = [
-    'name',
-    'alias',
-    'catid',
-    'owner',
-    'state',
-    'approved',
-    'blocked',
-    'block_reason_code',
-    'block_reason_text',
-    'intro',
-    'description',
-    'extension_version',
-    'joomla_versions',
-    'download_url',
-    'developer_url',
-    'internal_note',
+    'name'              => 'JGLOBAL_TITLE',
+    'alias'             => 'JFIELD_ALIAS_LABEL',
+    'catid'             => 'COM_JED_GENERAL_CATEGORY_ID_LABEL',
+    'owner'             => 'COM_JED_EXTENSION_OWNER_LABEL',
+    'state'             => 'JSTATUS',
+    'approved'          => 'COM_JED_EXTENSION_APPROVED_LABEL',
+    'blocked'           => 'COM_JED_EXTENSION_BLOCKED_LABEL',
+    'block_reason_code' => 'COM_JED_EXTENSION_BLOCK_REASON_CODE_LABEL',
+    'block_reason_text' => 'COM_JED_EXTENSION_BLOCK_REASON_TEXT_LABEL',
+    'intro'             => 'COM_JED_EXTENSION_INTRO_TEXT_LABEL',
+    'description'       => 'COM_JED_EXTENSION_DESCRIPTION_LABEL',
+    'extension_version' => 'COM_JED_GENERAL_VERSION_LABEL',
+    'joomla_versions'   => 'COM_JED_EXTENSION_JOOMLA_VERSIONS_LABEL',
+    'download_url'      => 'COM_JED_EXTENSION_DOWNLOAD_LINK_LABEL',
+    'developer_url'     => 'COM_JED_EXTENSION_DEVELOPER_URL_LABEL',
+    'internal_note'     => 'COM_JED_EXTENSION_INTERNAL_NOTE_LABEL',
 ];
 ?>
 
@@ -60,8 +64,8 @@ $fields = [
     </joomla-alert>
 
     <dl class="row">
-        <?php foreach ($fields as $field) : ?>
-            <dt class="col-sm-3"><?php echo Text::_('COM_JED_EXTENSION_' . strtoupper($field) . '_LABEL'); ?></dt>
+        <?php foreach ($fields as $field => $label) : ?>
+            <dt class="col-sm-3"><?php echo Text::_($label); ?></dt>
             <dd class="col-sm-9">
                 <?php echo JedHelper::displayFieldValue($field, $this->item->{$field} ?? null); ?>
             </dd>

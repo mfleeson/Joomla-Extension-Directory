@@ -58,6 +58,12 @@ No open items - see *Fixed* below.
 |---|---|
 | 28 | There is no way to open a case by hand in the administrator, although the source *Opened by hand* exists. |
 
+## Dead code
+
+| # | Problem |
+|---|---|
+| 29 | `administrator/components/com_jed/layouts/vulnerableitem/` (`header.php`, `common_vulnerability.php`, `public_description.php`) are leftovers of the VEL that lived in com_jed. Nothing renders them any more, and the 11 language keys they use are defined nowhere. They can be deleted. (Found by `tests/language/check-language-keys.php`.) |
+
 ## Fixed
 
 | # | Problem | Fix |

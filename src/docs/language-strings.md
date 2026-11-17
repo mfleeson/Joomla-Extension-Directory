@@ -39,6 +39,31 @@ Two checks keep this honest and both are cheap to run without a Joomla installat
    XML and JS and check each one against the union of all `.ini` files, ignoring prefixes that
    are completed at run time (`'COM_JED_..._' . strtoupper($x)`) and `$text_prefix` values.
 
+3. **Keys the other side cannot find** — Joomla loads a component's *site* language file on the
+   front end and its *administrator* files (`com_x.ini`, `com_x.sys.ini`) in the backend, so a key
+   defined for one side only shows raw on the other. Both sides reach across: the site uses
+   administrator services, models, tables, fields, enums and layouts; the administrator uses site
+   helpers and reads the site's menu item XML in the menu manager. This is checked mechanically,
+   per side:
+
+   ```
+   php tests/language/check-language-keys.php --side=site     # report; exit code 1 if anything is missing
+   php tests/language/check-language-keys.php --side=admin
+   php tests/language/check-language-keys.php --side=admin --fix    # copy missing keys from the other side's file
+   php tests/language/check-language-keys.php --side=site --list=docs/language-keys-site.md
+   php tests/language/check-language-keys.php --side=admin --list=docs/language-keys-admin.md
+   ```
+
+   The script's header says exactly which files count as each side's code. The first runs copied
+   408 keys into the site files (com_jed 183, com_vel 205, com_abandonware 20) and 54 into the
+   administrator files (com_jed 50, com_vel 4). The lists of every key, with a *Missing on this side*
+   section first, are [`language-keys-site.md`](language-keys-site.md) and
+   [`language-keys-admin.md`](language-keys-admin.md).
+
+   Keys assembled at run time cannot be checked from their parts alone. Prefer naming the key
+   outright - `tmpl/extension/deleted.php` built `'COM_JED_EXTENSION_' . strtoupper($field) . '_LABEL'`
+   and five of the resulting keys did not exist; it now names each label.
+
 The second check is the one that found the largest defect so far: ~145 keys used by com_jed's
 site views (dashboard, handovers, maintainer invitations, the new-extension wizard, the blocked
 listing page, the category and ticket filters) that had no definition at all.

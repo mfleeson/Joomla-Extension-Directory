@@ -200,7 +200,7 @@
         </field>
     </fieldset>
 
-    <fieldset name="publishing" label="JGLOBAL_FIELDSET_PUBLISHING">
+    <fieldset name="publishing" label="COM_JED_TAB_PUBLISHING">
         <field name="created_by" type="hidden" readonly="true" filter="unset"/>
         <field name="created" type="hidden" readonly="true" filter="unset"/>
         <field name="modified_by" type="hidden" readonly="true" filter="unset"/>
