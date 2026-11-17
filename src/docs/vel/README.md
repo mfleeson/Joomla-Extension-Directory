@@ -41,7 +41,7 @@ tests/unit/Vel/                        PHPUnit for the framework-free classes
    the CVE Services credentials (test environment first), the NVD API key, the from address.
    Then, once, *Feed runs › Seed CNA Back Catalogue* — repeat until the message says complete —
    so the hourly delta poll starts from a full queue rather than from 29,000 strangers' records.
-4. Run the sample data plugin `jed2` (or create the menu items by hand): the advisories list must
+4. Run the sample data plugin `jed_menu` (or create the menu items by hand): the advisories list must
    sit at `/vulnerable-extensions` with the report and fix-notice items under it.
 5. Give the VEL team group `core.manage`, `core.create`, `core.edit`, `core.edit.state`,
    `vel.communicate`, `vel.feeds`, `vel.jed` on com_vel; the lead also `vel.publish` and `vel.cve`.

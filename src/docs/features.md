@@ -53,7 +53,7 @@ Three related site views cover discovery:
   heading becomes "`<Category>` Extensions") and as global "preset" pages that
   span every category — **Top Rated**, **Most Reviewed**, **New**, **Recently
   Updated** — each just a different default sort order, normally reached via
-  dedicated front-end menu items (created by the `jed2` sample-data plugin). The
+  dedicated front-end menu items (created by the `jed_menu` sample-data plugin). The
   filter bar offers free-text search (or `id:123` to jump straight to one
   extension), and a "Compatible with J4/J5/J6" filter.
 
