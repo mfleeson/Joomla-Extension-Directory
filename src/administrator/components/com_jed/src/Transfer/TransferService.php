@@ -333,6 +333,11 @@ final class TransferService
 
         $extension = $this->loadExtension($extensionId);
 
+        // Same rule as initiate(): a deleted listing has nobody to hand it to and nothing to hand.
+        if ((int) $extension['deleted'] === 1) {
+            throw new RuntimeException(Text::_('COM_JED_TRANSFER_ERROR_DELETED'));
+        }
+
         if ((int) $extension['owner'] === (int) $recipient->id) {
             throw new RuntimeException(Text::_('COM_JED_TRANSFER_ERROR_SELF'));
         }

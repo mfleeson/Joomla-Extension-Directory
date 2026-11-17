@@ -20,8 +20,11 @@ use Jed\Component\Jed\Site\Helper\JedHelper;
 use Jed\Component\Jed\Administrator\Enum\TicketType;
 use Jed\Component\Jed\Administrator\Model\TicketmessageModel;
 use Jed\Component\Jed\Administrator\Model\TicketModel;
+use Jed\Component\Jed\Administrator\Table\TicketTable;
 use Jed\Component\Jed\Site\Helper\TicketHelper;
 use Joomla\CMS\Factory;
+use Joomla\Database\DatabaseDriver;
+use Joomla\Database\ParameterType;
 
 /**
  * Creates #__jed_tickets entries for events happening on other items (an extension submitted for
@@ -95,6 +98,75 @@ trait TicketHandlingTrait
                 'internal'          => 0,
                 'created_by'        => -1,
             ]);
+        }
+
+        return $ticketId;
+    }
+
+    /**
+     * Record a decision on the most recent ticket about an item, as an outgoing message.
+     *
+     * The decision itself is made on the item - a listing is rejected, not a ticket - but the
+     * ticket is where the developer and the next team member look for what happened. Writing it
+     * there means the reason and the notes of a decision are visible in the developer's My Tickets
+     * even when the decision's e-mail template has no place for free text, and the ticket's status
+     * can follow the decision in the same step.
+     *
+     * Nothing happens when no ticket is linked to the item: a decision never fails for want of a
+     * ticket to note it on.
+     *
+     * @param TicketType $type    The kind of item.
+     * @param int        $itemId  The item's primary key.
+     * @param string     $subject The message subject.
+     * @param string     $html    The message body (HTML, already escaped by the caller).
+     * @param int|null   $status  A new ticket status (0 New .. 5 Updated), or null to leave it.
+     *
+     * @return int  The ticket the message was written to, 0 when there was none.
+     *
+     * @since 4.0.0
+     */
+    public function recordOnLinkedTicket(TicketType $type, int $itemId, string $subject, string $html, ?int $status = null): int
+    {
+        /** @var DatabaseDriver $db */
+        $db       = Factory::getContainer()->get(DatabaseDriver::class);
+        $typeId   = $type->value;
+        $ticketId = (int) $db->setQuery(
+            $db->getQuery(true)
+                ->select($db->quoteName('id'))
+                ->from($db->quoteName('#__jed_tickets'))
+                ->where($db->quoteName('linked_item_type') . ' = :type')
+                ->where($db->quoteName('linked_item_id') . ' = :item')
+                ->order($db->quoteName('id') . ' DESC')
+                ->bind(':type', $typeId, ParameterType::INTEGER)
+                ->bind(':item', $itemId, ParameterType::INTEGER),
+            0,
+            1
+        )->loadResult();
+
+        if ($ticketId === 0) {
+            return 0;
+        }
+
+        (new TicketmessageModel())->save([
+            'id'                => 0,
+            'ticket_id'         => $ticketId,
+            'subject'           => $subject,
+            'message'           => $html,
+            'message_direction' => 0,
+            'internal'          => 0,
+            'created_by'        => (int) Factory::getApplication()->getIdentity()->id,
+        ]);
+
+        if ($status !== null) {
+            // Through the table, so the status change is logged like any other (TicketTable::store()).
+            $table = new TicketTable($db);
+
+            if ($table->load($ticketId) && (int) $table->ticket_status !== $status) {
+                $table->ticket_status = $status;
+                $table->modified_on   = Factory::getDate()->toSql();
+                $table->modified_by   = (int) Factory::getApplication()->getIdentity()->id;
+                $table->store();
+            }
         }
 
         return $ticketId;

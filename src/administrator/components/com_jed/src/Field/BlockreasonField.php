@@ -13,6 +13,7 @@ namespace Jed\Component\Jed\Administrator\Field;
 \defined('_JEXEC') or die;
 // phpcs:enable PSR1.Files.SideEffects
 
+use Jed\Component\Jed\Administrator\Listing\BlockReasons;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Form\Field\ListField;
 use Joomla\CMS\HTML\HTMLHelper;
@@ -48,24 +49,10 @@ class BlockreasonField extends ListField
      */
     protected function getOptions(): array
     {
-        $db = Factory::getContainer()->get(DatabaseInterface::class);
-
-        $rows = $db->setQuery(
-            $db->getQuery(true)
-                ->select($db->quoteName(['code', 'title']))
-                ->from($db->quoteName('#__jed_block_reasons'))
-                ->where($db->quoteName('state') . ' = 1')
-                ->order($db->quoteName('ordering') . ' ASC')
-        )->loadAssocList();
-
         $options = [HTMLHelper::_('select.option', '', Text::_('COM_JED_BLOCK_REASON_SELECT'))];
 
-        foreach ((array) $rows as $row) {
-            $options[] = HTMLHelper::_(
-                'select.option',
-                $row['code'],
-                $row['code'] . ' - ' . Text::_($row['title'])
-            );
+        foreach (BlockReasons::options(Factory::getContainer()->get(DatabaseInterface::class)) as $code => $label) {
+            $options[] = HTMLHelper::_('select.option', $code, $label);
         }
 
         return array_merge($options, parent::getOptions());

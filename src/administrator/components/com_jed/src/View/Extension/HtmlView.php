@@ -15,8 +15,11 @@ namespace Jed\Component\Jed\Administrator\View\Extension;
 // phpcs:enable PSR1.Files.SideEffects
 
 use Jed\Component\Jed\Administrator\Helper\JedHelper;
+use Jed\Component\Jed\Administrator\Listing\BlockReasons;
 use Jed\Component\Jed\Administrator\Model\ExtensionModel;
+use Jed\Component\Jed\Administrator\Transfer\TransferService;
 use Joomla\CMS\Factory;
+use Joomla\Database\DatabaseInterface;
 use Joomla\Database\ParameterType;
 use stdClass;
 use Joomla\CMS\Form\Form;
@@ -24,6 +27,7 @@ use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\View\HtmlView as BaseHtmlView;
 use Joomla\CMS\Router\Route;
 use Joomla\CMS\Toolbar\ToolbarHelper;
+use Joomla\CMS\User\UserFactoryInterface;
 use Joomla\Registry\Registry;
 
 /**
@@ -54,6 +58,36 @@ class HtmlView extends BaseHtmlView
     protected ?int $compareLeftId        = null;
     protected ?int $compareRightId       = null;
     protected ?int $compareApprovableId  = null;
+
+    /**
+     * Whether the right-hand revision of the compare page is the one awaiting a decision, and can
+     * therefore be rejected (an older revision can only be approved - that is a restore).
+     *
+     * @var bool
+     *
+     * @since 4.0.0
+     */
+    protected bool $compareCanReject = false;
+
+    /**
+     * The reason codes offered by the compare page's Reject panel, code => label.
+     *
+     * @var array<string, string>
+     *
+     * @since 4.0.0
+     */
+    protected array $rejectReasons = [];
+
+    /**
+     * What the Ownership tab shows: the current owner (from the live row, not the revision) and any
+     * open handover. Null when the tab is not shown - a new listing, or no Force Ownership
+     * Transfer permission.
+     *
+     * @var array{owner: ?\Joomla\CMS\User\User, open: ?array, openTo: ?\Joomla\CMS\User\User}|null
+     *
+     * @since 4.0.0
+     */
+    protected ?array $ownership = null;
 
     /**
      * Display the view
@@ -105,6 +139,12 @@ class HtmlView extends BaseHtmlView
             // the latest one) - Approve always promotes whichever history row that
             // is, regardless of what "left" represents.
             $this->compareApprovableId = $this->compareRightId;
+            $this->compareCanReject    = $this->compareApprovableId !== null
+                && $this->compareApprovableId === $model->getPendingHistoryId($extensionId);
+
+            if ($this->compareCanReject) {
+                $this->rejectReasons = BlockReasons::options(Factory::getContainer()->get(DatabaseInterface::class));
+            }
 
             $this->addToolbar();
             parent::display($tpl);
@@ -133,9 +173,45 @@ class HtmlView extends BaseHtmlView
         $this->maintainers = $model->getMaintainers();
         $this->history     = $model->getHistory();
         $this->reviews     = $model->getReviews();
+        $this->ownership   = $this->loadOwnership((int) ($this->item->extension_id ?? 0));
 
         $this->addToolbar();
         parent::display($tpl);
+    }
+
+    /**
+     * The data of the Ownership tab, or null when the tab is not offered.
+     *
+     * @param int $extensionId The listing.
+     *
+     * @return array|null
+     *
+     * @since 4.0.0
+     */
+    private function loadOwnership(int $extensionId): ?array
+    {
+        if ($extensionId <= 0 || !$this->getCurrentUser()->authorise('jed.transfer.force', 'com_jed')) {
+            return null;
+        }
+
+        $db    = Factory::getContainer()->get(DatabaseInterface::class);
+        $users = Factory::getContainer()->get(UserFactoryInterface::class);
+
+        $ownerId = (int) $db->setQuery(
+            $db->getQuery(true)
+                ->select($db->quoteName('owner'))
+                ->from($db->quoteName('#__jed_extensions'))
+                ->where($db->quoteName('id') . ' = :id')
+                ->bind(':id', $extensionId, ParameterType::INTEGER)
+        )->loadResult();
+
+        $open = (new TransferService($db))->getOpenTransfer($extensionId);
+
+        return [
+            'owner'  => $ownerId > 0 ? $users->loadUserById($ownerId) : null,
+            'open'   => $open,
+            'openTo' => $open !== null ? $users->loadUserById((int) $open['to_user_id']) : null,
+        ];
     }
 
     /**
@@ -157,6 +233,13 @@ class HtmlView extends BaseHtmlView
 
             if ($this->compareApprovableId && JedHelper::getActions('com_jed')->get('jed.approve')) {
                 ToolbarHelper::custom('extension.approve', 'publish.png', 'publish_f2.png', 'COM_JED_APPROVE_LABEL', false);
+
+                // Reject sits next to Approve, but only for the revision actually awaiting a
+                // decision. It submits the reason and notes from the Decision panel on the page;
+                // tmpl/extension/compare.php refuses to submit without a reason.
+                if ($this->compareCanReject) {
+                    ToolbarHelper::custom('extension.reject', 'cancel-circle', 'cancel-circle', 'COM_JED_REJECT_LABEL', false);
+                }
             }
 
             return;

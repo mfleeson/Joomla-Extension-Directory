@@ -18,6 +18,7 @@ namespace Jed\Component\Jed\Administrator\Ticket;
 
 use Jed\Component\Jed\Administrator\Model\ExtensionModel;
 use Jed\Component\Jed\Administrator\Enum\TicketType;
+use Jed\Component\Jed\Administrator\Listing\BlockReasons;
 use Joomla\CMS\User\User;
 use Joomla\Database\DatabaseInterface;
 
@@ -57,8 +58,14 @@ final class ExtensionTicketHandler implements TicketTypeHandlerInterface
      */
     public function getMasterData(int $linkedItemId): ?object
     {
-        $model                               = new ExtensionModel();
-        [$live, $pending, $pendingHistoryId] = $model->getCompareItems($linkedItemId, null, null);
+        // "Pending" means a revision the developer submitted that nobody has decided yet
+        // (getPendingHistoryId()), not "the newest revision differs from the live row": blocks,
+        // unblocks, deletions and restores also write revisions, and after one of those the panel
+        // used to announce a pending change - and link to that state change's snapshot.
+        $model            = new ExtensionModel();
+        $live             = $model->getLiveItem($linkedItemId);
+        $pendingHistoryId = $model->getPendingHistoryId($linkedItemId);
+        $pending          = $pendingHistoryId > 0 ? $model->getItem($linkedItemId, $pendingHistoryId) : null;
 
         if (!$live && !$pending) {
             return null;
@@ -67,10 +74,9 @@ final class ExtensionTicketHandler implements TicketTypeHandlerInterface
         return (object) [
             'extensionId'      => $linkedItemId,
             'live'             => $live,
-            'pending'          => $pending,
+            'pending'          => $pending ?: null,
             'pendingHistoryId' => $pendingHistoryId,
-            'isPending'        => $pending !== null
-                && (!$live || (int) ($live->entry_version ?? 0) !== $pendingHistoryId),
+            'isPending'        => $pendingHistoryId > 0,
         ];
     }
 
@@ -125,12 +131,32 @@ final class ExtensionTicketHandler implements TicketTypeHandlerInterface
                 hiddenFields: ['extension_id' => $linkedItemId, 'history_id' => $pendingHistoryId],
                 option: 'com_jed'
             ),
+            // A rejection is only a decision the developer can act on when it says what to
+            // correct, so the reason code is required (ExtensionModel::reject() refuses one
+            // without) and the notes are offered alongside. Both travel with the action's own
+            // form, under the names ExtensionController::reject() reads.
             new TicketAction(
                 label: 'COM_JED_TICKET_ACTION_REJECT',
                 task: 'extension.reject',
                 icon: 'cancel-circle',
+                confirmMessage: 'COM_JED_TICKET_ACTION_REJECT_CONFIRM',
                 hiddenFields: ['extension_id' => $linkedItemId, 'history_id' => $pendingHistoryId],
-                option: 'com_jed'
+                option: 'com_jed',
+                fields: [
+                    [
+                        'name'     => 'reject_reason_code',
+                        'type'     => 'select',
+                        'label'    => 'COM_JED_REJECT_REASON_LABEL',
+                        'options'  => BlockReasons::options($this->db),
+                        'required' => true,
+                    ],
+                    [
+                        'name'  => 'reject_reason_notes',
+                        'type'  => 'textarea',
+                        'label' => 'COM_JED_REJECT_NOTES_LABEL',
+                        'hint'  => 'COM_JED_REJECT_NOTES_DESC',
+                    ],
+                ]
             ),
         ];
     }

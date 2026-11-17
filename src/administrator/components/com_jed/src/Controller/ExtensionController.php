@@ -21,6 +21,7 @@ use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\Model\BaseDatabaseModel;
 use Joomla\CMS\MVC\Controller\FormController;
 use Joomla\CMS\Router\Route;
+use Joomla\CMS\Uri\Uri;
 use Joomla\Database\DatabaseInterface;
 use Joomla\Database\ParameterType;
 
@@ -242,7 +243,7 @@ class ExtensionController extends FormController
             Factory::getApplication()->enqueueMessage($e->getMessage(), 'error');
         }
 
-        $this->setRedirect(Route::_('index.php?option=com_jed&view=extensions', false));
+        $this->setRedirect($this->returnUrl());
 
         return true;
     }
@@ -284,9 +285,15 @@ class ExtensionController extends FormController
             $app->enqueueMessage(Text::_('COM_JED_EXTENSION_REJECTED_MESSAGE'));
         } catch (\Exception $e) {
             $app->enqueueMessage($e->getMessage(), 'error');
+
+            // A refused rejection (no reason picked) goes back to where it was made, so the team
+            // member can pick one instead of hunting for the listing again.
+            $this->setRedirect($this->returnUrl($this->compareUrl($extensionId, $historyId)));
+
+            return false;
         }
 
-        $this->setRedirect(Route::_('index.php?option=com_jed&view=extensions', false));
+        $this->setRedirect($this->returnUrl());
 
         return true;
     }
@@ -311,9 +318,17 @@ class ExtensionController extends FormController
         $extensionId = $this->input->getInt('id') ?: (int) $app->getUserState('com_jed.edit.extension.live_id', 0);
         $email       = (string) $this->input->getString('transfer_email', '');
         $reason      = (string) $this->input->getString('transfer_reason', '');
+        $editUrl     = Route::_('index.php?option=com_jed&view=extension&layout=edit&id=' . $extensionId, false);
 
         if (!$app->getIdentity()->authorise('jed.transfer.force', 'com_jed')) {
             $app->enqueueMessage(Text::_('JLIB_APPLICATION_ERROR_EDIT_NOT_PERMITTED'), 'error');
+            $this->setRedirect(Route::_('index.php?option=com_jed&view=extensions', false));
+
+            return false;
+        }
+
+        if ($extensionId <= 0) {
+            $app->enqueueMessage(Text::_('JLIB_APPLICATION_ERROR_NOT_EXIST'), 'error');
             $this->setRedirect(Route::_('index.php?option=com_jed&view=extensions', false));
 
             return false;
@@ -324,16 +339,30 @@ class ExtensionController extends FormController
             $service = new TransferService($db);
             $userId  = (int) $app->getIdentity()->id;
 
+            // Checked before the lookup so a missing reason does not spend one of the team
+            // member's address lookups.
+            if (trim($reason) === '') {
+                throw new \RuntimeException(Text::_('COM_JED_TRANSFER_ERROR_REASON_REQUIRED'));
+            }
+
             // The same bounded lookup the developer side uses, so a team member probing
             // addresses is logged and rate-limited exactly as a developer would be.
             $recipient = $service->findRecipient($email, $userId, $extensionId);
 
             $service->force($extensionId, $recipient, $userId, $reason);
-            $app->enqueueMessage(Text::_('COM_JED_TRANSFER_FORCED_MESSAGE'));
+            $app->enqueueMessage(Text::sprintf('COM_JED_TRANSFER_FORCED_MESSAGE_NAMED', $recipient->name));
         } catch (\Exception $e) {
+            // Back to the form, still checked out, so the team member can correct the address or
+            // the reason - a forced transfer is rare enough that losing the context costs more.
             $app->enqueueMessage($e->getMessage(), 'error');
+            $this->setRedirect($editUrl);
+
+            return false;
         }
 
+        // Done with the listing: release the edit lock the form held, or it stays checked out to
+        // this team member after they have left the page.
+        $this->getModel()->checkin($extensionId);
         $this->setRedirect(Route::_('index.php?option=com_jed&view=extensions', false));
 
         return true;
@@ -462,7 +491,13 @@ class ExtensionController extends FormController
             $app->enqueueMessage($e->getMessage(), 'error');
         }
 
-        $this->setRedirect(Route::_('index.php?option=com_jed&view=extensions', false));
+        // When the transition was made from the edit form, the form held the listing checked out;
+        // leaving for the list without releasing it kept the listing locked to this team member.
+        if ((string) $this->input->getBase64('return', '') === '') {
+            $model->checkin($extensionId);
+        }
+
+        $this->setRedirect($this->returnUrl());
 
         return true;
     }
@@ -501,5 +536,51 @@ class ExtensionController extends FormController
         $this->setRedirect(Route::_('index.php?option=com_jed&view=extension&layout=edit&id=' . $extensionId, false));
 
         return true;
+    }
+
+    /**
+     * Where to go after a moderation action.
+     *
+     * Actions started from a ticket post a `return` (the ticket's own address, base64-encoded, see
+     * layouts/ticket/action_button.php) so the team member lands back on the ticket they were
+     * working instead of on the Extensions list. Only internal addresses are followed.
+     *
+     * @param string|null $fallback Where to go without a usable `return`; the Extensions list by default.
+     *
+     * @return string
+     *
+     * @since 4.0.0
+     */
+    private function returnUrl(?string $fallback = null): string
+    {
+        $return = (string) $this->input->getBase64('return', '');
+
+        if ($return !== '') {
+            $url = base64_decode($return);
+
+            if ($url !== false && $url !== '' && Uri::isInternal($url)) {
+                return $url;
+            }
+        }
+
+        return $fallback ?? Route::_('index.php?option=com_jed&view=extensions', false);
+    }
+
+    /**
+     * The compare page for one revision against the live listing.
+     *
+     * @param int $extensionId The listing.
+     * @param int $historyId   The revision.
+     *
+     * @return string
+     *
+     * @since 4.0.0
+     */
+    private function compareUrl(int $extensionId, int $historyId): string
+    {
+        return Route::_(
+            'index.php?option=com_jed&view=extension&layout=compare&id=' . $extensionId . '&right=' . $historyId,
+            false
+        );
     }
 }

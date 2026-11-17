@@ -21,7 +21,9 @@ use Jed\Component\Jed\Administrator\Log\JedActionLog;
 use Jed\Component\Jed\Administrator\MediaHandling\ImageSize;
 use Jed\Component\Jed\Administrator\Table\ExtensionHistoryTable;
 use Jed\Component\Jed\Administrator\Table\ExtensionTable;
+use Jed\Component\Jed\Administrator\Enum\TicketType;
 use Jed\Component\Jed\Administrator\Traits\ExtensionUtilities;
+use Jed\Component\Jed\Administrator\Traits\TicketHandlingTrait;
 use Jed\Component\Jed\Administrator\Transfer\TransferService;
 use Jed\Component\Jed\Site\Helper\JedHelper as SiteJedHelper;
 use Jed\Component\Jed\Site\Helper\JedscoreHelper;
@@ -58,6 +60,7 @@ use function defined;
 class ExtensionModel extends AdminModel
 {
     use ExtensionUtilities;
+    use TicketHandlingTrait;
 
     /**
      * @var string  Alias to manage history control
@@ -222,7 +225,9 @@ class ExtensionModel extends AdminModel
             ? $this->getItem($extensionId, $leftHistoryId)
             : $this->getLiveItem($extensionId);
 
-        $rightHistoryId = $rightHistoryId ?: $this->getLatestHistoryId($extensionId);
+        // Without an explicit revision, compare against the one awaiting a decision - not simply the
+        // newest, which after a block, unblock, deletion or restore is that state change's snapshot.
+        $rightHistoryId = $rightHistoryId ?: ($this->getPendingHistoryId($extensionId) ?: $this->getLatestHistoryId($extensionId));
         $right          = $rightHistoryId ? $this->getItem($extensionId, $rightHistoryId) : null;
 
         return [$left, $right, $rightHistoryId];
@@ -279,7 +284,13 @@ class ExtensionModel extends AdminModel
         // claim also appears on the other product's page is the team's to decide. It is not a
         // history column today, so this is belt and braces - add it to the revision table and
         // approving an edit would confirm the claim in the same motion.
+        //
+        // `owner` is never promoted either. Ownership changes only through a transfer (agreed or
+        // forced, TransferService), which writes the live row directly. A revision carries the
+        // owner it was saved under, so promoting it would hand a listing back to its previous
+        // owner whenever a revision written before a transfer was approved after it.
         unset(
+            $liveData['owner'],
             $liveData['state'],
             $liveData['parent_confirmed'],
             $liveData['blocked'],
@@ -302,7 +313,19 @@ class ExtensionModel extends AdminModel
             throw new Exception(Text::_('JLIB_APPLICATION_ERROR_NOT_EXIST'));
         }
 
+        // The first approval of a listing is the moment it is listed, so it is also the moment it
+        // goes online. A submission is created offline (state 0) and, because `state` is not a
+        // moderation outcome, approval never touched it - the developer was told "is now listed"
+        // about a listing nobody could see. After the first approval `state` is the developer's
+        // again (dashboard switch), and approving later edits leaves it exactly as they set it.
+        $firstApproval = (int) $liveTable->approved !== 1;
+
         $liveTable->bind($liveData);
+
+        if ($firstApproval) {
+            $liveTable->state = 1;
+        }
+
         $liveTable->check();
         $liveTable->store();
 
@@ -316,7 +339,7 @@ class ExtensionModel extends AdminModel
         // still holds whatever was public before this decision.
         $this->announceListingChange($liveTable);
 
-        $this->notifyDeveloperOfDecision($extensionId, true, '', '');
+        $this->notifyDeveloperOfDecision($extensionId, true, '', '', $firstApproval);
         $this->logListingDecision(JedActionLog::EXTENSION_APPROVE, $extensionId, (string) $liveTable->name);
     }
 
@@ -362,6 +385,13 @@ class ExtensionModel extends AdminModel
             throw new Exception(Text::_('JLIB_APPLICATION_ERROR_NOT_EXIST'));
         }
 
+        // Only the revision waiting for a decision can be refused. Approving an older revision is
+        // a legitimate restore, but "rejecting" one would mail the developer a refusal of
+        // something they never submitted for review.
+        if ($historyId !== $this->getPendingHistoryId($extensionId)) {
+            throw new Exception(Text::_('COM_JED_REJECT_ERROR_NOT_PENDING'));
+        }
+
         $now    = Factory::getDate()->toSql();
         $userId = (int) $this->getCurrentUser()->id;
         $notes  = trim($notes);
@@ -397,6 +427,24 @@ class ExtensionModel extends AdminModel
         }
 
         $this->notifyDeveloperOfDecision($extensionId, false, $reasonCode, $notes);
+
+        // The per-code mail templates are the JED3 wording and have no place for the reviewer's
+        // own notes, so the decision is also written on the listing's ticket - with the reason and
+        // the notes - where the developer reads it in My Tickets, and the ticket now waits for
+        // them.
+        $this->recordOnLinkedTicket(
+            TicketType::Extension,
+            $extensionId,
+            Text::sprintf('COM_JED_TICKET_REJECTED_SUBJECT', $reasonCode, $reasonTitle),
+            '<p>' . Text::sprintf(
+                'COM_JED_TICKET_REJECTED_BODY',
+                htmlspecialchars((string) $liveTable->name, ENT_QUOTES, 'UTF-8'),
+                htmlspecialchars($reasonCode . ' - ' . $reasonTitle, ENT_QUOTES, 'UTF-8')
+            ) . '</p>'
+            . ($notes !== '' ? '<p>' . nl2br(htmlspecialchars($notes, ENT_QUOTES, 'UTF-8')) . '</p>' : ''),
+            1
+        );
+
         $this->logListingDecision(
             JedActionLog::EXTENSION_REJECT,
             $extensionId,
@@ -433,6 +481,10 @@ class ExtensionModel extends AdminModel
                 ->where($db->quoteName('extension_id') . ' = :eid')
                 ->where($db->quoteName('active') . ' = 1')
                 ->where($db->quoteName('approved_time') . ' IS NULL')
+                // A revision that already says "approved" is not waiting for anything - in
+                // practice the migration's baseline of a JED3 listing that was approved without a
+                // recorded time. New revisions are always written undecided (save()).
+                ->where('COALESCE(' . $db->quoteName('approved') . ', 0) <> 1')
                 ->order($db->quoteName('id') . ' DESC')
                 ->bind(':eid', $extensionId, ParameterType::INTEGER),
             0,
@@ -449,16 +501,24 @@ class ExtensionModel extends AdminModel
      * template registered falls back to the generic one.
      *
      * @param int    $extensionId The extension id.
-     * @param bool   $approved    Whether the listing was approved.
-     * @param string $reasonCode  The rejection reason code, empty on approval.
-     * @param string $notes       Free text for the developer.
+     * @param bool   $approved      Whether the listing was approved.
+     * @param string $reasonCode    The rejection reason code, empty on approval.
+     * @param string $notes         Free text for the developer.
+     * @param bool   $firstApproval For an approval: whether this put the listing online for the
+     *                              first time (listing_approved) or approved an edit to a listing
+     *                              that was already listed (listing_update_approved).
      *
      * @return void
      *
      * @since 4.0.0
      */
-    private function notifyDeveloperOfDecision(int $extensionId, bool $approved, string $reasonCode, string $notes): void
-    {
+    private function notifyDeveloperOfDecision(
+        int $extensionId,
+        bool $approved,
+        string $reasonCode,
+        string $notes,
+        bool $firstApproval = true
+    ): void {
         $db = $this->getDatabase();
 
         $listing = $db->setQuery(
@@ -473,7 +533,10 @@ class ExtensionModel extends AdminModel
             return;
         }
 
-        $template = 'com_jed.listing_approved';
+        // "Is now listed" is only true the first time. An approved edit to a listing that is
+        // already public gets its own wording, which also does not claim the listing is online -
+        // the developer may have taken it offline.
+        $template = $firstApproval ? 'com_jed.listing_approved' : 'com_jed.listing_update_approved';
 
         if (!$approved) {
             $template = (string) $db->setQuery(
@@ -667,6 +730,14 @@ class ExtensionModel extends AdminModel
 
         if (empty($form)) {
             return false;
+        }
+
+        // The owner is chosen when the team creates a listing, and changes afterwards only through
+        // a transfer (the Ownership tab), which notifies both parties, cancels an open handover and
+        // is logged. save() and approve() ignore the field for an existing listing accordingly.
+        if ((int) Factory::getApplication()->getUserState('com_jed.edit.extension.live_id') > 0) {
+            $form->setFieldAttribute('owner', 'readonly', 'true');
+            $form->setFieldAttribute('owner', 'description', 'COM_JED_EXTENSION_OWNER_READONLY_DESC');
         }
 
         return $form;
@@ -1201,15 +1272,41 @@ class ExtensionModel extends AdminModel
 
         $categories = (array) ($data['categories'] ?? []);
 
+        $db = $this->getDatabase();
+
+        // The revision records the owner the listing has *now* - never a value from the form, which
+        // is read-only for an existing listing (see getForm()). approve() does not promote it
+        // either, but a revision should still say truthfully whose listing it was written for.
+        $liveOwner = $db->setQuery(
+            $db->getQuery(true)
+                ->select($db->quoteName('owner'))
+                ->from($db->quoteName('#__jed_extensions'))
+                ->where($db->quoteName('id') . ' = :eid')
+                ->bind(':eid', $extensionId, ParameterType::INTEGER)
+        )->loadResult();
+
+        if ($liveOwner !== null) {
+            $data['owner'] = (int) $liveOwner;
+        }
+
         // Force a new INSERT rather than an UPDATE of an existing history entry
         $data['id']           = 0;
         $data['extension_id'] = $extensionId;
         $data['active']       = 1;
         unset($data['created']); // ExtensionHistoryTable::bind() sets this for new rows
 
+        // A new revision is undecided, whoever wrote it. The form's Approval tab is loaded from the
+        // previous revision, so without this a team member's edit to an approved listing carried
+        // that revision's verdict along - and a revision that already looks decided is never
+        // offered for approval (getPendingHistoryId()), so the edit could not go live.
+        $data['approved']        = 0;
+        $data['approved_time']   = null;
+        $data['approved_by']     = null;
+        $data['approved_reason'] = '';
+        $data['approved_notes']  = '';
+
         // Only one history entry may be active per extension; deactivate the rest
         // before inserting the new (active) one.
-        $db = $this->getDatabase();
         $db->setQuery(
             $db->getQuery(true)
                 ->update($db->quoteName('#__jed_extensions_history'))

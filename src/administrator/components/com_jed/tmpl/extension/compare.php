@@ -30,6 +30,40 @@ $leftLabel = $this->compareLeftId
     ? Text::sprintf('COM_JED_EXTENSION_COMPARE_HISTORY_LABEL', $this->compareLeftId)
     : Text::_('COM_JED_EXTENSION_COMPARE_LIVE_LABEL');
 $rightLabel = Text::sprintf('COM_JED_EXTENSION_COMPARE_HISTORY_LABEL', $this->compareRightId);
+
+$canReject = $this->compareCanReject
+    && $this->compareLeft && $this->compareRight
+    && $this->getCurrentUser()->authorise('jed.approve', 'com_jed');
+
+if ($canReject) {
+    Text::script('COM_JED_REJECT_JS_REASON_REQUIRED');
+    Text::script('COM_JED_REJECT_JS_CONFIRM');
+
+    $this->getDocument()->getWebAssetManager()->addInlineScript(
+        <<<'JS'
+        Joomla.submitbutton = function (task) {
+            var form = document.getElementById('extension-form');
+
+            if (task === 'extension.reject') {
+                var reason = document.getElementById('jed-reject-reason');
+
+                if (!reason.value) {
+                    alert(Joomla.Text._('COM_JED_REJECT_JS_REASON_REQUIRED'));
+                    reason.focus();
+
+                    return;
+                }
+
+                if (!confirm(Joomla.Text._('COM_JED_REJECT_JS_CONFIRM'))) {
+                    return;
+                }
+            }
+
+            Joomla.submitform(task, form);
+        };
+        JS
+    );
+}
 ?>
 <style>
     .jed-compare-row { padding: .4rem 0; border-bottom: 1px solid var(--bs-border-color, #eee); }
@@ -78,6 +112,33 @@ $rightLabel = Text::sprintf('COM_JED_EXTENSION_COMPARE_HISTORY_LABEL', $this->co
 </div>
 
 <form action="index.php" method="post" name="adminForm" id="extension-form" class="form-validate">
+    <?php if ($canReject) : ?>
+        <?php
+        // The reason and notes the toolbar's Reject button submits. Approve ignores them. A
+        // rejection without a reason is refused by ExtensionModel::reject(); the script below
+        // only saves the round trip.
+        ?>
+        <div class="card mt-3 jed-compare-decision">
+            <div class="card-body">
+                <h3 class="h5"><?php echo Text::_('COM_JED_REJECT_PANEL_HEADING'); ?></h3>
+                <p class="text-muted small"><?php echo Text::_('COM_JED_REJECT_PANEL_INTRO'); ?></p>
+                <div class="mb-3">
+                    <label class="form-label" for="jed-reject-reason"><?php echo Text::_('COM_JED_REJECT_REASON_LABEL'); ?> *</label>
+                    <select class="form-select" id="jed-reject-reason" name="reject_reason_code">
+                        <option value=""><?php echo Text::_('COM_JED_BLOCK_REASON_SELECT'); ?></option>
+                        <?php foreach ($this->rejectReasons as $code => $label) : ?>
+                            <option value="<?php echo $this->escape($code); ?>"><?php echo $this->escape($label); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="mb-0">
+                    <label class="form-label" for="jed-reject-notes"><?php echo Text::_('COM_JED_REJECT_NOTES_LABEL'); ?></label>
+                    <textarea class="form-control" id="jed-reject-notes" name="reject_reason_notes" rows="4"></textarea>
+                    <div class="form-text"><?php echo Text::_('COM_JED_REJECT_NOTES_DESC'); ?></div>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
     <input type="hidden" name="option" value="com_jed"/>
     <input type="hidden" name="task" value=""/>
     <input type="hidden" name="extension_id" value="<?php echo (int) $this->compareExtensionId; ?>"/>

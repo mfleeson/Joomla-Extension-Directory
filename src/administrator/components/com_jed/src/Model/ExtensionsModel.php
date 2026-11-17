@@ -138,10 +138,18 @@ class ExtensionsModel extends ListModel
                 . ' WHERE ' . $db->quoteName('r.extension_id') . ' = ' . $db->quoteName('a.id') . ') AS '
                 . $db->quoteName('reviewCount')
             )
+            // The revision awaiting a decision, if any - the same definition as
+            // ExtensionModel::getPendingHistoryId(): submitted (active = 1) and not yet decided
+            // (approved_time IS NULL). This used to be "the newest revision differs from the live
+            // one", but blocks, unblocks, deletions and restores also write (inactive) revisions,
+            // so the list showed Pending after those although nothing was waiting.
             ->select(
                 '(SELECT MAX(h2.id) FROM ' . $db->quoteName('#__jed_extensions_history') . ' h2'
-                . ' WHERE ' . $db->quoteName('h2.extension_id') . ' = ' . $db->quoteName('a.id') . ') AS '
-                . $db->quoteName('latest_history_id')
+                . ' WHERE ' . $db->quoteName('h2.extension_id') . ' = ' . $db->quoteName('a.id')
+                . ' AND ' . $db->quoteName('h2.active') . ' = 1'
+                . ' AND ' . $db->quoteName('h2.approved_time') . ' IS NULL'
+                . ' AND COALESCE(' . $db->quoteName('h2.approved') . ', 0) <> 1) AS '
+                . $db->quoteName('pending_history_id')
             );
 
         // Filter by published state

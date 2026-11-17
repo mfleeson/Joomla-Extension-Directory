@@ -218,6 +218,115 @@ foreach ($this->form->getFieldsets() as $fieldset) :
                 echo HTMLHelper::_('uitab.endTab'); ?>
         <?php endforeach; ?>
 
+        <?php if ($this->ownership !== null) : ?>
+            <?php
+            // The forced transfer (8.8.1): for when the owner cannot be reached. The agreed,
+            // dual-confirmed handover is the developers' own, on their dashboard. The inputs sit
+            // outside `jform` on purpose - ExtensionController::forceTransfer() reads them by
+            // these names, and a normal Save ignores them.
+            echo HTMLHelper::_('uitab.addTab', 'extensionTab', 'ownership', Text::_('COM_JED_OWNERSHIP_TAB_LABEL'));
+            $owner  = $this->ownership['owner'];
+            $open   = $this->ownership['open'];
+            $openTo = $this->ownership['openTo'];
+            ?>
+            <div class="row">
+                <div class="col-12 col-lg-8">
+                    <dl class="row">
+                        <dt class="col-sm-4"><?php echo Text::_('COM_JED_OWNERSHIP_CURRENT_OWNER'); ?></dt>
+                        <dd class="col-sm-8">
+                            <?php if ($owner !== null && (int) $owner->id > 0) : ?>
+                                <a href="<?php echo Route::_('index.php?option=com_users&task=user.edit&id=' . (int) $owner->id); ?>">
+                                    <?php echo $this->escape($owner->name); ?></a>
+                                <span class="text-muted">(<?php echo $this->escape($owner->username); ?>, <?php echo $this->escape($owner->email); ?>)</span>
+                            <?php else : ?>
+                                <span class="text-muted"><?php echo Text::_('COM_JED_OWNERSHIP_NO_OWNER'); ?></span>
+                            <?php endif; ?>
+                        </dd>
+                        <dt class="col-sm-4"><?php echo Text::_('COM_JED_OWNERSHIP_OPEN_HANDOVER'); ?></dt>
+                        <dd class="col-sm-8">
+                            <?php if ($open !== null) : ?>
+                                <?php echo Text::sprintf(
+                                    'COM_JED_OWNERSHIP_OPEN_HANDOVER_TO',
+                                    $this->escape($openTo !== null ? $openTo->name : '#' . (int) $open['to_user_id']),
+                                    HTMLHelper::_('date', $open['expires'], Text::_('DATE_FORMAT_LC4'))
+                                ); ?>
+                                <div class="form-text"><?php echo Text::_('COM_JED_OWNERSHIP_OPEN_HANDOVER_NOTE'); ?></div>
+                            <?php else : ?>
+                                <span class="text-muted"><?php echo Text::_('JNONE'); ?></span>
+                            <?php endif; ?>
+                        </dd>
+                    </dl>
+
+                    <fieldset class="options-form">
+                        <legend><?php echo Text::_('COM_JED_OWNERSHIP_FORCE_LEGEND'); ?></legend>
+                        <p class="text-muted"><?php echo Text::_('COM_JED_OWNERSHIP_FORCE_INTRO'); ?></p>
+                        <div class="control-group">
+                            <div class="control-label">
+                                <label for="jed-transfer-email"><?php echo Text::_('COM_JED_OWNERSHIP_NEW_OWNER_EMAIL'); ?> *</label>
+                            </div>
+                            <div class="controls">
+                                <input type="email" class="form-control" id="jed-transfer-email" name="transfer_email" autocomplete="off">
+                                <div class="form-text"><?php echo Text::_('COM_JED_OWNERSHIP_NEW_OWNER_EMAIL_DESC'); ?></div>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <div class="control-label">
+                                <label for="jed-transfer-reason"><?php echo Text::_('COM_JED_OWNERSHIP_REASON'); ?> *</label>
+                            </div>
+                            <div class="controls">
+                                <textarea class="form-control" id="jed-transfer-reason" name="transfer_reason" rows="4"></textarea>
+                                <div class="form-text"><?php echo Text::_('COM_JED_OWNERSHIP_REASON_DESC'); ?></div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-warning" id="jed-force-transfer">
+                            <span class="icon-users" aria-hidden="true"></span>
+                            <?php echo Text::_('COM_JED_OWNERSHIP_FORCE_BUTTON'); ?>
+                        </button>
+                    </fieldset>
+                </div>
+            </div>
+            <?php
+            Text::script('COM_JED_OWNERSHIP_JS_EMAIL_REQUIRED');
+            Text::script('COM_JED_OWNERSHIP_JS_REASON_REQUIRED');
+            Text::script('COM_JED_OWNERSHIP_JS_CONFIRM');
+            $this->getDocument()->getWebAssetManager()->addInlineScript(
+                <<<'JS'
+                document.addEventListener('DOMContentLoaded', function () {
+                    var button = document.getElementById('jed-force-transfer');
+
+                    if (!button) {
+                        return;
+                    }
+
+                    button.addEventListener('click', function () {
+                        var email  = document.getElementById('jed-transfer-email');
+                        var reason = document.getElementById('jed-transfer-reason');
+
+                        if (!email.value.trim()) {
+                            alert(Joomla.Text._('COM_JED_OWNERSHIP_JS_EMAIL_REQUIRED'));
+                            email.focus();
+
+                            return;
+                        }
+
+                        if (!reason.value.trim()) {
+                            alert(Joomla.Text._('COM_JED_OWNERSHIP_JS_REASON_REQUIRED'));
+                            reason.focus();
+
+                            return;
+                        }
+
+                        if (confirm(Joomla.Text._('COM_JED_OWNERSHIP_JS_CONFIRM'))) {
+                            Joomla.submitform('extension.forceTransfer', document.getElementById('extension-form'));
+                        }
+                    });
+                });
+                JS
+            );
+            echo HTMLHelper::_('uitab.endTab');
+            ?>
+        <?php endif; ?>
+
         <?php
         echo HTMLHelper::_('uitab.addTab', 'extensionTab', 'viewextensionreviews', Text::_('COM_JED_EXTENSION_REVIEWS_TAB_LABEL', true));
 ?>

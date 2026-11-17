@@ -407,6 +407,29 @@ $wa->useScript('com_jed.favorite');
                                             <?php echo $this->escape($item->approved_notes); ?>
                                         </div>
                                     <?php endif; ?>
+                                    <?php
+                                    // The developer's own online/offline switch, for an approved
+                                    // listing only - before approval there is nothing to switch.
+                                    // Offered while blocked too: taking a blocked listing offline
+                                    // is the developer's right, and going online does not lift the
+                                    // block (ExtensionModel::setOnlineState()).
+                                    if ((int) $item->approved === 1) :
+                                        $isOnline = (int) $item->state === 1;
+                                        ?>
+                                        <form action="<?php echo Route::_('index.php?option=com_jed&task=extension.setOnlineState'); ?>"
+                                              method="post" class="d-inline-block mt-1 jed-online-switch">
+                                            <input type="hidden" name="extension_id" value="<?php echo (int) $item->id; ?>">
+                                            <input type="hidden" name="online" value="<?php echo $isOnline ? 0 : 1; ?>">
+                                            <?php echo HTMLHelper::_('form.token'); ?>
+                                            <button type="submit"
+                                                    class="btn btn-sm <?php echo $isOnline ? 'btn-outline-secondary' : 'btn-outline-success'; ?>"
+                                                <?php if ($isOnline) : ?>
+                                                    onclick="return confirm('<?php echo htmlspecialchars(addslashes(Text::_('COM_JED_ONLINE_STATE_CONFIRM_OFFLINE')), ENT_QUOTES); ?>');"
+                                                <?php endif; ?>>
+                                                <?php echo Text::_($isOnline ? 'COM_JED_ONLINE_STATE_TAKE_OFFLINE' : 'COM_JED_ONLINE_STATE_PUT_ONLINE'); ?>
+                                            </button>
+                                        </form>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

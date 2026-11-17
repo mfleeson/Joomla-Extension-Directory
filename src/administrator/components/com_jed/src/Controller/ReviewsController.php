@@ -17,6 +17,7 @@ use Exception;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\Controller\AdminController;
+use Joomla\CMS\Uri\Uri;
 use Joomla\Utilities\ArrayHelper;
 
 /**
@@ -86,7 +87,7 @@ class ReviewsController extends AdminController
             $this->setMessage(Text::_('COM_JED_ITEMS_SUCCESS_PUBLISHED'));
         }
 
-        $this->setRedirect('index.php?option=com_jed&view=reviews');
+        $this->setRedirect($this->returnUrl('index.php?option=com_jed&view=reviews'));
     }
 
     /**
@@ -116,7 +117,84 @@ class ReviewsController extends AdminController
             $this->setMessage(Text::_('COM_JED_ITEMS_SUCCESS_DELETED'));
         }
 
-        $this->setRedirect('index.php?option=com_jed&view=reviews');
+        $this->setRedirect($this->returnUrl('index.php?option=com_jed&view=reviews'));
+    }
+
+    /**
+     * Publish, unpublish, archive or trash the selected reviews.
+     *
+     * The inherited task, plus one thing: when it was started from a ticket (the Review ticket's
+     * Approve and Reject actions post a `return` - see layouts/ticket/action_button.php), the team
+     * member goes back to that ticket instead of to the Reviews list.
+     *
+     * @return void
+     *
+     * @since 4.0.0
+     */
+    public function publish()
+    {
+        parent::publish();
+
+        $this->redirectToReturn();
+    }
+
+    /**
+     * Delete the selected reviews - the inherited task, returning to the ticket it was started from.
+     *
+     * @return void
+     *
+     * @since 4.0.0
+     */
+    public function delete()
+    {
+        parent::delete();
+
+        $this->redirectToReturn();
+    }
+
+    /**
+     * Replace the redirect with the posted `return` when there is a usable one.
+     *
+     * The message the inherited task set is kept: setRedirect() only replaces it when given one.
+     *
+     * @return void
+     *
+     * @since 4.0.0
+     */
+    private function redirectToReturn(): void
+    {
+        $return = $this->returnUrl(null);
+
+        if ($return !== null) {
+            $this->setRedirect($return);
+        }
+    }
+
+    /**
+     * The internal address posted as `return` (base64), or the fallback.
+     *
+     * Only internal addresses are followed, so the field cannot be used to send a team member
+     * off-site after an action.
+     *
+     * @param string|null $fallback Where to go without a usable `return`.
+     *
+     * @return string|null
+     *
+     * @since 4.0.0
+     */
+    private function returnUrl(?string $fallback): ?string
+    {
+        $return = (string) $this->input->getBase64('return', '');
+
+        if ($return !== '') {
+            $url = base64_decode($return);
+
+            if ($url !== false && $url !== '' && Uri::isInternal($url)) {
+                return $url;
+            }
+        }
+
+        return $fallback;
     }
 
     /**

@@ -31,7 +31,7 @@
 		<file type="plugin" id="jed_actionlog" group="actionlog">plg_actionlog_jed.zip</file>
 		<file type="plugin" id="jedidentity" group="system">plg_system_jedidentity.zip</file>
 		<file type="plugin" id="jed_privacy" group="privacy">plg_privacy_jed.zip</file>
-		<file type="plugin" id="vel" group="task">plg_task_vel.zip</file>
+	<file type="plugin" id="vel" group="task">plg_task_vel.zip</file>
 		<file type="plugin" id="vel" group="privacy">plg_privacy_vel.zip</file>
 		<file type="plugin" id="vel" group="actionlog">plg_actionlog_vel.zip</file>
 	</files>

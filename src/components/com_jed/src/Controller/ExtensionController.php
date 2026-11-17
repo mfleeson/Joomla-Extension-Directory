@@ -145,21 +145,42 @@ class ExtensionController extends BaseController
         $extensionId = $app->getInput()->getInt('extension_id', 0);
         $online      = $app->getInput()->getInt('online', 0) === 1 ? 1 : 0;
 
-        if (!JedHelper::isLoggedIn() || !$extensionId || !JedHelper::isOwnerOrMaintainer($extensionId)) {
-            $this->sendJson(['success' => false, 'message' => Text::_('COM_JED_EXTENSION_NO_ACCESS_LABEL')]);
+        // Two callers: a script that wants JSON, and the dashboard's plain forms, which want to
+        // land back on the dashboard with a message. The dashboard is the only place a developer
+        // can use the switch, so the plain-form path is the one that matters for them.
+        $wantsJson = $app->getInput()->getCmd('format') === 'json'
+            || strtolower((string) $app->getInput()->server->getString('HTTP_X_REQUESTED_WITH', '')) === 'xmlhttprequest';
+        $back      = Route::_('index.php?option=com_jed&view=dashboard', false);
+
+        $error = null;
+
+        if (!JedHelper::isLoggedIn()) {
+            $error = Text::_('COM_JED_EXTENSION_NO_ACCESS_LABEL');
+        } elseif (!$extensionId || !JedHelper::isOwnerOrMaintainer($extensionId)) {
+            $error = Text::_('COM_JED_ONLINE_STATE_NOT_YOURS');
+        } else {
+            try {
+                /** @var ExtensionModel $model */
+                $model = $this->getModel('Extension', 'Site');
+                $model->setOnlineState($extensionId, $online);
+            } catch (Exception $e) {
+                $error = $e->getMessage();
+            }
+        }
+
+        if ($wantsJson) {
+            $this->sendJson($error === null
+                ? ['success' => true, 'data' => ['online' => $online]]
+                : ['success' => false, 'message' => $error]);
 
             return;
         }
 
-        try {
-            /** @var ExtensionModel $model */
-            $model = $this->getModel('Extension', 'Site');
-            $model->setOnlineState($extensionId, $online);
-
-            $this->sendJson(['success' => true, 'data' => ['online' => $online]]);
-        } catch (Exception $e) {
-            $this->sendJson(['success' => false, 'message' => $e->getMessage()]);
-        }
+        $app->enqueueMessage(
+            $error ?? Text::_($online === 1 ? 'COM_JED_ONLINE_STATE_NOW_ONLINE' : 'COM_JED_ONLINE_STATE_NOW_OFFLINE'),
+            $error === null ? 'message' : 'error'
+        );
+        $this->setRedirect($back);
     }
 
     /**

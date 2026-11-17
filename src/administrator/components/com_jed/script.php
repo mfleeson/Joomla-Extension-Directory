@@ -459,6 +459,17 @@ class Com_JedInstallerScript
 <p>You can take it offline again at any time from your dashboard, and any change you make from now on goes through the same review before it becomes public.</p>
 HTML,
             ],
+            // An approved *edit* to a listing that is already listed. Approval used to send
+            // listing_approved for every revision, so a developer who fixed a typo was told their
+            // extension "is now listed" - and one whose listing was offline was told something
+            // untrue. Chosen by ExtensionModel::approve() on whether this is the first approval.
+            'com_jed.listing_update_approved' => [
+                'subject' => 'Your changes to {EXTENSIONNAME} have been approved',
+                'body'    => <<<'HTML'
+<p>The changes you submitted to <strong>{EXTENSIONNAME}</strong> have been reviewed and are now live on {SITENAME}.</p>
+<p>If the listing is offline it stays offline - you can put it back online at any time from your dashboard.</p>
+HTML,
+            ],
             'com_jed.listing_rejected' => [
                 'subject' => 'Your extension {EXTENSIONNAME} was not accepted',
                 'body'    => <<<'HTML'

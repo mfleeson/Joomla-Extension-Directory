@@ -49,7 +49,12 @@ $fields    = [
     <?php if ($displayData->isPending) : ?>
         <div class="alert alert-warning mb-0 mt-2">
             <?php echo Text::_('COM_JED_MASTERDATA_EXTENSION_PENDING'); ?>
-            <a href="<?php echo Route::_('index.php?option=com_jed&task=extension.compareHistory&extension_id=' . (int) $displayData->extensionId . '&right=' . (int) $displayData->pendingHistoryId); ?>">
+            <?php
+            // Straight to the compare layout. This used to be a GET link to the compareHistory
+            // task, which checks a POSTed token and reads the selection from POST, so it always
+            // failed. The compare page carries Approve and Reject for the pending revision.
+            ?>
+            <a href="<?php echo Route::_('index.php?option=com_jed&view=extension&layout=compare&id=' . (int) $displayData->extensionId . '&right=' . (int) $displayData->pendingHistoryId); ?>">
                 <?php echo Text::_('COM_JED_EXTENSION_COMPARE_LABEL'); ?>
             </a>
         </div>

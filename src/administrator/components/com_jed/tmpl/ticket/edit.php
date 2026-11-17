@@ -229,17 +229,22 @@ $userFactory = $container->get('user.factory');
     );
 ?>
 <div class="position-relative">
-  <?php  if ($this->linkedItemActions) : ?>
-    <div class="position-absolute top-0 end-0 p-3 m-3 bg-light border rounded shadow" style="max-width: 320px; z-index: 1050;">
-
-   <!-- <div class="row jed-ticket-actions mt-2">-->
-        <?php // echo "<pre>";print_r($this->linkedItemActions);echo "</pre>"; ?>
-        <?php foreach ($this->linkedItemActions as $action) :
-            /** @var TicketAction $action */
-            echo LayoutHelper::render('ticket.action_button', ['action' => $action]);
-        endforeach; ?>
-    </div></div>
-    <?php endif;
+    <?php if ($this->linkedItemActions) : ?>
+        <?php
+        // Only the controls are rendered here: their <form>s are emitted after the ticket form is
+        // closed (see the end of this file and layouts/ticket/action_button.php), because a form
+        // nested in this one would be dropped by the browser and its button would submit the
+        // ticket form instead.
+        ?>
+        <div class="position-absolute top-0 end-0 p-3 m-3 bg-light border rounded shadow jed-ticket-actions" style="max-width: 340px; z-index: 1050;">
+            <?php foreach ($this->linkedItemActions as $action) :
+                /** @var TicketAction $action */
+                echo LayoutHelper::render('ticket.action_button', ['action' => $action, 'part' => 'controls']);
+            endforeach; ?>
+        </div>
+    <?php endif; ?>
+</div>
+<?php
     echo LayoutHelper::render($this->linkedItemLayout, $this->linkedItemData);
     echo HTMLHelper::_('uitab.endTab');
 
@@ -303,3 +308,9 @@ $userFactory = $container->get('user.factory');
     <?php echo HTMLHelper::_('form.token'); ?>
 
 </form>
+<?php
+// The ticket actions' own forms, outside the ticket form - see the note at the actions above.
+foreach ((array) $this->linkedItemActions as $action) {
+    echo LayoutHelper::render('ticket.action_button', ['action' => $action, 'part' => 'form']);
+}
+?>

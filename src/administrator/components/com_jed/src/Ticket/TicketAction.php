@@ -36,6 +36,17 @@ final class TicketAction
      *                                    button's mini-form renders exactly these, nothing implicit.
      * @param string      $option         The component the task belongs to (e.g. "com_jed") - ticket
      *                                    actions can span multiple components, not just com_jed.
+     * @param array       $fields         Visible inputs the decision needs from the team member,
+     *                                    e.g. the reason code and the notes of a rejection. Each
+     *                                    entry is an array with:
+     *                                    - `name`     the input name the task reads;
+     *                                    - `type`     `select`, `textarea` or `text`;
+     *                                    - `label`    a language key;
+     *                                    - `options`  for `select`: value => already translated label;
+     *                                    - `required` bool;
+     *                                    - `hint`     optional language key shown under the input.
+     *                                    An action with fields renders as a button that opens a
+     *                                    small form, rather than a button that submits at once.
      *
      * @since 4.0.0
      */
@@ -45,7 +56,8 @@ final class TicketAction
         public readonly string $icon = 'publish',
         public readonly ?string $confirmMessage = null,
         public readonly array $hiddenFields = [],
-        public readonly string $option = 'com_jed'
+        public readonly string $option = 'com_jed',
+        public readonly array $fields = []
     ) {
     }
 }

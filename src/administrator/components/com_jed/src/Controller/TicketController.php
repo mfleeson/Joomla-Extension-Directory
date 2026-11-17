@@ -31,6 +31,9 @@ use Joomla\CMS\Filter\InputFilter;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\Controller\FormController;
 use Joomla\CMS\Router\Route;
+use Jed\Component\Jed\Administrator\Table\TicketTable;
+use Joomla\Database\DatabaseDriver;
+use Joomla\Database\DatabaseInterface;
 use Joomla\Database\ParameterType;
 
 /**
@@ -62,7 +65,10 @@ class TicketController extends FormController
     {
         $app = Factory::getApplication();
 
-        if (! $app->getIdentity()->authorise('core.edit', 'com_tickets')) {
+        // com_jed, not com_tickets: the ticket system moved into com_jed and com_tickets no longer
+        // exists, so this asked about an asset nobody can configure. The same right as internal
+        // notes and the JED Checker tab - the JED team's.
+        if (!$app->getIdentity()->authorise('core.manage', 'com_jed')) {
             echo '||';
             $app->close();
         }
@@ -102,34 +108,105 @@ class TicketController extends FormController
     {
         $this->checkToken();
 
-        $user = $this->app->getIdentity();
+        $app  = $this->app;
+        $user = $app->getIdentity();
 
-        if (!$user->authorise('core.edit', 'com_tickets')) {
+        $jform = $this->input->post->get('jform', [], 'array');
+        $id    = (int) ($jform['id'] ?? 0);
+
+        // Back to the ticket that was being worked - com_jed's own ticket screen. This used to
+        // point at option=com_tickets, the component the ticket system lived in before it moved
+        // into com_jed, so every reply ended on "component not found" although it had been sent.
+        $ticketUrl = Route::_('index.php?option=com_jed&view=ticket&layout=edit&id=' . $id, false);
+
+        if (!$user->authorise('core.manage', 'com_jed')) {
             throw new Exception(Text::_('JERROR_ALERTNOAUTHOR'), 403);
         }
 
-        $jform   = $this->input->post->get('jform', [], 'array');
-        $id      = (int) ($jform['id'] ?? 0);
         $subject = trim((string) InputFilter::getInstance()->clean($jform['message_subject'] ?? '', 'string'));
         $message = ComponentHelper::filterText((string) ($jform['message_text'] ?? ''));
 
         // The recipient is whoever opened the ticket, never a value posted with the form.
-        $db        = Factory::getContainer()->get('DatabaseDriver');
-        $createdBy = (int) $db->setQuery(
+        $db        = Factory::getContainer()->get(DatabaseInterface::class);
+        $createdBy = $id > 0 ? (int) $db->setQuery(
             $db->getQuery(true)
                 ->select($db->quoteName('created_by'))
                 ->from($db->quoteName('#__jed_tickets'))
                 ->where($db->quoteName('id') . ' = :id')
                 ->bind(':id', $id, ParameterType::INTEGER)
-        )->loadResult();
+        )->loadResult() : 0;
 
-        if ($id <= 0 || $createdBy <= 0 || $subject === '' || $message === '') {
+        if ($id <= 0 || $createdBy <= 0) {
             throw new Exception(Text::_('JERROR_AN_ERROR_HAS_OCCURRED'), 400);
         }
 
-        JedemailHelper::sendEmail($subject, $message, JedHelper::getUserById($createdBy), $user->name);
+        // An empty subject or body is a slip, not a fault: say so on the ticket rather than
+        // answering with an error page.
+        if ($subject === '' || trim(strip_tags($message)) === '') {
+            $app->enqueueMessage(Text::_('COM_JED_TICKET_MESSAGE_EMPTY'), 'warning');
+            $this->setRedirect($ticketUrl);
+
+            return;
+        }
+
+        $mailError = JedemailHelper::sendEmail($subject, $message, JedHelper::getUserById($createdBy), $user->name);
         $this->storeMessage($id, $subject, $message);
-        $this->setRedirect(Route::_('index.php?option=com_tickets&view=ticket&layout=edit&id=' . $id, false));
+
+        // A message template can set the ticket status (its `ticket_status` param fills the
+        // Status drop-down). Sending is when that decision is made, so the status goes with the
+        // message instead of being lost unless the ticket was saved as well.
+        $statusChanged = $this->applyStatusFromForm($id, $jform['ticket_status'] ?? null);
+
+        if ($mailError !== '') {
+            $app->enqueueMessage(Text::sprintf('COM_JED_TICKET_MESSAGE_STORED_MAIL_FAILED', $mailError), 'warning');
+        } else {
+            $app->enqueueMessage(Text::_('COM_JED_TICKET_MESSAGE_SENT'));
+        }
+
+        if ($statusChanged !== null) {
+            $app->enqueueMessage(Text::sprintf('COM_JED_TICKET_STATUS_SET', Text::_('COM_JED_TICKETS_TICKET_STATUS_OPTION_' . $statusChanged)));
+        }
+
+        $this->setRedirect($ticketUrl);
+    }
+
+    /**
+     * Set the ticket's status from the posted form, when it differs from the stored one.
+     *
+     * Through the table, so a move to or from Resolved/Closed is written to the action log like
+     * any other (TicketTable::store()).
+     *
+     * @param int   $ticketId The ticket.
+     * @param mixed $posted   The posted `ticket_status`, or null when the form had none.
+     *
+     * @return int|null  The new status when it was changed, null otherwise.
+     *
+     * @since 4.0.0
+     */
+    private function applyStatusFromForm(int $ticketId, mixed $posted): ?int
+    {
+        if ($posted === null || $posted === '' || !is_numeric($posted)) {
+            return null;
+        }
+
+        $status = (int) $posted;
+
+        // 0 New, 1 Awaiting User, 2 Awaiting JED, 3 Resolved, 4 Closed, 5 Updated.
+        if ($status < 0 || $status > 5) {
+            return null;
+        }
+
+        $table = new TicketTable(Factory::getContainer()->get(DatabaseDriver::class));
+
+        if (!$table->load($ticketId) || (int) $table->ticket_status === $status) {
+            return null;
+        }
+
+        $table->ticket_status = $status;
+        $table->modified_on   = Factory::getDate()->toSql();
+        $table->modified_by   = (int) $this->app->getIdentity()->id;
+
+        return $table->store() ? $status : null;
     }
 
     /**
@@ -219,7 +296,7 @@ class TicketController extends FormController
         $item  = $model->getItem($ticketId);
 
         $type        = TicketType::tryFrom((int) ($item->linked_item_type ?? 0)) ?? TicketType::Other;
-        $handler     = TicketTypeHandlerRegistry::createDefault($model->getDatabase())->get($type);
+        $handler     = TicketTypeHandlerRegistry::createDefault(Factory::getContainer()->get(DatabaseInterface::class))->get($type);
         $extensionId = $handler->getExtensionId((int) ($item->linked_item_id ?? 0));
 
         $stateKey = 'com_jed.ticket.jedcheck.' . $ticketId;
@@ -232,7 +309,7 @@ class TicketController extends FormController
         }
 
         try {
-            $result = (new JedCheckerService($model->getDatabase()))->check($extensionId);
+            $result = (new JedCheckerService(Factory::getContainer()->get(DatabaseInterface::class)))->check($extensionId);
 
             $app->setUserState($stateKey, ['result' => $result]);
             $app->enqueueMessage(

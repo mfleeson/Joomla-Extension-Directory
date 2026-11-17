@@ -123,10 +123,13 @@ $listDirn  = $this->escape($this->state->get('list.direction'));
                             </td>
                             <td class="text-center">
                                 <?php
-                                $isPending = !empty($item->latest_history_id) && (int) $item->latest_history_id !== (int) $item->entry_version;
+                                // A revision awaiting a decision (see ExtensionsModel::getListQuery()). The
+                                // link names it, so the compare page opens on exactly that revision and
+                                // offers Approve and Reject for it.
+                                $isPending = !empty($item->pending_history_id);
                         ?>
                                 <?php if ($isPending) : ?>
-                                    <a href="<?php echo Route::_('index.php?option=com_jed&view=extension&layout=compare&id=' . $item->id); ?>"
+                                    <a href="<?php echo Route::_('index.php?option=com_jed&view=extension&layout=compare&id=' . (int) $item->id . '&right=' . (int) $item->pending_history_id); ?>"
                                        title="<?php echo Text::_('COM_JED_EXTENSION_PENDING_DESC'); ?>"
                                        data-bs-toggle="tooltip">
                                         <span class="icon-refresh text-warning" aria-hidden="true"></span>

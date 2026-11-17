@@ -17,16 +17,19 @@ namespace Jed\Component\Jed\Site\Model;
 use DateInterval;
 use Exception;
 use Jed\Component\Jed\Administrator\Listing\LinkedExtensions;
+use Jed\Component\Jed\Administrator\Log\JedActionLog;
 use Jed\Component\Jed\Administrator\Listing\ListingAccess;
 use Jed\Component\Jed\Administrator\MediaHandling\ImageSize;
 use Jed\Component\Jed\Administrator\Traits\ExtensionUtilities;
 use Jed\Component\Jed\Site\Helper\JedHelper;
 use Jed\Component\Jed\Site\Helper\JedscoreHelper;
 use Jed\Component\Jed\Site\Helper\JedtrophyHelper;
+use Joomla\CMS\Event\Model\AfterChangeStateEvent;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Helper\TagsHelper;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\Model\ItemModel;
+use Joomla\CMS\Plugin\PluginHelper;
 use Joomla\CMS\Table\Table;
 use Joomla\Database\ParameterType;
 use Joomla\Utilities\ArrayHelper;
@@ -598,20 +601,27 @@ class ExtensionModel extends ItemModel
         $db     = $this->getDatabase();
         $online = $online === 1 ? 1 : 0;
 
-        // Checked separately rather than by counting affected rows: MySQL reports zero rows
-        // changed when the new value equals the old one, so "no rows affected" does not mean
-        // "no such listing".
-        $exists = $db->setQuery(
+        $listing = $db->setQuery(
             $db->getQuery(true)
-                ->select('1')
+                ->select($db->quoteName(['id', 'name', 'state', 'approved', 'deleted']))
                 ->from($db->quoteName('#__jed_extensions'))
                 ->where($db->quoteName('id') . ' = :id')
-                ->where($db->quoteName('deleted') . ' = 0')
                 ->bind(':id', $extensionId, ParameterType::INTEGER)
-        )->loadResult();
+        )->loadObject();
 
-        if (!$exists) {
+        if ($listing === null || (int) $listing->deleted === 1) {
             throw new Exception(Text::_('COM_JED_ITEM_NOT_LOADED'), 404);
+        }
+
+        // Online and offline only mean something for a listing the JED team has approved. Before
+        // that the listing is "awaiting approval" or "not approved" whatever `state` says, and
+        // the first approval puts it online anyway (ExtensionModel::approve()).
+        if ((int) $listing->approved !== 1) {
+            throw new Exception(Text::_('COM_JED_ONLINE_STATE_NOT_APPROVED'), 400);
+        }
+
+        if ((int) $listing->state === $online) {
+            return;
         }
 
         $db->setQuery(
@@ -622,6 +632,34 @@ class ExtensionModel extends ItemModel
                 ->bind(':state', $online, ParameterType::INTEGER)
                 ->bind(':id', $extensionId, ParameterType::INTEGER)
         )->execute();
+
+        // Smart Search keeps its own copy of every public listing and only refreshes it when told,
+        // exactly as after the backend's Publish/Unpublish (administrator ExtensionModel::publish()).
+        try {
+            $dispatcher = $this->getDispatcher();
+            PluginHelper::importPlugin('content', null, true, $dispatcher);
+            $dispatcher->dispatch(
+                'onContentChangeState',
+                new AfterChangeStateEvent('onContentChangeState', [
+                    'context' => 'com_jed.extension',
+                    'subject' => [$extensionId],
+                    'value'   => $online,
+                ])
+            );
+        } catch (\Throwable) {
+            // The state change stands; a stale index entry is corrected by the next reindex.
+        }
+
+        // The JED team's first question about a listing that "disappeared" is who took it down
+        // and when. It is the developer's decision, but it is a visibility change, so it goes on
+        // the same timeline as blocks and deletions.
+        JedActionLog::loadWording();
+        JedActionLog::record(
+            $online === 1 ? JedActionLog::EXTENSION_ONLINE : JedActionLog::EXTENSION_OFFLINE,
+            'com_jed.extension',
+            $extensionId,
+            ['title' => (string) $listing->name]
+        );
     }
 
     /**

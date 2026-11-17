@@ -110,6 +110,20 @@ abstract class JedActionLog
     public const TRANSFER_FORCE = 'transfer.force';
 
     /**
+     * The owner or a maintainer put an approved listing online from the dashboard.
+     *
+     * @since 4.0.0
+     */
+    public const EXTENSION_ONLINE = 'extension.online';
+
+    /**
+     * The owner or a maintainer took an approved listing offline from the dashboard.
+     *
+     * @since 4.0.0
+     */
+    public const EXTENSION_OFFLINE = 'extension.offline';
+
+    /**
      * Somebody was invited as a maintainer of a listing. (`P1-03`)
      *
      * @since 4.0.0

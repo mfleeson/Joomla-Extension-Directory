@@ -75,6 +75,21 @@ $extensionUrl = Route::_('index.php?option=com_jed&view=extension&catid=' . (int
             echo \Jed\Component\Vel\Site\Helper\VelBadge::render((int) $item->id);
         }
 ?>
+        <?php
+        // An offline listing is only reachable by its owner and maintainers (ListingAccess). Say
+        // so, so they do not mistake their own view for what the public sees, and let them put
+        // it back online from here.
+        if ((int) ($item->state ?? 1) !== 1 && JedHelper::isLoggedIn() && JedHelper::isOwnerOrMaintainer((int) $item->id)) : ?>
+            <div class="alert alert-secondary d-flex flex-wrap justify-content-between align-items-center gap-2" role="status">
+                <span><?php echo Text::_('COM_JED_ONLINE_STATE_OFFLINE_NOTICE'); ?></span>
+                <form action="<?php echo Route::_('index.php?option=com_jed&task=extension.setOnlineState'); ?>" method="post" class="m-0">
+                    <input type="hidden" name="extension_id" value="<?php echo (int) $item->id; ?>">
+                    <input type="hidden" name="online" value="1">
+                    <?php echo HTMLHelper::_('form.token'); ?>
+                    <button type="submit" class="btn btn-sm btn-success"><?php echo Text::_('COM_JED_ONLINE_STATE_PUT_ONLINE'); ?></button>
+                </form>
+            </div>
+        <?php endif; ?>
         <header class="row gap-2">
             <div class="col d-flex flex-column gap-2 mb-3">
                 <h2 class="fs-1 m-0 d-flex flex-row gap-2 align-items-center">
