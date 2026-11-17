@@ -62,6 +62,8 @@ final class Jed extends ActionLogPlugin implements SubscriberInterface
         'extension.unblock'  => 'PLG_ACTIONLOG_JED_EXTENSION_UNBLOCK',
         'extension.delete'   => 'PLG_ACTIONLOG_JED_EXTENSION_DELETE',
         'extension.restore'  => 'PLG_ACTIONLOG_JED_EXTENSION_RESTORE',
+        'extension.online'   => 'PLG_ACTIONLOG_JED_EXTENSION_ONLINE',
+        'extension.offline'  => 'PLG_ACTIONLOG_JED_EXTENSION_OFFLINE',
         'transfer.force'     => 'PLG_ACTIONLOG_JED_TRANSFER_FORCE',
         'maintainer.add'     => 'PLG_ACTIONLOG_JED_MAINTAINER_ADD',
         'maintainer.remove'  => 'PLG_ACTIONLOG_JED_MAINTAINER_REMOVE',
