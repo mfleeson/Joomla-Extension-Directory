@@ -13,7 +13,7 @@
  * plus the latest JED audit-pipeline job for the listing when the user may see audit results.
  * See JedCheckerService and Ticket\HtmlView::loadJedChecker(). Team-only.
  *
- * @var array{available: bool, package: ?array, result: ?array, error: ?string, audit: ?object, ticketId: int} $displayData
+ * @var array{available: bool, status: string, message: string, version: ?string, package: ?array, result: ?array, error: ?string, audit: ?object, ticketId: int} $displayData
  */
 
 // No direct access
@@ -26,6 +26,9 @@ use Joomla\CMS\HTML\HTMLHelper;
 use Joomla\CMS\Language\Text;
 
 $available = (bool) $displayData['available'];
+$status    = (string) ($displayData['status'] ?? ($available ? 'available' : 'not_installed'));
+$message   = (string) ($displayData['message'] ?? '');
+$version   = $displayData['version'] ?? null;
 $package   = $displayData['package'];
 $result    = $displayData['result'];
 $error     = $displayData['error'];
@@ -47,7 +50,10 @@ $badges = static function (array $counts): string {
         $html .= '<span class="badge ' . $class . ' rounded-pill ms-1' . ($count === 0 ? ' d-none' : '') . '">' . $count . '</span>';
     }
 
-    if ($total === 0) {
+    if (!empty($counts['failed'])) {
+        // The rule could not run on this package: not a clean result.
+        $html .= '<span class="badge bg-secondary rounded-pill ms-1">!</span>';
+    } elseif ($total === 0) {
         $html .= '<span class="badge bg-success rounded-pill ms-1">&#10003;</span>';
     }
 
@@ -61,14 +67,20 @@ $badges = static function (array $counts): string {
         <div class="container">
             <?php if (!$available) : ?>
                 <div class="alert alert-warning">
-                    <?php echo Text::_('COM_JED_JEDCHECKER_NOT_INSTALLED'); ?>
-                    <a href="https://extensions.joomla.org/extension/jedchecker" target="_blank" rel="noopener noreferrer">
-                        extensions.joomla.org/extension/jedchecker
-                    </a>
+                    <?php echo $escape($message !== '' ? $message : Text::_('COM_JED_JEDCHECKER_NOT_INSTALLED')); ?>
+                    <?php if ($status === 'not_installed' || $status === 'unsupported') : ?>
+                        <a href="https://extensions.joomla.org/extension/jedchecker" target="_blank" rel="noopener noreferrer">
+                            extensions.joomla.org/extension/jedchecker
+                        </a>
+                    <?php endif; ?>
                 </div>
             <?php endif; ?>
 
             <dl class="row mb-2">
+                <?php if ($version !== null && $version !== '') : ?>
+                    <dt class="col-sm-3"><?php echo Text::_('COM_JED_JEDCHECKER_TAB'); ?></dt>
+                    <dd class="col-sm-9"><?php echo $escape(Text::sprintf('COM_JED_JEDCHECKER_VERSION', $version)); ?></dd>
+                <?php endif; ?>
                 <dt class="col-sm-3"><?php echo Text::_('COM_JED_JEDCHECKER_PACKAGE'); ?></dt>
                 <dd class="col-sm-9">
                     <?php if ($package === null) : ?>

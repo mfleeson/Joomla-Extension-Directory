@@ -125,7 +125,7 @@ class HtmlView extends BaseHtmlView
      *
      * @since 4.0.0
      */
-    protected array $jedChecker = ['available' => false, 'package' => null, 'result' => null, 'error' => null, 'audit' => null];
+    protected array $jedChecker = ['available' => false, 'status' => 'not_installed', 'message' => '', 'version' => null, 'package' => null, 'result' => null, 'error' => null, 'audit' => null];
 
     /**
      * Whether the current user is JED team and may see and write internal notes.

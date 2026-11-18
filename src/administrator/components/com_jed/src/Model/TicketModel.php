@@ -18,6 +18,7 @@ namespace Jed\Component\Jed\Administrator\Model;
 
 use Exception;
 use Jed\Component\Jed\Administrator\Checker\JedCheckerService;
+use Jed\Component\Jed\Administrator\Checker\JedCheckerStatus;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Form\Form;
 use Joomla\CMS\Language\Text;
@@ -332,7 +333,7 @@ class TicketModel extends AdminModel
      * @param int $extensionId The listing.
      * @param int $ticketId    The ticket.
      *
-     * @return array{available: bool, package: ?array, result: ?array, error: ?string, audit: ?object}
+     * @return array{available: bool, status: string, message: string, version: ?string, package: ?array, result: ?array, error: ?string, audit: ?object}
      *
      * @since 4.0.0
      */
@@ -360,8 +361,13 @@ class TicketModel extends AdminModel
             )->loadObject();
         }
 
+        $status = $service->status();
+
         return [
-                'available' => $service->isAvailable(),
+                'available' => $status === JedCheckerStatus::Available,
+                'status'    => $status->value,
+                'message'   => $service->statusMessage($status),
+                'version'   => $service->version(),
                 'package'   => $service->describePackage($extensionId),
                 'result'    => isset($stored['result']) && \is_array($stored['result']) ? $stored['result'] : null,
                 'error'     => isset($stored['error']) ? (string) $stored['error'] : null,

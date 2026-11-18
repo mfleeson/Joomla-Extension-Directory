@@ -85,7 +85,16 @@ Shown when the ticket resolves to a listing (extension, review, link-check or ab
 **Run JED Checker** runs the JED Checker rules against the listing's package - the one uploaded to
 the listing, else the one at its internal download URL, else its public download link. The tab
 badge shows *errors/warnings* (red if there are errors). Each rule lists its findings or "Nothing
-found". The JED Checker component must be installed on the site for this to work.
+found"; findings show file paths from the package name down (e.g. `mycomponent_1.2.zip/site/foo.php`).
+A rule that could not run on the package is marked with a grey **!** and says why. The other rules'
+results still count.
+
+The **JED Checker** component must be installed **and enabled** on the site, in a version that has
+its programming interface (`CheckerApi`). If it is not usable, the tab says why - *not installed*,
+*installed but disabled* (enable it in **System > Manage > Extensions**), or *version X has no
+programming interface* (update JED Checker) - and **Run JED Checker** is not shown. The installed
+version is shown on the tab. If JED Checker cannot read a package (not an archive, damaged), the tab
+shows its reason.
 
 With **View Audit Results** permission, the latest **JED Automated Audit** for the listing
 (static analysis and security review) is shown here too.

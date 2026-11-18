@@ -23,8 +23,10 @@ After installing: enable the plugins, create the scheduled tasks (see [Automatio
 set permissions (see [Permissions and roles](permissions-and-roles.md)) and set the component
 options below.
 
-The **JED Checker** component must also be installed for the ticket screen's JED Checker tab to
-work.
+The **JED Checker** component must also be installed and enabled for the ticket screen's JED Checker
+tab to work (the version that provides `Joomla\Component\Jedchecker\Administrator\Api\CheckerApi`).
+The tab checks this through Joomla's extension list, so a disabled or uninstalled JED Checker is
+reported as such.
 
 ## Component options
 
@@ -68,6 +70,15 @@ The **JED Main Menu** sample data builds the standard menu (Home, Browse Extensi
 Community, Support, Vulnerable Extensions, Login/Register). Edit `menu.json` and run the sample data
 again to change it, or edit the menu in **Menus** directly.
 
+`menu.json` must be valid JSON - every key in double quotes (`"alias": "..."`), a comma between
+entries. If it is not, the sample data stops with *menu.json is not valid JSON* and the menu is left
+exactly as it was. (A JSON validator or an editor with JSON checking catches this before you run it.)
+
+Top-level aliases are unique across **all** site menus, trashed items included. When an alias from
+`menu.json` is taken, the sample data saves the item as `alias-1` and says so in its result message
+- for example *"Vulnerable Extensions" was saved with the alias "vulnerable-extensions-1"*. Delete
+the other menu item (and empty the trash), then run the sample data again.
+
 Menu item types you can use:
 
 | Component | Menu item type | Options |
@@ -85,6 +96,12 @@ Menu item types you can use:
 
 The VEL list must stay at **`/vulnerable-extensions`** - advisory links, e-mails, CVE records and
 the legacy JSON feed all use that path.
+
+If `/vulnerable-extensions/json-feed` (or the JSON API) answers *404*, copy
+`tests/vel/diagnose-json-feed.php` to the site root, open `/diagnose-json-feed.php?run=1`, and
+delete the file afterwards. It lists the menu items involved, asks the router what it makes of the
+URL and names the cause - typically another menu item holding the `vulnerable-extensions` alias,
+the old placeholder *JSON Feed* menu item, or an old `ApiRules.php` on the server.
 
 ### The dropdown menu layout
 
