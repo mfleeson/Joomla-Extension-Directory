@@ -80,6 +80,7 @@ Menu item types you can use:
 | JED | **JED Tickets**, **New Ticket** | |
 | VEL | **VEL: Vulnerable Extensions List** | *Default tab* (Live, Patched, Abandoned, All). One item per tab gives tab-specific menu entries; the list page links its tabs to them. |
 | VEL | **VEL: Single Advisory**, **VEL: Report a Vulnerability**, **VEL: Fix Notice** | |
+| VEL | **VEL: JSON Feed (legacy)** | The legacy JSON feed. Give it the alias `json-feed` under the *Vulnerable Extensions* item to keep `/vulnerable-extensions/json-feed`. |
 | Abandonware | **Abandonware: Abandoned Extensions**, **Abandonware: Report an Extension** | |
 
 The VEL list must stay at **`/vulnerable-extensions`** - advisory links, e-mails, CVE records and

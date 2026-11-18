@@ -83,7 +83,7 @@ advisory, are kept — the rest are noise).
 | M-01 | open (needs R-04) | plan in `migration/vel-legacy.md` |
 | M-02 | done | `vel_reports.sql` step in `plg_sampledata_jed_migrate` |
 | M-03 | open (decision + R-04) | RSTicketsPro department 5 |
-| P-06 | needs install (shape needs R-04) | legacy feed reconstructed from the legacy schema; headers and sunset in place |
+| P-06 | needs install (shape needs R-04) | legacy feed reconstructed from the legacy schema; headers and sunset in place; SEF route fixed (was 404), menu item type, list-page link |
 | M-04 | open (after go-live) | checklist in `migration/vel-legacy.md` |
 
 ## Phase 5 — JED and abandonware integration, consumer

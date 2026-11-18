@@ -52,19 +52,13 @@ class JsonView extends AbstractView
     {
         $app = Factory::getApplication();
 
-        if ((int) VelHelper::option('legacy_feed_enabled', 1) !== 1) {
+        if (!VelHelper::legacyFeedAvailable()) {
             $this->gone();
 
             return;
         }
 
         $sunset = (string) (VelHelper::option('legacy_feed_sunset_date') ?? '');
-
-        if ($sunset !== '' && strtotime($sunset) !== false && strtotime($sunset) < time()) {
-            $this->gone();
-
-            return;
-        }
 
         $repository = new AdvisoryRepository(Factory::getContainer()->get(DatabaseInterface::class));
         $rows       = $repository->allPublished(0);

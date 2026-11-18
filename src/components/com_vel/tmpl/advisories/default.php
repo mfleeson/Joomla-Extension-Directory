@@ -66,6 +66,9 @@ $sortUrl = function (string $key) use ($f, $carry, $sortKey): string {
             <a href="<?php echo Route::_('index.php?option=com_vel&view=fixnotice'); ?>"><?php echo Text::_('COM_VEL_LINK_FIXNOTICE'); ?></a> &middot;
             <a href="<?php echo $this->feedUrl('rss'); ?>"><?php echo Text::_('COM_VEL_LINK_RSS'); ?></a> &middot;
             <a href="<?php echo Route::_('index.php?option=com_vel&view=api&resource=index'); ?>"><?php echo Text::_('COM_VEL_LINK_API'); ?></a>
+            <?php if (VelHelper::legacyFeedAvailable()) : ?>
+                &middot; <a href="<?php echo Route::_('index.php?option=com_vel&view=legacyfeed&format=json'); ?>"><?php echo Text::_('COM_VEL_LINK_LEGACY_FEED'); ?></a>
+            <?php endif; ?>
         </p>
     </div>
 

@@ -145,3 +145,10 @@ The JED main menu's **Vulnerable Extensions** item opens the list on *Live*; its
 List* menu item with a different **Default tab** option; the tabs on the page link to these menu
 items. The list must stay at `/vulnerable-extensions`, because advisory URLs, e-mails and CVE
 records use that path.
+
+The **JSON Feed** child is a *VEL: JSON Feed (legacy)* menu item with the alias `json-feed`, so the
+legacy feed keeps its address `/vulnerable-extensions/json-feed`. The feed answers at that address
+even without the menu item. Under **Options > Public**, *Serve the legacy JSON feed* switches it off
+(it then answers *410 Gone*) and *Legacy feed sunset date* announces the end date in the feed and
+its `Sunset` header; after that date it answers *410 Gone* as well. The list page's *JSON feed
+(legacy)* link disappears at the same moment.

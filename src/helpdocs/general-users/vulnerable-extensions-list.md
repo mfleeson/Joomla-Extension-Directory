@@ -99,6 +99,13 @@ Links at the top of the list page:
   available (`type=atom`).
 - **JSON API** - a public, read-only API for tools and monitoring services (advisory list, single
   advisories, CVE records, the complete dataset, and a "check my extensions" endpoint).
+- **JSON feed (legacy)** - `/vulnerable-extensions/json-feed`, the feed older vulnerability
+  checkers read: every published advisory, one entry per affected product, with the old field
+  names (`category` *Live VEL* / *Resolved VEL* / *Unresolved VEL*, `risk_level`,
+  `vulnerable_version`, `patch_version`...). It is deprecated - new tools should use the JSON API -
+  and will be switched off on a date announced in the feed itself (`_deprecated.sunset` and the
+  `Sunset` header). The link is only shown while the feed is served. It is also in the main menu
+  under **Vulnerable Extensions > JSON Feed**.
 
 ## Let your site check for you
 

@@ -111,4 +111,23 @@ final class VelHelper
 
         return $value === null || $value === '' ? $fallback : $value;
     }
+
+    /**
+     * Is the legacy JSON feed (/vulnerable-extensions/json-feed) being served? It is unless
+     * "Serve the legacy JSON feed" is switched off or its sunset date has passed.
+     *
+     * @return bool
+     *
+     * @since 4.0.0
+     */
+    public static function legacyFeedAvailable(): bool
+    {
+        if ((int) self::option('legacy_feed_enabled', 1) !== 1) {
+            return false;
+        }
+
+        $sunset = (string) (self::option('legacy_feed_sunset_date') ?? '');
+
+        return $sunset === '' || strtotime($sunset) === false || strtotime($sunset) >= time();
+    }
 }

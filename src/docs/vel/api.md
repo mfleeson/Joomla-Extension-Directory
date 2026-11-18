@@ -55,8 +55,17 @@ product identity not yet known on the advisory), a `reason`, and the matching ad
 `category` Live VEL / Resolved VEL / Unresolved VEL; `risk_level`, `start_version`,
 `vulnerable_version`, `patch_version`, `recommendation`, `update_notice`, `exploit_type`, `cve_id`,
 …) and is sent with `Deprecation: true`, a `Link: rel="successor-version"` and, once the option is
-set, `Sunset`. It answers 410 after the sunset date. Research task R-04 captures the live feed
-and adjusts the field names byte for byte.
+set, `Sunset`. It answers 410 after the sunset date (and when *Serve the legacy JSON feed* is off). Research
+task R-04 captures the live feed and adjusts the field names byte for byte.
+
+Routing: `ApiRules` turns the `json-feed` segment under the advisories menu item into
+`view=legacyfeed&format=json`, so the URL works without a dedicated menu item. A menu item of type
+*VEL: JSON Feed (legacy)* (`tmpl/legacyfeed/default.xml`, link
+`index.php?option=com_vel&view=legacyfeed&format=json`) with the alias `json-feed` under the list
+item gives the same URL and a menu entry; the JED main menu sample data creates one. A request
+that reaches the view without `format=json` gets the same JSON (`View/Legacyfeed/HtmlView`).
+The list page links the feed and adds it as `<link rel="alternate" type="application/json">`
+while it is served (`VelHelper::legacyFeedAvailable()`).
 
 ## Inbound webhook (optional)
 

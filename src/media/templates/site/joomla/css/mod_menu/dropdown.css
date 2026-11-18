@@ -1,0 +1,94 @@
+/**
+ * Joomla.org site template - menu layout "Dropdown" (templates/joomla/html/mod_menu/dropdown.php).
+ *
+ * The list does not carry Bootstrap's "nav" class (see dropdown.php for why), so it gets the same row and the same
+ * nav-link variables here. Loaded by the layout itself, so it is used whether or not the template CSS comes from
+ * the CDN.
+ */
+.mod-menu_dropdown {
+  --bs-nav-link-padding-x: 1rem;
+  --bs-nav-link-padding-y: 0.5rem;
+  --bs-nav-link-color: var(--bs-link-color);
+  --bs-nav-link-hover-color: var(--bs-link-hover-color);
+  --bs-nav-link-disabled-color: var(--bs-secondary-color);
+  display: flex;
+  flex-wrap: wrap;
+  padding-inline-start: 0;
+  margin-bottom: 0;
+  list-style: none;
+}
+
+/* A link with a submenu: the link and its toggle side by side */
+.mod-menu_dropdown > .nav-item.dropdown {
+  display: flex;
+  align-items: center;
+}
+
+.mod-menu_dropdown > .nav-item > .dropdown-toggle-split {
+  padding-inline: 0.375rem;
+}
+
+.mod-menu_dropdown .dropdown-menu {
+  min-width: 12rem;
+}
+
+/* Levels below the dropdown: shown inside it, indented */
+.mod-menu_dropdown .mod-menu_dropdown__sub {
+  padding-inline-start: 0;
+  margin: 0;
+}
+
+.mod-menu_dropdown .mod-menu_dropdown__sub > li > .dropdown-item,
+.mod-menu_dropdown .mod-menu_dropdown__sub > li > .dropdown-header {
+  padding-inline-start: calc(var(--bs-dropdown-item-padding-x) * 2);
+}
+
+.mod-menu_dropdown .mod-menu_dropdown__sub .mod-menu_dropdown__sub > li > .dropdown-item,
+.mod-menu_dropdown .mod-menu_dropdown__sub .mod-menu_dropdown__sub > li > .dropdown-header {
+  padding-inline-start: calc(var(--bs-dropdown-item-padding-x) * 3);
+}
+
+/**
+ * In the template's blue menu bar (position-1): the same look as the template's single-level pills
+ * (scss/blocks/_site-subnav.scss), for the toggle buttons as well as the links.
+ */
+.subnav .mod-menu_dropdown {
+  --bs-nav-link-padding-x: 0.75rem;
+  --bs-nav-link-color: #fff;
+  --bs-nav-link-hover-color: #fff;
+}
+
+@media (min-width: 576px) and (max-width: 767.98px) {
+  .subnav .mod-menu_dropdown {
+    --bs-nav-link-font-size: 0.89rem;
+  }
+}
+
+.subnav .mod-menu_dropdown > li > .nav-link {
+  margin-inline-end: 1px;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+  border: 1px solid transparent;
+  transition: all 0.2s ease-in-out;
+}
+
+.subnav .mod-menu_dropdown > li > .nav-link:focus-visible {
+  box-shadow: 0 0 0 0.25rem rgba(255, 255, 255, 0.25);
+}
+
+.subnav .mod-menu_dropdown > li.active > .nav-link,
+.subnav .mod-menu_dropdown > li > .nav-link:hover,
+.subnav .mod-menu_dropdown > li > .nav-link.show {
+  color: #fff;
+  background-color: rgba(19, 42, 76, 0.5);
+  box-shadow: inset 3px 0 2px -2px rgba(0, 0, 0, 0.15), inset -3px 0 2px -2px rgba(0, 0, 0, 0.15);
+}
+
+.subnav .mod-menu_dropdown > li.current > .nav-link {
+  font-weight: normal;
+}
+
+/* The link and its split toggle read as one item */
+.subnav .mod-menu_dropdown > li.dropdown > .nav-link:not(.dropdown-toggle-split) {
+  margin-inline-end: 0;
+  padding-inline-end: 0.25rem;
+}

@@ -27,8 +27,9 @@ use Joomla\CMS\Component\Router\Rules\RulesInterface;
  * The first needs several segments under one view; the second needs a segment that is not a
  * view name, because the legacy feed's URL is fixed by the checkers that already read it.
  *
- * Attached after MenuRules (which takes the menu item's segments and sets view=advisories)
- * and before StandardRules (which must not see these segments).
+ * Attached before StandardRules (which must not see these segments). Both shapes hang off the
+ * advisories ("Vulnerable Extensions") menu item; a menu item of type "VEL: JSON Feed
+ * (legacy)" (view=legacyfeed) is its own URL and needs no segment at all.
  *
  * @since 4.0.0
  */
@@ -80,7 +81,21 @@ class ApiRules implements RulesInterface
      */
     public function parse(&$segments, &$vars): void
     {
-        if (($vars['view'] ?? '') !== 'advisories' || $segments === []) {
+        if ($segments === []) {
+            return;
+        }
+
+        // RouterView::parse() starts every rule with empty $vars - no rule before this one fills
+        // in the view - so the view comes from the menu item the path matched (SiteRouter makes
+        // it the active item before calling the component router), as in StandardRules.
+        $view = (string) ($vars['view'] ?? '');
+
+        if ($view === '') {
+            $active = $this->router->menu->getActive();
+            $view   = $active && ($active->query['option'] ?? '') === 'com_vel' ? (string) ($active->query['view'] ?? '') : '';
+        }
+
+        if ($view !== 'advisories') {
             return;
         }
 
@@ -136,8 +151,15 @@ class ApiRules implements RulesInterface
         $view = (string) ($query['view'] ?? '');
 
         if ($view === 'legacyfeed') {
-            $segments[] = 'json-feed';
-            unset($query['view']);
+            // The path always means JSON (parse() sets format=json), so ?format=json is noise.
+            // When the URL is built on a "JSON feed" menu item, that item's own path already is
+            // the feed (e.g. /vulnerable-extensions/json-feed): adding the segment again would
+            // give /json-feed/json-feed.
+            if (!$this->isFeedMenuItem((int) ($query['Itemid'] ?? 0))) {
+                $segments[] = 'json-feed';
+            }
+
+            unset($query['view'], $query['format']);
 
             return;
         }
@@ -158,5 +180,27 @@ class ApiRules implements RulesInterface
         }
 
         unset($query['view'], $query['resource'], $query['id'], $query['format']);
+    }
+
+    /**
+     * Is the menu item a "JSON feed" menu item (view=legacyfeed) rather than the list?
+     *
+     * @param int $itemId A menu item id.
+     *
+     * @return bool
+     *
+     * @since 4.0.0
+     */
+    private function isFeedMenuItem(int $itemId): bool
+    {
+        if ($itemId === 0) {
+            return false;
+        }
+
+        $item = $this->router->menu->getItem($itemId);
+
+        return $item !== null
+            && ($item->query['option'] ?? '') === 'com_vel'
+            && ($item->query['view'] ?? '') === 'legacyfeed';
     }
 }

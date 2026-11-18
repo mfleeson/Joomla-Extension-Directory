@@ -259,6 +259,10 @@ class HtmlView extends BaseHtmlView
         $document->addHeadLink($this->feedUrl('atom'), 'alternate', 'rel', ['type' => 'application/atom+xml', 'title' => Text::_('COM_VEL_FEED_TITLE')]);
         $document->addHeadLink(Route::_('index.php?option=com_vel&view=api&resource=advisories'), 'alternate', 'rel', ['type' => 'application/json', 'title' => Text::_('COM_VEL_API_TITLE')]);
 
+        if (VelHelper::legacyFeedAvailable()) {
+            $document->addHeadLink(Route::_('index.php?option=com_vel&view=legacyfeed&format=json'), 'alternate', 'rel', ['type' => 'application/json', 'title' => Text::_('COM_VEL_LEGACY_FEED_TITLE')]);
+        }
+
         $document->setMetaData('description', Text::_('COM_VEL_LIST_META_DESCRIPTION'));
     }
 

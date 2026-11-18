@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<metadata>
+    <layout title="COM_VEL_MENU_LEGACYFEED_TITLE" option="COM_VEL_MENU_LEGACYFEED_OPTION">
+        <message>
+            <![CDATA[COM_VEL_MENU_LEGACYFEED_DESC]]>
+        </message>
+    </layout>
+    <!-- The feed is JSON only: the hidden request field puts &format=json into the menu item's
+         link, so the page opens as a JSON document (View/Legacyfeed/HtmlView answers the same
+         JSON should the format ever be missing). Give the item the alias "json-feed" under the
+         "Vulnerable Extensions" menu item to keep the legacy URL /vulnerable-extensions/json-feed. -->
+    <fields name="request">
+        <fieldset name="request">
+            <field
+                    name="format"
+                    type="hidden"
+                    default="json"
+            />
+        </fieldset>
+    </fields>
+</metadata>
