@@ -157,12 +157,12 @@ final class JedMenu extends CMSPlugin implements SubscriberInterface
   },
   "module": {
     "title": "JED Main Menu",
-    "position": "position-1",
+    "position": "menu",
     "showtitle": 0,
     "access": "public",
     "menu_class": "nav-pills",
     "params": {
-      "layout": "joomla:dropdown",
+      "layout": "_:collapse-default",
       "startLevel": 1,
       "endLevel": 0,
       "showAllChildren": 1,
@@ -192,25 +192,25 @@ final class JedMenu extends CMSPlugin implements SubscriberInterface
     },
     {
       "title": "Search",
-      "link": "index.php?option=com_jed&view=search"
+      "link": "index.php?option=com_finder&view=search"
     },
     {
       "title": "Community",
       "type": "heading",
       "children": [
-        { "title": "Meet the JED Team", "link": "index.php?option=com_jed&view=categories&id=0" },
-        { "title": "Blog", "link": "index.php?option=com_jed&view=categories&id=0" },
-        { "title": "JED Newsletter", "link": "index.php?option=com_jed&view=categories&id=0" },
-        { "title": "Terms of Service", "link": "index.php?option=com_jed&view=categories&id=0" },
-        { "title": "Help Joomla!", "link": "index.php?option=com_jed&view=categories&id=0" }
+        { "title": "Meet the JED Team", "alias": "meet-jed-team", "link": "https://volunteers.joomla.org/teams/extensions-directory-team" },
+        { "title": "Blog", "alias":"blog", "link": "https://volunteers.joomla.org/teams/extensions-directory-team#reports" },
+        { "title": "JED Newsletter", "alias": "jed-newsletter", "link": "https://community.joomla.org/joomla-extensions-directory-newsletter.html" },
+        { "title": "Terms of Service", "link": "index.php?option=com_content&view=article&id=31" },
+        { "title": "Help Joomla!", "alias": "help-joomla", "link": "https://volunteers.joomla.org/help-wanted" }
       ]
     },
     {
       "title": "Support",
       "type": "heading",
       "children": [
-        { "title": "Knowledgebase", "link": "index.php?option=com_jed&view=categories&id=0" },
-        { "title": "Sponsor Joomla!", "link": "index.php?option=com_jed&view=categories&id=0" }
+        { "title": "Knowledgebase", "link": "index.php?option=com_content&view=category&layout=blog&id=10498" },
+        { "title": "Sponsor Joomla!", "alias": "sponsor-joomla", "link": "https://community.joomla.org/sponsorship-campaigns.html?utm_source=jed" }
       ]
     },
     {
@@ -223,10 +223,10 @@ final class JedMenu extends CMSPlugin implements SubscriberInterface
         { "title": "Live", "link": "index.php?option=com_vel&view=advisories", "params": { "default_status": "live", "page_title": "Vulnerable Extensions: Live" } },
         { "title": "Patched", "link": "index.php?option=com_vel&view=advisories", "params": { "default_status": "patched", "page_title": "Vulnerable Extensions: Patched" } },
         { "title": "Abandoned", "link": "index.php?option=com_vel&view=advisories", "params": { "default_status": "abandoned", "page_title": "Vulnerable Extensions: Abandoned" } },
-        { "title": "Submit a Report", "link": "index.php?option=com_jed&view=velreportform" },
-        { "title": "Submit an Update", "link": "index.php?option=com_jed&view=veldeveloperupdateform" },
-        { "title": "Submit AbandonWare", "link": "index.php?option=com_jed&view=velabandonwareform" },
-        { "title": "JSON Feed", "link": "index.php?option=com_jed&view=categories&id=0" }
+        { "title": "Report a Vulnerability", "link": "index.php?option=com_vel&view=report" },
+        { "title": "Report Fix Notice", "link": "index.php?option=com_vel&view=fixnotice" },
+        { "title": "Report AbandonWare", "link": "index.php?option=com_abandonware&view=report" },
+        { "title": "JSON Feed", "alias": "json-feed", "link": "index.php?option=com_vel&view=legacyfeed&format=json" }
       ]
     },
     {
@@ -249,8 +249,8 @@ final class JedMenu extends CMSPlugin implements SubscriberInterface
         { "title": "VEL Single Advisory", "link": "index.php?option=com_vel&view=advisory" },
         { "title": "My Tickets", "link": "index.php?option=com_jed&view=tickets" },
         { "title": "Show Extension Categories", "link": "index.php?option=com_jed&view=categories&id=0" },
-        { "title": "Submit Extension", "link": "index.php?option=com_jed&view=extensionform" },
-        { "title": "User Control Panel", "link": "index.php?option=com_jed&view=controlpanel" }
+        { "title": "Submit Extension", "link": "index.php?option=com_jed&view=newextension" },
+        { "title": "User Control Panel", "link": "index.php?option=com_jed&view=dashboard" }
       ]
     }
   ]
@@ -950,7 +950,8 @@ JSON;
      */
     private function saveMenuItem(array $data): int
     {
-        $baseAlias = $data['alias'];
+        $baseAlias  = $data['alias'];
+        $firstError = '';
 
         foreach (['', '-1', '-2'] as $suffix) {
             $this->menuItemModel->setState('item.id', 0);
@@ -958,7 +959,27 @@ JSON;
             $data['alias'] = $baseAlias . $suffix;
 
             if ($this->menuItemModel->save($data)) {
+                if ($suffix !== '') {
+                    // Say so: the item works, but not at the address menu.json meant (e.g. the VEL list at
+                    // /vulnerable-extensions-1 instead of /vulnerable-extensions, so /vulnerable-extensions/json-feed
+                    // ends in a 404). Top level aliases are unique across all site menus, trashed items included.
+                    $this->warnings[] = \sprintf(
+                        $this->text(
+                            'PLG_SAMPLEDATA_JED_MENU_WARNING_ALIAS_CHANGED',
+                            '"%1$s" was saved with the alias "%2$s" because "%3$s" is already in use: %4$s Its URL is therefore not the one in menu.json. Delete or rename the other menu item (check the trash), then run this sample data again.'
+                        ),
+                        $data['title'],
+                        $data['alias'],
+                        $baseAlias,
+                        trim(html_entity_decode(strip_tags($firstError), ENT_QUOTES, 'UTF-8'))
+                    );
+                }
+
                 return (int) $this->menuItemModel->getState('item.id');
+            }
+
+            if ($firstError === '') {
+                $firstError = (string) $this->menuItemModel->getError();
             }
         }
 

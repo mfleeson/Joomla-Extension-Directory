@@ -13,7 +13,7 @@
     "access": "public",
     "menu_class": "nav-pills",
     "params": {
-      "layout": "joomla:dropdown",
+      "layout": "_:collapse-default",
       "startLevel": 1,
       "endLevel": 0,
       "showAllChildren": 1,
@@ -49,11 +49,11 @@
       "title": "Community",
       "type": "heading",
       "children": [
-        { "title": "Meet the JED Team", "link": "https://volunteers.joomla.org/teams/extensions-directory-team" },
-        { "title": "Blog", "link": "https://volunteers.joomla.org/teams/extensions-directory-team#reports" },
-        { "title": "JED Newsletter", "link": "https://community.joomla.org/joomla-extensions-directory-newsletter.html" },
+        { "title": "Meet the JED Team", "alias": "meet-jed-team", "link": "https://volunteers.joomla.org/teams/extensions-directory-team" },
+        { "title": "Blog", "alias":"blog", "link": "https://volunteers.joomla.org/teams/extensions-directory-team#reports" },
+        { "title": "JED Newsletter", "alias": "jed-newsletter", "link": "https://community.joomla.org/joomla-extensions-directory-newsletter.html" },
         { "title": "Terms of Service", "link": "index.php?option=com_content&view=article&id=31" },
-        { "title": "Help Joomla!", "link": "https://volunteers.joomla.org/help-wanted" }
+        { "title": "Help Joomla!", "alias": "help-joomla", "link": "https://volunteers.joomla.org/help-wanted" }
       ]
     },
     {
@@ -61,7 +61,7 @@
       "type": "heading",
       "children": [
         { "title": "Knowledgebase", "link": "index.php?option=com_content&view=category&layout=blog&id=10498" },
-        { "title": "Sponsor Joomla!", "link": "https://community.joomla.org/sponsorship-campaigns.html?utm_source=jed" }
+        { "title": "Sponsor Joomla!", "alias": "sponsor-joomla", "link": "https://community.joomla.org/sponsorship-campaigns.html?utm_source=jed" }
       ]
     },
     {
@@ -77,7 +77,7 @@
         { "title": "Report a Vulnerability", "link": "index.php?option=com_vel&view=report" },
         { "title": "Report Fix Notice", "link": "index.php?option=com_vel&view=fixnotice" },
         { "title": "Report AbandonWare", "link": "index.php?option=com_abandonware&view=report" },
-        { "title": "JSON Feed", "link": "index.php?option=com_jed&view=categories&id=0" }
+        { "title": "JSON Feed", "alias": "json-feed", "link": "index.php?option=com_vel&view=legacyfeed&format=json" }
       ]
     },
     {
