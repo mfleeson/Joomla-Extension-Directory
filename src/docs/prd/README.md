@@ -12,6 +12,8 @@ what was changed, and how it was verified.
 | [PRD-04](PRD-04-ticket-reply-redirect.md) | Sending a ticket reply lands on "component not found" | Tickets |
 | [PRD-05](PRD-05-forced-ownership-transfer.md) | No screen for forcing an ownership transfer | Ownership |
 | [PRD-06](PRD-06-ticket-return-and-pending.md) | Review actions on a ticket went to the Reviews list; the *Pending* icon showed after blocks and deletions (known issue #13) | Tickets, moderation |
+| [PRD-07](PRD-07-jedchecker-integration.md) | The ticket's JED Checker tab always said JED Checker was not installed, and could not run the current JED Checker | Tickets, JED Checker |
+| [PRD-08](PRD-08-jedchecker-joomla6-security-review.md) | JED Checker: Joomla 6 review and security fixes (HTML injection from packages, language-string override, web-reachable unpack folder, zip bombs) | com_jedchecker |
 
 ## Verification
 
