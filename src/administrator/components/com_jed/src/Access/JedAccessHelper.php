@@ -185,10 +185,15 @@ final class JedAccessHelper
             $db->getQuery(true)
                 ->select('COUNT(*)')
                 ->from($db->quoteName('#__jed_extensions'))
-                ->where($db->quoteName('owner') . ' = :uid')
+                // Who submitted it (created_by) as well as who owns it: since organisations
+                // (PRD-09) `owner` is the organisation's primary contact, so a member submitting
+                // for a company would otherwise never count against their own cap. This is a
+                // flood limit, not a permission, so authorship is the right column here.
+                ->where('(' . $db->quoteName('owner') . ' = :uid OR ' . $db->quoteName('created_by') . ' = :uid2)')
                 ->where($db->quoteName('approved_time') . ' IS NULL')
                 ->where($db->quoteName('deleted') . ' = 0')
                 ->bind(':uid', $userId, ParameterType::INTEGER)
+                ->bind(':uid2', $userId, ParameterType::INTEGER)
         )->loadResult();
     }
 

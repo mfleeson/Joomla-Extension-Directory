@@ -11,10 +11,11 @@
 namespace Jed\Component\Jed\Administrator\Traits;
 
 use Jed\Component\Jed\Administrator\Access\JedAccessHelper;
-use Jed\Component\Jed\Administrator\Log\JedActionLog;
 use Jed\Component\Jed\Administrator\MediaHandling\ImagePipeline;
+use Jed\Component\Jed\Administrator\Organisation\MembershipState;
+use Jed\Component\Jed\Administrator\Organisation\OrganisationAccess;
+use Jed\Component\Jed\Administrator\Organisation\OrganisationService;
 use Jed\Component\Jed\Administrator\MediaHandling\ImageSize;
-use Jed\Component\Jed\Site\Helper\JedHelper;
 use Jed\Component\Jed\Site\Service\Category;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
@@ -225,149 +226,54 @@ trait ExtensionUtilities
     }
 
     /**
-     * Store the selected maintainers for an extension into #__jed_extensions_maintainers.
+     * The organisation a **new** listing is submitted for (PRD-09 R12).
      *
-     * @param int   $extensionId The extension ID to save the maintainers for
-     * @param array $rows        The "maintainer" subform rows (each with a user_id)
+     * Replaces the per-listing maintainer list this trait used to store: who may look after a
+     * listing is now the membership of the organisation that owns it. The submitter must be an
+     * active member of the organisation they pick; somebody with no organisation gets their
+     * personal one (created when needed). The choice is checked here, against the database, so a
+     * posted organisation id the submitter does not belong to is refused rather than trusted.
      *
-     * @return void
+     * @param int $requested   The organisation id from the form, or 0.
+     * @param int $submitterId The submitting user.
      *
-     * @since 4.0.0
+     * @return int  The organisation id to use.
+     *
+     * @throws \RuntimeException  The submitter is not an active member of the requested one.
+     *
+     * @since 4.1.0
      */
-    private function storeMaintainers(int $extensionId, array $rows): void
+    private function organisationForNewListing(int $requested, int $submitterId): int
     {
-        $db      = $this->getDatabase();
-        $userIds = array_values(array_unique(array_filter(array_map(
-            static fn ($row) => (int) ($row['user_id'] ?? 0),
-            $rows
-        ))));
+        $organisations = new OrganisationService($this->getDatabase());
 
-        // Nobody is owner and maintainer of the same extension at the same time (8.8). It cannot
-        // be a database constraint because the two facts live in different tables, so it is
-        // enforced here and again when a transfer completes (P1-04). Silently dropping the owner
-        // is the right answer rather than an error: the form offers a user picker, and picking
-        // the owner is a plausible slip, not an attack.
-        $listing = $db->setQuery(
-            $db->getQuery(true)
-                ->select($db->quoteName(['owner', 'name']))
-                ->from($db->quoteName('#__jed_extensions'))
-                ->where($db->quoteName('id') . ' = :eid')
-                ->bind(':eid', $extensionId, ParameterType::INTEGER)
-        )->loadAssoc() ?: ['owner' => 0, 'name' => ''];
-
-        $owner = (int) $listing['owner'];
-
-        $userIds = array_values(array_filter($userIds, static fn (int $id) => $id !== $owner));
-
-        // Existing rows are kept rather than rebuilt, so an acceptance already given is not
-        // silently reset to "invited" every time the owner saves the form for another reason.
-        $existing = $db->setQuery(
-            $db->getQuery(true)
-                ->select($db->quoteName('user_id'))
-                ->from($db->quoteName('#__jed_extensions_maintainers'))
-                ->where($db->quoteName('extension_id') . ' = :eid')
-                ->bind(':eid', $extensionId, ParameterType::INTEGER)
-        )->loadColumn();
-
-        $existing = array_map('intval', (array) $existing);
-        $removed  = array_diff($existing, $userIds);
-        $added    = array_diff($userIds, $existing);
-
-        if ($removed !== []) {
-            $db->setQuery(
-                $db->getQuery(true)
-                    ->delete($db->quoteName('#__jed_extensions_maintainers'))
-                    ->where($db->quoteName('extension_id') . ' = ' . $extensionId)
-                    ->whereIn($db->quoteName('user_id'), array_values($removed))
-            )->execute();
-
-            $this->logMaintainerChanges(
-                JedActionLog::MAINTAINER_REMOVE,
-                $extensionId,
-                (string) $listing['name'],
-                array_values($removed)
-            );
-        }
-
-        if ($added === []) {
-            return;
-        }
-
-        $invitedBy = (int) Factory::getApplication()->getIdentity()->id;
-        $now       = Factory::getDate()->toSql();
-
-        $query = $db->getQuery(true)
-            ->insert($db->quoteName('#__jed_extensions_maintainers'))
-            ->columns($db->quoteName(['extension_id', 'user_id', 'state', 'invited_by', 'invited_time']));
-
-        foreach ($added as $userId) {
-            // state = invited. The rights start when the person accepts, not when they are named
-            // (P1-03 item 4) - they reach far, and the name can appear on the public listing.
-            $query->values(
-                $extensionId . ', ' . (int) $userId . ', ' . JedHelper::MAINTAINER_INVITED
-                . ', ' . $invitedBy . ', ' . $db->quote($now)
-            );
-        }
-
-        $db->setQuery($query)->execute();
-
-        $this->logMaintainerChanges(
-            JedActionLog::MAINTAINER_ADD,
-            $extensionId,
-            (string) $listing['name'],
-            array_values($added)
-        );
-    }
-
-    /**
-     * Record maintainer changes in the action log (`P1-22`), one entry per person.
-     *
-     * One entry each rather than one listing several: the log's item filter is a single id, and a
-     * combined entry could not be found by searching for the person it concerns.
-     *
-     * This is logged even when a developer does it on their own listing, which looks like a
-     * departure from `8.15`'s "only moderation-relevant events from the frontend". It is not: a
-     * maintainer may edit the listing and their name appears publicly on it (`P1-03`), so the
-     * question "who gave this person access, and when" is exactly the kind the log exists for.
-     *
-     * @param string $action      Add or remove.
-     * @param int    $extensionId The listing.
-     * @param string $name        Its name.
-     * @param int[]  $userIds     The people added or removed.
-     *
-     * @return void
-     *
-     * @since 4.0.0
-     */
-    private function logMaintainerChanges(string $action, int $extensionId, string $name, array $userIds): void
-    {
-        if ($userIds === []) {
-            return;
-        }
-
-        $users = Factory::getContainer()->get(UserFactoryInterface::class);
-
-        foreach ($userIds as $userId) {
-            $userId = (int) $userId;
-
-            try {
-                $maintainer = $users->loadUserById($userId)->name;
-            } catch (Throwable) {
-                $maintainer = (string) $userId;
+        if ($requested > 0) {
+            if (!OrganisationAccess::isMember($requested, $submitterId)) {
+                throw new \RuntimeException(Text::_('COM_JED_ORGANISATION_ERROR_NOT_MEMBER'));
             }
 
-            JedActionLog::record($action, 'com_jed.extension', $extensionId, [
-                'title'          => $name,
-                'maintainer'     => $maintainer,
-                'maintainerlink' => 'index.php?option=com_users&task=user.edit&id=' . $userId,
-            ]);
+            return $requested;
         }
+
+        $memberOf = $organisations->organisationsOf($submitterId, [MembershipState::ACTIVE]);
+        $usable   = array_values(array_filter($memberOf, static fn (object $o): bool => (int) $o->state === 1));
+
+        if (\count($usable) === 1) {
+            return (int) $usable[0]->id;
+        }
+
+        if (\count($usable) > 1) {
+            // Several organisations and no choice made: refuse rather than guess whose it is.
+            throw new \RuntimeException(Text::_('COM_JED_ORGANISATION_ERROR_CHOOSE'));
+        }
+
+        return (int) $organisations->personalOrganisationFor($submitterId);
     }
 
     /**
      * Apply the Joomla tags picked on the extension form to the live #__jed_extensions row.
      *
-     * Like categories/maintainers, tags are treated as live metadata rather than part of the
+     * Like categories, tags are treated as live metadata rather than part of the
      * pending review: they're written straight to the live extension record's Joomla tag mapping
      * on every save, regardless of the history/approval workflow that gates the rest of the
      * extension's content. The actual tag mapping (#__contentitem_tag_map) is handled by core's

@@ -18,6 +18,7 @@ use Jed\Component\Jed\Administrator\Queue\QueueService;
 use Jed\Component\Jed\Administrator\Table\ExtensionTable;
 use Jed\Component\Jed\Administrator\Transfer\TransferService;
 use Joomla\CMS\Event\Model\AfterSaveEvent;
+use Jed\Component\Jed\Administrator\Organisation\OrganisationService;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\Plugin\PluginHelper;
@@ -144,11 +145,16 @@ final class PrivacyRemovalService
             return [];
         }
 
+        // Organisations first (PRD-09). Where the person is an organisation's primary contact and
+        // another active administrator exists, the role - and with it `owner` on every listing of
+        // the organisation - passes to that administrator, so those listings are no longer "this
+        // person's" below and are not blocked. Memberships are deleted.
+        $report = ['review_handling' => $reviewHandling];
+        $report += (new OrganisationService($this->db))->handleErasure($userId);
+
         // Read before writing: once `owner` is cleared there is no way back to "which listings
         // were this person's", and two later steps need exactly that list.
         $ownedExtensions = $this->ownedExtensionIds($userId);
-
-        $report = ['review_handling' => $reviewHandling];
 
         // Open handovers first, while the transfer rows still point at a live account. Both
         // parties are told, which is the whole reason this goes through TransferService rather

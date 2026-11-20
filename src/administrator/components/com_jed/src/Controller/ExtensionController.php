@@ -14,6 +14,7 @@ namespace Jed\Component\Jed\Administrator\Controller;
 // phpcs:enable PSR1.Files.SideEffects
 
 use Jed\Component\Jed\Administrator\Model\ExtensionModel;
+use Jed\Component\Jed\Administrator\Organisation\OrganisationService;
 use Jed\Component\Jed\Administrator\Queue\QueueService;
 use Jed\Component\Jed\Administrator\Transfer\TransferService;
 use Joomla\CMS\Factory;
@@ -316,6 +317,7 @@ class ExtensionController extends FormController
 
         $app         = Factory::getApplication();
         $extensionId = $this->input->getInt('id') ?: (int) $app->getUserState('com_jed.edit.extension.live_id', 0);
+        $code        = (string) $this->input->getString('transfer_organisation', '');
         $email       = (string) $this->input->getString('transfer_email', '');
         $reason      = (string) $this->input->getString('transfer_reason', '');
         $editUrl     = Route::_('index.php?option=com_jed&view=extension&layout=edit&id=' . $extensionId, false);
@@ -345,12 +347,23 @@ class ExtensionController extends FormController
                 throw new \RuntimeException(Text::_('COM_JED_TRANSFER_ERROR_REASON_REQUIRED'));
             }
 
-            // The same bounded lookup the developer side uses, so a team member probing
-            // addresses is logged and rate-limited exactly as a developer would be.
-            $recipient = $service->findRecipient($email, $userId, $extensionId);
+            // PRD-09: listings move between organisations. The target is the organisation's code;
+            // an account e-mail is still accepted and resolves to the organisation that account
+            // is primary contact of (created as a personal one for somebody who has none - the
+            // usual case when a volunteer adopts an abandoned extension). The e-mail goes through
+            // the same bounded lookup the developer side uses, so a team member probing addresses
+            // is logged and rate-limited exactly as a developer would be.
+            if (trim($code) !== '') {
+                $organisation = $service->findOrganisation($code);
+            } else {
+                $recipient      = $service->findRecipient($email, $userId, $extensionId);
+                $organisations  = new OrganisationService($db);
+                $organisationId = (int) $organisations->personalOrganisationFor((int) $recipient->id);
+                $organisation   = $service->findOrganisation((string) ($organisations->find($organisationId)->uid ?? ''));
+            }
 
-            $service->force($extensionId, $recipient, $userId, $reason);
-            $app->enqueueMessage(Text::sprintf('COM_JED_TRANSFER_FORCED_MESSAGE_NAMED', $recipient->name));
+            $service->force($extensionId, $organisation, $userId, $reason);
+            $app->enqueueMessage(Text::sprintf('COM_JED_TRANSFER_FORCED_MESSAGE_NAMED', $organisation->title));
         } catch (\Exception $e) {
             // Back to the form, still checked out, so the team member can correct the address or
             // the reason - a forced transfer is rare enough that losing the context costs more.

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    An organisation's editable details (PRD-09 R1). Deliberately absent: uid (generated, never
+    editable), state (the JED team's), primary_user_id and the members (their own actions, each
+    with its own rule), created/modified (server-side). OrganisationService re-validates every value,
+    so this form is the convenience, not the check.
+-->
+<form>
+    <fieldset name="details" label="COM_JED_ORGANISATION_FIELDSET_DETAILS">
+        <field name="title" type="text" required="true" maxlength="255" filter="string"
+               label="COM_JED_ORGANISATION_FIELD_TITLE_LABEL"
+               description="COM_JED_ORGANISATION_FIELD_TITLE_DESC"/>
+        <field name="description" type="textarea" rows="4" filter="string"
+               label="COM_JED_ORGANISATION_FIELD_DESCRIPTION_LABEL"/>
+        <field name="website" type="url" maxlength="255" filter="url" validate="url" schemes="http,https"
+               label="COM_JED_ORGANISATION_FIELD_WEBSITE_LABEL"/>
+    </fieldset>
+    <fieldset name="contact" label="COM_JED_ORGANISATION_FIELDSET_CONTACT">
+        <field name="contact_name" type="text" maxlength="255" filter="string"
+               label="COM_JED_ORGANISATION_FIELD_CONTACT_NAME_LABEL"/>
+        <field name="contact_email" type="email" required="true" maxlength="255" filter="string" validate="email"
+               label="COM_JED_ORGANISATION_FIELD_CONTACT_EMAIL_LABEL"
+               description="COM_JED_ORGANISATION_FIELD_CONTACT_EMAIL_DESC"/>
+        <field name="contact_phone" type="tel" maxlength="50" filter="string"
+               label="COM_JED_ORGANISATION_FIELD_CONTACT_PHONE_LABEL"/>
+        <field name="address" type="textarea" rows="3" filter="string"
+               label="COM_JED_ORGANISATION_FIELD_ADDRESS_LABEL"/>
+        <field name="country" type="text" maxlength="2" size="2" filter="cmd"
+               label="COM_JED_ORGANISATION_FIELD_COUNTRY_LABEL"
+               description="COM_JED_ORGANISATION_FIELD_COUNTRY_DESC"/>
+    </fieldset>
+    <fieldset name="membership" label="COM_JED_ORGANISATION_FIELDSET_MEMBERSHIP">
+        <field name="accept_requests" type="radio" default="1" layout="joomla.form.field.radio.switcher" filter="integer"
+               label="COM_JED_ORGANISATION_FIELD_ACCEPT_REQUESTS_LABEL"
+               description="COM_JED_ORGANISATION_FIELD_ACCEPT_REQUESTS_DESC">
+            <option value="0">JNO</option>
+            <option value="1">JYES</option>
+        </field>
+    </fieldset>
+</form>

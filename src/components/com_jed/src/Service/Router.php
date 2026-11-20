@@ -122,6 +122,14 @@ class Router extends RouterView
         $ticketform = new RouterViewConfiguration('ticketform');
         $this->registerView($ticketform);
 
+        // Organisations (PRD-09). Routed by id, never by UID or alias: the pages are for members
+        // only, and a readable URL would only advertise which organisations exist.
+        $organisations = new RouterViewConfiguration('organisations');
+        $this->registerView($organisations);
+        $organisation = new RouterViewConfiguration('organisation');
+        $organisation->setKey('id')->setParent($organisations)->addLayout('edit');
+        $this->registerView($organisation);
+
         $this->attachRule(new MenuRules($this));
         $this->attachRule(new StandardRules($this));
         $this->attachRule(new NomenuRules($this));
@@ -364,5 +372,31 @@ class Router extends RouterView
     public function getProfileSegment($id, $query): array
     {
         return [$id];
+    }
+
+    /**
+     * @param string $segment The segment.
+     * @param array  $query   The query.
+     *
+     * @return int
+     *
+     * @since 4.1.0
+     */
+    public function getOrganisationId($segment, $query): int
+    {
+        return (int) $segment;
+    }
+
+    /**
+     * @param string $id    The id.
+     * @param array  $query The query.
+     *
+     * @return array
+     *
+     * @since 4.1.0
+     */
+    public function getOrganisationSegment($id, $query): array
+    {
+        return [(int) $id => (string) (int) $id];
     }
 }

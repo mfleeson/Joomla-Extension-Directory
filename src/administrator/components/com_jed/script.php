@@ -86,6 +86,7 @@ class Com_JedInstallerScript
         $this->ensureExtensionContentType();
         $this->createMailTemplates();
         $this->seedBlockReasons();
+        $this->migrateToOrganisations();
 
         echo Text::_('COM_JED_INSTALLERSCRIPT_POSTFLIGHT');
 
@@ -384,6 +385,38 @@ class Com_JedInstallerScript
     }
 
     /**
+     * PRD-09: give every owner an organisation and convert maintainers (R14).
+     *
+     * Runs on every install and update. It only ever touches listings without an organisation, so
+     * after the first successful run it finds nothing to do; a run interrupted half way is simply
+     * continued by the next one.
+     *
+     * @return void
+     *
+     * @since 4.1.0
+     */
+    private function migrateToOrganisations(): void
+    {
+        try {
+            $db     = Factory::getContainer()->get(DatabaseInterface::class);
+            $report = (new \Jed\Component\Jed\Administrator\Organisation\OrganisationMigration($db))->run();
+
+            if ($report['owners'] > 0 || $report['skipped'] > 0) {
+                Log::add('com_jed organisation migration: ' . json_encode($report), Log::INFO, 'com_jed');
+                Factory::getApplication()->enqueueMessage(Text::sprintf(
+                    'COM_JED_INSTALLERSCRIPT_ORGANISATIONS_MIGRATED',
+                    $report['owners'],
+                    $report['listings'],
+                    $report['members'],
+                    $report['requests']
+                ));
+            }
+        } catch (\Throwable $e) {
+            Log::add('com_jed organisation migration failed: ' . $e->getMessage(), Log::WARNING, 'jerror');
+        }
+    }
+
+    /**
      * Creates/updates the Joomla Mail Templates (#__mail_templates) used by the ticket system:
      * the canned replies offered on the ticket edit screen, the moderation outcome mails and the
      * submission confirmation. Templates are matched by their template_id, so running this again
@@ -405,7 +438,7 @@ class Com_JedInstallerScript
                 // The marker the ticket edit screen's template picker selects on. com_jed also
                 // owns mail templates that are not canned replies (the audit report, the broken
                 // link notice, seeded by install.mysql.utf8.sql), and those must not be offered.
-                $params = ['canned_reply' => 1];
+                $params = ($template['canned'] ?? true) ? ['canned_reply' => 1] : [];
 
                 if (!empty($template['ticket_status'])) {
                     $params['ticket_status'] = $template['ticket_status'];
@@ -542,6 +575,54 @@ HTML,
 <p><strong>Reason:</strong></p>
 <p>{REASONNOTES}</p>
 <p>This is a notification, not a request - the change has already been made. If you think it was a mistake, reply to this mail.</p>
+HTML,
+            ],
+            // Organisations (PRD-09). Notifications, not canned replies: none of them belongs on
+            // the ticket screen's template picker.
+            'com_jed.organisation_request' => [
+                'canned'  => false,
+                'subject' => '{REQUESTER} would like to join {ORGANISATION}',
+                'body'    => <<<'HTML'
+<p><strong>{REQUESTER}</strong> has asked to become a member of <strong>{ORGANISATION}</strong> on {SITENAME}.</p>
+<p>{MESSAGE}</p>
+<p>Members can edit every listing of the organisation and answer its reviews. Approve or reject the request here:</p>
+<p><a href="{LINK}">{LINK}</a></p>
+<p>If you no longer want to receive requests, switch them off on the same page.</p>
+HTML,
+            ],
+            'com_jed.organisation_request_approved' => [
+                'canned'  => false,
+                'subject' => 'You are now a member of {ORGANISATION}',
+                'body'    => <<<'HTML'
+<p>Your request to join <strong>{ORGANISATION}</strong> on {SITENAME} has been approved. You can now look after its listings from your dashboard.</p>
+<p><a href="{LINK}">{LINK}</a></p>
+HTML,
+            ],
+            'com_jed.organisation_request_rejected' => [
+                'canned'  => false,
+                'subject' => 'Your request to join {ORGANISATION}',
+                'body'    => <<<'HTML'
+<p>Your request to join <strong>{ORGANISATION}</strong> on {SITENAME} was not accepted by its administrators.</p>
+<p>If you think this is a mistake, contact the organisation directly.</p>
+HTML,
+            ],
+            'com_jed.organisation_invitation' => [
+                'canned'  => false,
+                'subject' => '{INVITER} invites you to join {ORGANISATION}',
+                'body'    => <<<'HTML'
+<p><strong>{INVITER}</strong> has invited you to become a member of <strong>{ORGANISATION}</strong> on {SITENAME}.</p>
+<p>Members can edit every listing of the organisation and answer its reviews, and your name is shown to its other members. Nothing happens until you accept. Accept or decline on your organisations page:</p>
+<p><a href="{LINK}">{LINK}</a></p>
+<p>If you do not know this organisation, decline the invitation.</p>
+HTML,
+            ],
+            'com_jed.organisation_added' => [
+                'canned'  => false,
+                'subject' => 'You have been added to {ORGANISATION}',
+                'body'    => <<<'HTML'
+<p><strong>{INVITER}</strong> has added you to <strong>{ORGANISATION}</strong> on {SITENAME}. You can now look after its listings from your dashboard.</p>
+<p>If this is a mistake, you can leave the organisation on your organisations page:</p>
+<p><a href="{LINK}">{LINK}</a></p>
 HTML,
             ],
             'com_jed.extension_vl1_vulnerable' => [

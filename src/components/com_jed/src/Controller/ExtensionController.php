@@ -184,51 +184,23 @@ class ExtensionController extends BaseController
     }
 
     /**
-     * Accept or decline a maintainer invitation.
-     *
-     * Only the invited person can answer, and only their own invitation - the extension id alone
-     * is not an authorisation, so the row is matched on the current user's id as well.
+     * Formerly: accept or decline a per-listing maintainer invitation.
      *
      * @return void
      *
      * @since 4.0.0
+     *
+     * @deprecated 4.1.0 Use organisation.respond (PRD-09).
      */
     public function respondToInvitation(): void
     {
-        // 'get': the dashboard offers this as two plain links rather than a form, so the token
-        // travels in the query string. checkToken() defaults to POST and would silently reject
-        // every answer.
+        // Per-listing maintainer invitations were replaced by organisation invitations in 4.1.0
+        // (PRD-09). Links in mails sent before then land here: send the person to the page where
+        // their organisation invitations are answered, instead of to an error.
         $this->checkToken('get');
 
-        $app         = Factory::getApplication();
-        $extensionId = $app->getInput()->getInt('extension_id', 0);
-        $accept      = $app->getInput()->getInt('accept', 0) === 1;
-
-        $dashboard = Route::_('index.php?option=com_jed&view=dashboard', false);
-
-        if (!JedHelper::isLoggedIn() || !$extensionId) {
-            $app->enqueueMessage(Text::_('COM_JED_EXTENSION_NO_ACCESS_LABEL'), 'error');
-            $this->setRedirect($dashboard);
-
-            return;
-        }
-
-        try {
-            /** @var ExtensionModel $model */
-            $model    = $this->getModel('Extension', 'Site');
-            $answered = $model->respondToMaintainerInvitation($extensionId, (int) $app->getIdentity()->id, $accept);
-
-            $app->enqueueMessage(
-                $answered
-                    ? Text::_($accept ? 'COM_JED_MAINTAINER_INVITE_ACCEPTED' : 'COM_JED_MAINTAINER_INVITE_DECLINED')
-                    : Text::_('COM_JED_MAINTAINER_INVITE_NOT_FOUND'),
-                $answered ? 'message' : 'warning'
-            );
-        } catch (Exception $e) {
-            $app->enqueueMessage($e->getMessage(), 'error');
-        }
-
-        $this->setRedirect($dashboard);
+        Factory::getApplication()->enqueueMessage(Text::_('COM_JED_MAINTAINER_INVITE_REPLACED'), 'info');
+        $this->setRedirect(Route::_('index.php?option=com_jed&view=organisations', false));
     }
 
     /**

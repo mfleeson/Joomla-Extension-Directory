@@ -13,6 +13,7 @@ namespace Jed\Component\Jed\Site\Controller;
 \defined('_JEXEC') or die;
 // phpcs:enable PSR1.Files.SideEffects
 
+use Jed\Component\Jed\Administrator\Organisation\OrganisationAccess;
 use Jed\Component\Jed\Administrator\Transfer\TransferService;
 use Jed\Component\Jed\Administrator\Transfer\TransferState;
 use Jed\Component\Jed\Site\Helper\JedHelper;
@@ -47,9 +48,11 @@ class TransferController extends BaseController
 
         $app         = Factory::getApplication();
         $extensionId = $app->getInput()->getInt('extension_id', 0);
-        $email       = (string) $app->getInput()->getString('recipient_email', '');
+        $code        = (string) $app->getInput()->getString('recipient_organisation', '');
         $userId      = (int) $app->getIdentity()->id;
 
+        // An administrator of the organisation that owns the listing (PRD-09 R5). isOwner() asks
+        // exactly that since 4.1.0.
         if (!JedHelper::isLoggedIn() || !JedHelper::isOwner($extensionId)) {
             $app->enqueueMessage(Text::_('COM_JED_TRANSFER_ERROR_NOT_OWNER'), 'error');
             $this->setRedirect($this->dashboard());
@@ -58,14 +61,14 @@ class TransferController extends BaseController
         }
 
         try {
-            $service   = new TransferService(Factory::getContainer()->get(DatabaseInterface::class));
-            $recipient = $service->findRecipient($email, $userId, $extensionId);
+            $service      = new TransferService(Factory::getContainer()->get(DatabaseInterface::class));
+            $organisation = $service->findOrganisation($code);
 
-            $service->initiate($extensionId, $recipient, $userId);
+            $service->initiate($extensionId, $organisation, $userId);
 
-            // Named, never addressed: telling the owner "sent to Jane Doe" confirms the account
-            // they already looked up, while echoing the address back would not (8.8.1).
-            $app->enqueueMessage(Text::sprintf('COM_JED_TRANSFER_REQUESTED', $recipient->name));
+            // Addressed by the organisation's code, so there is no account to confirm or deny:
+            // the message names the organisation the administrator chose.
+            $app->enqueueMessage(Text::sprintf('COM_JED_TRANSFER_REQUESTED', $organisation->title));
         } catch (Throwable $e) {
             $app->enqueueMessage($e->getMessage(), 'error');
         }
@@ -133,13 +136,19 @@ class TransferController extends BaseController
 
         $transfer = $db->setQuery(
             $db->getQuery(true)
-                ->select($db->quoteName(['from_user_id', 'to_user_id']))
+                ->select($db->quoteName(['extension_id', 'from_user_id', 'to_user_id', 'from_organisation_id', 'to_organisation_id']))
                 ->from($db->quoteName('#__jed_extension_transfers'))
                 ->where($db->quoteName('id') . ' = ' . $transferId)
         )->loadAssoc();
 
+        // The two confirming primary contacts, or an administrator of either organisation
+        // (PRD-09 R5) - the administrators run the organisation, the primary contact only signs.
         $isParty = $transfer !== null
-            && \in_array($userId, [(int) $transfer['from_user_id'], (int) $transfer['to_user_id']], true);
+            && (
+                \in_array($userId, [(int) $transfer['from_user_id'], (int) $transfer['to_user_id']], true)
+                || OrganisationAccess::isMember((int) ($transfer['from_organisation_id'] ?? 0), $userId, true)
+                || OrganisationAccess::isMember((int) ($transfer['to_organisation_id'] ?? 0), $userId, true)
+            );
 
         if (!JedHelper::isLoggedIn() || !$isParty) {
             $app->enqueueMessage(Text::_('COM_JED_TRANSFER_ERROR_NOT_PARTY'), 'error');

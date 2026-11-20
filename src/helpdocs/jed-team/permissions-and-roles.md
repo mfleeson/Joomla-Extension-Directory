@@ -12,8 +12,8 @@ Two different kinds of rule apply:
 - **Global rights** (this page): *may this group approve anything at all?* These are Joomla
   permissions.
 - **Rights over one listing**: *may this person touch this extension?* Answered by the listing's
-  **owner** and its accepted **maintainers** - not by a permission. The owner of one listing has
-  no rights over any other.
+  **organisation**: its active members may edit it, its administrators may also hand it over -
+  not by a permission. Membership of one organisation gives no rights over another's listings.
 
 ## JED (`com_jed`) permissions
 
@@ -25,7 +25,7 @@ Two different kinds of rule apply:
 | **Delete** (`core.delete`) | Soft-delete and restore listings; delete reviews and developer responses |
 | **Edit** (`core.edit`) | Edit listings and reviews in the administrator; *Recalculate Score*; the **Edit** button on public listing pages |
 | **Edit State** (`core.edit.state`) | Publish/unpublish/archive/trash listings (the online/offline state) and reviews; approve/reject reviews and approve developer responses |
-| **Edit Own** (`core.edit.own`) | Lets developers edit their **own** (owned or maintained) listings and reviews. (Taking their own approved listing online/offline needs no permission - being its owner or an accepted maintainer is enough.) |
+| **Edit Own** (`core.edit.own`) | Lets developers edit the listings of their organisations, and their own reviews. (Taking such an approved listing online/offline needs no permission - being an active member of the owning organisation is enough.) |
 | **Approve Listings** (`jed.approve`) | Promote a pending revision to live, or reject it with a reason; switch the active revision |
 | **Block Listings** (`jed.block`) | Block and unblock listings - deliberately separate from Edit State |
 | **Force Ownership Transfer** (`jed.transfer.force`) | The listing's **Ownership** tab: move a listing to a new owner without the current owner's confirmation |

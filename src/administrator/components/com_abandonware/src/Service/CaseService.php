@@ -479,7 +479,7 @@ class CaseService
     }
 
     /**
-     * Send the owner-contact template to the owner and every accepted maintainer.
+     * Send the owner-contact template to the owner and every active member of the owning organisation.
      *
      * Owner **and** maintainers, because the question a case asks is whether anybody is still
      * reachable, not whether one named account is. Read from `owner` and an accepted maintainer
@@ -505,7 +505,6 @@ class CaseService
 
         $this->loadLanguage();
 
-        $accepted   = 1;
         $recipients = $this->db->setQuery(
             $this->db->getQuery(true)
                 ->select('DISTINCT ' . $this->db->quoteName('u.id'))
@@ -518,15 +517,28 @@ class CaseService
                 ->bind(':eid', $extensionId, ParameterType::INTEGER)
         )->loadColumn();
 
-        $maintainers = $this->db->setQuery(
-            $this->db->getQuery(true)
-                ->select($this->db->quoteName('user_id'))
-                ->from($this->db->quoteName('#__jed_extensions_maintainers'))
-                ->where($this->db->quoteName('extension_id') . ' = :eid')
-                ->where($this->db->quoteName('state') . ' = :accepted')
-                ->bind(':eid', $extensionId, ParameterType::INTEGER)
-                ->bind(':accepted', $accepted, ParameterType::INTEGER)
-        )->loadColumn();
+        // Every active member of the organisation that owns the listing (com_jed PRD-09, which
+        // replaced per-listing maintainers). The question a case asks is whether *anybody* behind
+        // the listing is still reachable.
+        try {
+            $active      = 1;
+            $maintainers = $this->db->setQuery(
+                $this->db->getQuery(true)
+                    ->select($this->db->quoteName('m.user_id'))
+                    ->from($this->db->quoteName('#__jed_organisation_members', 'm'))
+                    ->innerJoin(
+                        $this->db->quoteName('#__jed_extensions', 'x'),
+                        $this->db->quoteName('x.organisation_id') . ' = ' . $this->db->quoteName('m.organisation_id')
+                    )
+                    ->where($this->db->quoteName('x.id') . ' = :eid')
+                    ->where($this->db->quoteName('m.state') . ' = :active')
+                    ->bind(':eid', $extensionId, ParameterType::INTEGER)
+                    ->bind(':active', $active, ParameterType::INTEGER)
+            )->loadColumn();
+        } catch (Throwable $e) {
+            // A com_jed without organisations: the owner alone.
+            $maintainers = [];
+        }
 
         $userIds = array_unique(array_map('intval', array_merge($recipients ?: [], $maintainers ?: [])));
         $userIds = array_filter($userIds, static fn (int $id): bool => $id > 0);

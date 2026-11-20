@@ -7,7 +7,7 @@
 | **Awaiting approval** | Submitted; the JED team has not decided yet | No | Wait. You can keep improving it. |
 | **Not approved** | Reviewed and turned down. The reviewer's notes are shown under the badge and were e-mailed to you. | No | Fix the problem and save the listing again - it goes back to *Awaiting approval*. |
 | **Online** | Approved and public. A listing goes online automatically when it is first approved. | Yes | Keep it up to date. **Take offline** hides it. |
-| **Offline** | Approved, but you (or a maintainer) took it offline | No | **Put online** shows it again. |
+| **Offline** | Approved, but you (or another member of your organisation) took it offline | No | **Put online** shows it again. |
 | **Blocked** | Taken offline by the JED team, with a public reason | A notice is shown instead of the listing | Fix the reason (see below), then open a ticket under *Unpublished Support*. |
 | **Deleted** | Removed | No (the address answers "deleted") | Contact the JED team if you think this is a mistake. |
 
@@ -23,9 +23,9 @@ For an approved listing, the status cell in **My Dashboard > My Extensions** has
   reviews, scores, tickets and your pending edits all stay.
 - **Put online** (on an offline listing) - it is visible again straight away.
 
-The owner and accepted maintainers can use the switch; each use is recorded for the JED team. When
+Every active member of the organisation that owns the listing can use the switch; each use is recorded for the JED team. When
 you open your own offline listing on the site, a notice reminds you that only you and your
-maintainers can see it, with a **Put online** button.
+members of its organisation can see it, with a **Put online** button.
 
 The switch is not available while a listing is awaiting approval or not approved. It is available
 while a listing is **blocked**, but going online does not lift the block - visitors keep seeing the

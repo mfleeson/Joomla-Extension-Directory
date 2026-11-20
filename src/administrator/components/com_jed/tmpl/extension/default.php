@@ -18,6 +18,7 @@ use Jed\Component\Jed\Administrator\Helper\JedHelper;
 use Jed\Component\Jed\Administrator\MediaHandling\ImageSize;
 use Joomla\CMS\HTML\HTMLHelper;
 use Joomla\CMS\Language\Text;
+use Joomla\CMS\Router\Route;
 
 /** @var \Jed\Component\Jed\Administrator\View\Extension\HtmlView $this */
 
@@ -96,15 +97,30 @@ foreach ($fieldsets as $fieldset) :
                             <li class="text-muted">&#8212;</li>
                         <?php endif; ?>
                     </ul>
-                <?php elseif ($fieldset->name === 'maintainers') : ?>
-                    <ul class="list-unstyled mt-3">
-                        <?php foreach ($this->maintainers as $maintainer) : ?>
-                            <li><?php echo $this->escape($maintainer->name ?: $maintainer->username); ?></li>
-                        <?php endforeach; ?>
-                        <?php if (empty($this->maintainers)) : ?>
-                            <li class="text-muted">&#8212;</li>
-                        <?php endif; ?>
-                    </ul>
+                <?php elseif ($fieldset->name === 'organisation') : ?>
+                    <?php if ($this->organisation === null) : ?>
+                        <p class="text-muted mt-3"><?php echo Text::_('COM_JED_ORGANISATION_NONE'); ?></p>
+                    <?php else : ?>
+                        <p class="mt-3">
+                            <a href="<?php echo Route::_('index.php?option=com_jed&task=organisation.edit&id=' . (int) $this->organisation->id); ?>">
+                                <?php echo $this->escape($this->organisation->title); ?>
+                            </a>
+                            <code><?php echo $this->escape($this->organisation->uid); ?></code>
+                        </p>
+                        <ul class="list-unstyled">
+                            <?php foreach ($this->organisation->members as $member) : ?>
+                                <li>
+                                    <?php echo $this->escape($member->name ?: $member->username); ?>
+                                    <span class="badge bg-<?php echo $member->role === 'admin' ? 'primary' : 'secondary'; ?>">
+                                        <?php echo Text::_('COM_JED_ORGANISATION_ROLE_' . strtoupper((string) $member->role)); ?>
+                                    </span>
+                                    <?php if ((int) $member->user_id === (int) $this->organisation->primary_user_id) : ?>
+                                        <span class="badge bg-info"><?php echo Text::_('COM_JED_ORGANISATION_PRIMARY_CONTACT'); ?></span>
+                                    <?php endif; ?>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php endif; ?>
                 <?php endif; ?>
 
                 <?php if ($fieldset->name === $firstFieldsetName && !empty($this->categories)) : ?>

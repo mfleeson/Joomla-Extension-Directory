@@ -90,6 +90,7 @@ final class PrivacyExportService
             'jed_extensions'          => $this->extensions($userId),
             'jed_extension_revisions' => $this->revisions($userId),
             'jed_maintainer_roles'    => $this->maintainerRoles($userId),
+            'jed_organisations'       => $this->organisationMemberships($userId),
             'jed_extension_media'     => $this->media($userId),
             'jed_reviews'             => $this->reviews($userId),
             'jed_review_responses'    => $this->reviewResponses($userId),
@@ -158,6 +159,35 @@ final class PrivacyExportService
             ->order($this->db->quoteName('id') . ' ASC');
 
         return $this->annotateRelationship($this->rows($query, '#__jed_extensions_history'), $userId);
+    }
+
+    /**
+     * The person's organisation memberships (PRD-09): each organisation's name and code with the
+     * person's role and state, and - for the organisations they run - the contact details they
+     * are responsible for. Other members are not listed: that would hand back other people's data.
+     *
+     * @param int $userId The subject of the request.
+     *
+     * @return array<int, array<string, mixed>>
+     *
+     * @since 4.1.0
+     */
+    private function organisationMemberships(int $userId): array
+    {
+        $query = $this->db->getQuery(true)
+            ->select($this->db->quoteName(['o.id', 'o.uid', 'o.title', 'm.role', 'm.state', 'm.request_message', 'm.requested_time', 'm.invited_time', 'm.joined_time']))
+            ->select('CASE WHEN ' . $this->db->quoteName('o.primary_user_id') . ' = :uid1 THEN 1 ELSE 0 END AS ' . $this->db->quoteName('is_primary_contact'))
+            ->select('CASE WHEN ' . $this->db->quoteName('o.primary_user_id') . ' = :uid2 THEN ' . $this->db->quoteName('o.contact_name') . ' ELSE NULL END AS ' . $this->db->quoteName('contact_name'))
+            ->select('CASE WHEN ' . $this->db->quoteName('o.primary_user_id') . ' = :uid3 THEN ' . $this->db->quoteName('o.contact_email') . ' ELSE NULL END AS ' . $this->db->quoteName('contact_email'))
+            ->select('CASE WHEN ' . $this->db->quoteName('o.primary_user_id') . ' = :uid4 THEN ' . $this->db->quoteName('o.contact_phone') . ' ELSE NULL END AS ' . $this->db->quoteName('contact_phone'))
+            ->select('CASE WHEN ' . $this->db->quoteName('o.primary_user_id') . ' = :uid5 THEN ' . $this->db->quoteName('o.address') . ' ELSE NULL END AS ' . $this->db->quoteName('address'))
+            ->from($this->db->quoteName('#__jed_organisation_members', 'm'))
+            ->innerJoin($this->db->quoteName('#__jed_organisations', 'o'), $this->db->quoteName('o.id') . ' = ' . $this->db->quoteName('m.organisation_id'))
+            ->where($this->db->quoteName('m.user_id') . ' = :uid')
+            ->bind([':uid', ':uid1', ':uid2', ':uid3', ':uid4', ':uid5'], $userId, ParameterType::INTEGER)
+            ->order($this->db->quoteName('o.title') . ' ASC');
+
+        return $this->rows($query, '#__jed_organisation_members');
     }
 
     /**

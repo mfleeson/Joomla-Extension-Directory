@@ -16,6 +16,9 @@ namespace Jed\Component\Jed\Site\Model;
 
 use Jed\Component\Jed\Administrator\Transfer\TransferState;
 use Jed\Component\Jed\Site\Helper\JedHelper;
+use Jed\Component\Jed\Administrator\Organisation\MembershipState;
+use Jed\Component\Jed\Administrator\Organisation\OrganisationRole;
+use Jed\Component\Jed\Administrator\Organisation\OrganisationService;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\Model\ItemModel;
@@ -88,8 +91,9 @@ class DashboardModel extends ItemModel
      */
     public function getReviews(): array
     {
-        $userId = Factory::getApplication()->getIdentity()->id;
-        $db     = $this->getDatabase();
+        $userId     = Factory::getApplication()->getIdentity()->id;
+        $db         = $this->getDatabase();
+        $ownListing = JedHelper::getOwnedOrMaintainedCondition($db, 'e');
 
         $query = $db->getQuery(true)
             ->select(
@@ -97,18 +101,16 @@ class DashboardModel extends ItemModel
                     'r.id', 'r.title', 'r.overall_score', 'r.state', 'r.created_on', 'r.extension_id',
                     'r.created_by', 'r.developer_response', 'r.developer_response_published',
                     $db->quoteName('e.name', 'extension_title'),
-                    'CASE WHEN ' . $db->quoteName('e.owner') . ' = ' . $db->quote($userId)
-                        . ' OR ' . $db->quoteName('m.user_id') . ' IS NOT NULL THEN 1 ELSE 0 END AS is_own_extension',
+                    'CASE WHEN ' . $ownListing . ' THEN 1 ELSE 0 END AS is_own_extension',
                 ]
             )
             ->from($db->quoteName('#__jed_reviews', 'r'))
             ->innerJoin($db->quoteName('#__jed_extensions', 'e'), $db->quoteName('e.id') . ' = ' . $db->quoteName('r.extension_id'))
-            ->leftJoin($db->quoteName('#__jed_extensions_maintainers', 'm'), $db->quoteName('m.extension_id') . ' = ' . $db->quoteName('r.extension_id')
-                . ' AND ' . $db->quoteName('m.user_id') . ' = ' . $db->quote($userId))
+            // Reviews the user wrote, and the published reviews of listings their organisations own
+            // (PRD-09 - previously "owned or maintained").
             ->where(
                 '(' . $db->quoteName('r.created_by') . ' = ' . $db->quote($userId) . ')'
-                . ' OR ((' . $db->quoteName('e.owner') . ' = ' . $db->quote($userId)
-                . ' OR ' . $db->quoteName('m.user_id') . ' IS NOT NULL) AND ' . $db->quoteName('r.state') . ' = 1)'
+                . ' OR (' . $ownListing . ' AND ' . $db->quoteName('r.state') . ' = 1)'
             )
             ->order($db->quoteName('r.created_on') . ' DESC');
 
@@ -135,40 +137,35 @@ class DashboardModel extends ItemModel
      * @throws \Exception
      */
     /**
-     * The open maintainer invitations for the current user.
+     * Organisation invitations waiting for the current user's answer (PRD-09).
      *
-     * The dashboard is the only place an invited person finds out they were named at all - the
-     * invitation grants nothing until they answer it, so without this the state column would
-     * just be a way to make maintainers never work.
+     * An invitation grants nothing until it is accepted (S4), so the dashboard is where being
+     * named turns into being able to do something - and where a stranger's invitation is declined.
      *
      * @return array
      *
-     * @since 4.0.0
+     * @since 4.1.0
      */
-    public function getMaintainerInvitations(): array
+    public function getOrganisationInvitations(): array
     {
         $userId = (int) (Factory::getApplication()->getIdentity()->id ?? 0);
 
-        if ($userId <= 0) {
-            return [];
-        }
+        return (new OrganisationService($this->getDatabase()))->organisationsOf($userId, [MembershipState::INVITED]);
+    }
 
-        $db      = $this->getDatabase();
-        $invited = JedHelper::MAINTAINER_INVITED;
+    /**
+     * Membership requests waiting for the current user's decision, in every organisation they
+     * administer (PRD-09 R7).
+     *
+     * @return array
+     *
+     * @since 4.1.0
+     */
+    public function getOrganisationRequests(): array
+    {
+        $userId = (int) (Factory::getApplication()->getIdentity()->id ?? 0);
 
-        return (array) $db->setQuery(
-            $db->getQuery(true)
-                ->select($db->quoteName(['m.extension_id', 'm.invited_time']))
-                ->select($db->quoteName('e.name', 'extension_name'))
-                ->select($db->quoteName('u.name', 'invited_by_name'))
-                ->from($db->quoteName('#__jed_extensions_maintainers', 'm'))
-                ->innerJoin($db->quoteName('#__jed_extensions', 'e'), $db->quoteName('e.id') . ' = ' . $db->quoteName('m.extension_id'))
-                ->leftJoin($db->quoteName('#__users', 'u'), $db->quoteName('u.id') . ' = ' . $db->quoteName('m.invited_by'))
-                ->where($db->quoteName('m.user_id') . ' = ' . $userId)
-                ->where($db->quoteName('m.state') . ' = ' . $invited)
-                ->where($db->quoteName('e.deleted') . ' = 0')
-                ->order($db->quoteName('m.invited_time') . ' DESC')
-        )->loadObjectList();
+        return (new OrganisationService($this->getDatabase()))->requestsAwaiting($userId);
     }
 
     /**
@@ -201,15 +198,20 @@ class DashboardModel extends ItemModel
             $db->getQuery(true)
                 ->select($db->quoteName(['t.id', 't.extension_id', 't.state', 't.expires', 't.from_user_id', 't.to_user_id']))
                 ->select($db->quoteName('e.name', 'extension_name'))
-                ->select($db->quoteName('uf.name', 'from_name'))
-                ->select($db->quoteName('ut.name', 'to_name'))
+                // Named by organisation (PRD-09) where the transfer has them, by person before.
+                ->select('COALESCE(' . $db->quoteName('of.title') . ', ' . $db->quoteName('uf.name') . ') AS ' . $db->quoteName('from_name'))
+                ->select('COALESCE(' . $db->quoteName('ot.title') . ', ' . $db->quoteName('ut.name') . ') AS ' . $db->quoteName('to_name'))
                 ->from($db->quoteName('#__jed_extension_transfers', 't'))
                 ->innerJoin($db->quoteName('#__jed_extensions', 'e'), $db->quoteName('e.id') . ' = ' . $db->quoteName('t.extension_id'))
                 ->leftJoin($db->quoteName('#__users', 'uf'), $db->quoteName('uf.id') . ' = ' . $db->quoteName('t.from_user_id'))
                 ->leftJoin($db->quoteName('#__users', 'ut'), $db->quoteName('ut.id') . ' = ' . $db->quoteName('t.to_user_id'))
+                ->leftJoin($db->quoteName('#__jed_organisations', 'of'), $db->quoteName('of.id') . ' = ' . $db->quoteName('t.from_organisation_id'))
+                ->leftJoin($db->quoteName('#__jed_organisations', 'ot'), $db->quoteName('ot.id') . ' = ' . $db->quoteName('t.to_organisation_id'))
                 ->whereIn($db->quoteName('t.state'), $open, ParameterType::STRING)
+                // The two confirming primary contacts, and the administrator who started it.
                 ->where('(' . $db->quoteName('t.from_user_id') . ' = ' . $userId
-                    . ' OR ' . $db->quoteName('t.to_user_id') . ' = ' . $userId . ')')
+                    . ' OR ' . $db->quoteName('t.to_user_id') . ' = ' . $userId
+                    . ' OR ' . $db->quoteName('t.initiated_by') . ' = ' . $userId . ')')
                 ->order($db->quoteName('t.id') . ' DESC')
         )->loadObjectList();
 
@@ -220,9 +222,10 @@ class DashboardModel extends ItemModel
 
             // "Waiting for you" is the only thing the reader can act on, so work it out here
             // rather than leaving the template to reason about the state machine.
-            $row->awaiting_me = $isRecipient
+            $isParty          = $isRecipient || (int) $row->from_user_id === $userId;
+            $row->awaiting_me = $isParty && ($isRecipient
                 ? $state !== TransferState::TO_CONFIRMED
-                : $state !== TransferState::FROM_CONFIRMED;
+                : $state !== TransferState::FROM_CONFIRMED);
         }
 
         return $rows;
@@ -231,9 +234,8 @@ class DashboardModel extends ItemModel
     /**
      * The listings the current user could hand over right now.
      *
-     * Owned only, never maintained: the 8.8 matrix puts transfer in the owner-only column, and
-     * offering a maintainer a listing in this picker would be an invitation to an error the
-     * controller then has to refuse.
+     * Only listings of organisations the user administers (PRD-09): offering an ordinary member a
+     * listing in this picker would be an invitation to an error the controller then has to refuse.
      *
      * Listings with a handover already under way are left out, because a second request would be
      * refused anyway - they are shown in the open-transfers list above the form instead.
@@ -265,7 +267,15 @@ class DashboardModel extends ItemModel
             $db->getQuery(true)
                 ->select($db->quoteName(['a.id', 'a.name']))
                 ->from($db->quoteName('#__jed_extensions', 'a'))
-                ->where($db->quoteName('a.owner') . ' = ' . $userId)
+                // Listings of organisations the user is an active administrator of (PRD-09 R5):
+                // handing a listing over is the administrators' decision, not every member's.
+                ->where('EXISTS (SELECT 1 FROM ' . $db->quoteName('#__jed_organisation_members', 'om')
+                    . ' INNER JOIN ' . $db->quoteName('#__jed_organisations', 'oo') . ' ON ' . $db->quoteName('oo.id') . ' = ' . $db->quoteName('om.organisation_id')
+                    . ' WHERE ' . $db->quoteName('om.organisation_id') . ' = ' . $db->quoteName('a.organisation_id')
+                    . ' AND ' . $db->quoteName('om.user_id') . ' = ' . $userId
+                    . ' AND ' . $db->quoteName('om.state') . ' = ' . MembershipState::ACTIVE->value
+                    . ' AND ' . $db->quoteName('om.role') . ' = ' . $db->quote(OrganisationRole::ADMIN->value)
+                    . ' AND ' . $db->quoteName('oo.state') . ' = 1)')
                 ->where($db->quoteName('a.deleted') . ' = 0')
                 ->where($openTransfer)
                 ->order($db->quoteName('a.name') . ' ASC')

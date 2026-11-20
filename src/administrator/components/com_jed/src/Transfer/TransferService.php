@@ -15,6 +15,10 @@ namespace Jed\Component\Jed\Administrator\Transfer;
 // phpcs:enable PSR1.Files.SideEffects
 
 use Jed\Component\Jed\Administrator\Log\JedActionLog;
+use Jed\Component\Jed\Administrator\Organisation\MembershipState;
+use Jed\Component\Jed\Administrator\Organisation\OrganisationAccess;
+use Jed\Component\Jed\Administrator\Organisation\OrganisationRole;
+use Jed\Component\Jed\Administrator\Organisation\OrganisationService;
 use Jed\Component\Jed\Site\Helper\JedHelper;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
@@ -140,19 +144,52 @@ final class TransferService
     }
 
     /**
-     * Start a transfer and mail both parties their own link.
+     * Find the organisation a listing is to be handed to (PRD-09 R11).
      *
-     * @param int  $extensionId The extension.
-     * @param User $recipient   The new owner, from findRecipient().
-     * @param int  $initiatedBy Who started it.
+     * By its public code, not by anybody's e-mail address: the code names an organisation, not
+     * an account, so asking for one discloses nothing about who is registered (8.8.1) - which is
+     * why this, unlike findRecipient(), needs no rate limit.
      *
-     * @return int  The transfer id.
+     * @param string $uid The organisation's code.
      *
-     * @throws RuntimeException  When the extension cannot be transferred right now.
+     * @return object  The organisation row.
+     *
+     * @throws RuntimeException  Unknown, disabled, or without a primary contact.
+     *
+     * @since 4.1.0
+     */
+    public function findOrganisation(string $uid): object
+    {
+        $organisation = (new OrganisationService($this->db))->findByUid($uid);
+
+        if ($organisation === null || (int) $organisation->state !== 1) {
+            throw new RuntimeException(Text::_('COM_JED_TRANSFER_ERROR_NO_ORGANISATION'));
+        }
+
+        if ((int) $organisation->primary_user_id <= 0) {
+            throw new RuntimeException(Text::_('COM_JED_TRANSFER_ERROR_ORGANISATION_NO_CONTACT'));
+        }
+
+        return $organisation;
+    }
+
+    /**
+     * Open a handover of a listing to another organisation.
+     *
+     * The two organisations' primary contacts confirm, each with their own single-use token, in
+     * either order (P1-04). Each side is named to the other by organisation - never by address.
+     *
+     * @param int    $extensionId    The extension.
+     * @param object $toOrganisation The receiving organisation (findOrganisation()).
+     * @param int    $initiatedBy    The administrator of the current organisation asking.
+     *
+     * @return int  The new transfer id.
+     *
+     * @throws RuntimeException  When the extension cannot be handed over right now.
      *
      * @since 4.0.0
      */
-    public function initiate(int $extensionId, User $recipient, int $initiatedBy): int
+    public function initiate(int $extensionId, object $toOrganisation, int $initiatedBy): int
     {
         $extension = $this->loadExtension($extensionId);
 
@@ -167,44 +204,51 @@ final class TransferService
             throw new RuntimeException(Text::_('COM_JED_TRANSFER_ERROR_ALREADY_OPEN'));
         }
 
-        $fromUserId = (int) $extension['owner'];
+        $from = $this->sourceOrganisation($extension);
 
-        if ($fromUserId === (int) $recipient->id) {
+        if ((int) $from->id === (int) $toOrganisation->id) {
             throw new RuntimeException(Text::_('COM_JED_TRANSFER_ERROR_SELF'));
         }
+
+        $fromUserId = (int) $from->primary_user_id;
+        $toUserId   = (int) $toOrganisation->primary_user_id;
 
         $fromToken = $this->newToken();
         $toToken   = $this->newToken();
         $now       = Factory::getDate();
 
         $row = (object) [
-            'extension_id'    => $extensionId,
-            'from_user_id'    => $fromUserId,
-            'to_user_id'      => (int) $recipient->id,
-            'initiated_by'    => $initiatedBy,
-            'initiated_time'  => $now->toSql(),
-            'from_token_hash' => $this->hashToken($fromToken),
-            'to_token_hash'   => $this->hashToken($toToken),
-            'state'           => TransferState::PENDING->value,
-            'expires'         => $now->modify('+' . self::EXPIRY_DAYS . ' days')->toSql(),
+            'extension_id'         => $extensionId,
+            'from_user_id'         => $fromUserId,
+            'to_user_id'           => $toUserId,
+            'from_organisation_id' => (int) $from->id,
+            'to_organisation_id'   => (int) $toOrganisation->id,
+            'initiated_by'         => $initiatedBy,
+            'initiated_time'       => $now->toSql(),
+            'from_token_hash'      => $this->hashToken($fromToken),
+            'to_token_hash'        => $this->hashToken($toToken),
+            'state'                => TransferState::PENDING->value,
+            'expires'              => $now->modify('+' . self::EXPIRY_DAYS . ' days')->toSql(),
         ];
 
         $this->db->insertObject('#__jed_extension_transfers', $row, 'id');
         $transferId = (int) $row->id;
 
-        $owner = Factory::getContainer()->get(UserFactoryInterface::class)->loadUserById($fromUserId);
+        $users     = Factory::getContainer()->get(UserFactoryInterface::class);
+        $owner     = $users->loadUserById($fromUserId);
+        $recipient = $users->loadUserById($toUserId);
 
-        // Each party gets their own token, and each is told the *name* of the other - never the
-        // address. A transfer must not disclose an address the other side did not share (8.8.1).
+        // Each party gets their own token, and each is told the *organisation* on the other side -
+        // never an address. A transfer must not disclose an address the other side did not share.
         $this->notify($owner, 'com_jed.transfer_request_owner', [
             'EXTENSIONNAME' => (string) $extension['name'],
-            'OTHERPARTY'    => $recipient->name,
+            'OTHERPARTY'    => (string) $toOrganisation->title,
             'CONFIRMLINK'   => $this->confirmationLink($transferId, $fromToken),
         ]);
 
         $this->notify($recipient, 'com_jed.transfer_request_recipient', [
             'EXTENSIONNAME' => (string) $extension['name'],
-            'OTHERPARTY'    => $owner->name,
+            'OTHERPARTY'    => (string) $from->title,
             'CONFIRMLINK'   => $this->confirmationLink($transferId, $toToken),
         ]);
 
@@ -272,6 +316,22 @@ final class TransferService
                 throw new RuntimeException(Text::_('COM_JED_TRANSFER_ERROR_WRONG_USER'));
             }
 
+            // The confirming user was the primary contact when the transfer started. If their
+            // organisation has since demoted or removed them, their link no longer speaks for it.
+            $sideOrgId = (int) ($isRecipient ? ($transfer['to_organisation_id'] ?? 0) : ($transfer['from_organisation_id'] ?? 0));
+
+            if ($sideOrgId > 0) {
+                $membership = (new OrganisationService($this->db))->membership($sideOrgId, $userId);
+
+                if (
+                    $membership === null
+                    || (int) $membership->state !== MembershipState::ACTIVE->value
+                    || (string) $membership->role !== OrganisationRole::ADMIN->value
+                ) {
+                    throw new RuntimeException(Text::_('COM_JED_TRANSFER_ERROR_WRONG_USER'));
+                }
+            }
+
             $newState = $state->afterConfirmationBy($isRecipient);
             $now      = Factory::getDate()->toSql();
 
@@ -306,16 +366,16 @@ final class TransferService
     }
 
     /**
-     * Move a listing without the current owner's consent.
+     * Move a listing to another organisation without the current one's consent.
      *
      * The abandonware escape hatch. The reason is mandatory and is kept on the same record, both
-     * parties are told afterwards - as information, not as consent - and the state says `forced`
-     * so that a later reader can tell this apart from an agreed handover.
+     * primary contacts are told afterwards - as information, not as consent - and the state says
+     * `forced` so that a later reader can tell this apart from an agreed handover.
      *
-     * @param int    $extensionId The extension.
-     * @param User   $recipient   The new owner.
-     * @param int    $byUserId    The team member.
-     * @param string $reason      Why.
+     * @param int    $extensionId    The extension.
+     * @param object $toOrganisation The receiving organisation (findOrganisation()).
+     * @param int    $byUserId       The team member.
+     * @param string $reason         Why.
      *
      * @return int  The transfer id.
      *
@@ -323,7 +383,7 @@ final class TransferService
      *
      * @since 4.0.0
      */
-    public function force(int $extensionId, User $recipient, int $byUserId, string $reason): int
+    public function force(int $extensionId, object $toOrganisation, int $byUserId, string $reason): int
     {
         $reason = trim($reason);
 
@@ -338,7 +398,12 @@ final class TransferService
             throw new RuntimeException(Text::_('COM_JED_TRANSFER_ERROR_DELETED'));
         }
 
-        if ((int) $extension['owner'] === (int) $recipient->id) {
+        // The current organisation, when there is one. A listing the migration could not give one
+        // (its owner's account is gone) has none - which is exactly the listing a forced transfer
+        // exists for, so it is not refused.
+        $fromId = $extension['organisation_id'] !== null ? (int) $extension['organisation_id'] : null;
+
+        if ($fromId === (int) $toOrganisation->id) {
             throw new RuntimeException(Text::_('COM_JED_TRANSFER_ERROR_SELF'));
         }
 
@@ -349,32 +414,39 @@ final class TransferService
             $this->cancel((int) $open['id'], $byUserId, Text::_('COM_JED_TRANSFER_SUPERSEDED_BY_FORCE'));
         }
 
-        $now = Factory::getDate()->toSql();
+        $fromUserId = (int) $extension['owner'];
+        $toUserId   = (int) $toOrganisation->primary_user_id;
+        $now        = Factory::getDate()->toSql();
+
         $row = (object) [
-            'extension_id'    => $extensionId,
-            'from_user_id'    => (int) $extension['owner'],
-            'to_user_id'      => (int) $recipient->id,
-            'initiated_by'    => $byUserId,
-            'initiated_time'  => $now,
-            'from_token_hash' => null,
-            'to_token_hash'   => null,
-            'state'           => TransferState::FORCED->value,
-            'expires'         => $now,
-            'completed_time'  => $now,
-            'cancel_reason'   => $reason,
+            'extension_id'         => $extensionId,
+            'from_user_id'         => $fromUserId,
+            'to_user_id'           => $toUserId,
+            'from_organisation_id' => $fromId,
+            'to_organisation_id'   => (int) $toOrganisation->id,
+            'initiated_by'         => $byUserId,
+            'initiated_time'       => $now,
+            'from_token_hash'      => null,
+            'to_token_hash'        => null,
+            'state'                => TransferState::FORCED->value,
+            'expires'              => $now,
+            'completed_time'       => $now,
+            'cancel_reason'        => $reason,
         ];
 
         $this->db->insertObject('#__jed_extension_transfers', $row, 'id');
 
-        $this->applyOwnership($extensionId, (int) $extension['owner'], (int) $recipient->id);
+        $this->applyOwnership($extensionId, $fromUserId, $toUserId, $fromId, (int) $toOrganisation->id);
 
-        $users = Factory::getContainer()->get(UserFactoryInterface::class);
-        $owner = $users->loadUserById((int) $extension['owner']);
+        $users     = Factory::getContainer()->get(UserFactoryInterface::class);
+        $owner     = $users->loadUserById($fromUserId);
+        $recipient = $users->loadUserById($toUserId);
+        $fromName  = $fromId !== null ? (string) ((new OrganisationService($this->db))->find($fromId)->title ?? $owner->name) : (string) $owner->name;
 
-        foreach ([[$owner, $recipient], [$recipient, $owner]] as [$to, $other]) {
+        foreach ([[$owner, (string) $toOrganisation->title], [$recipient, $fromName]] as [$to, $other]) {
             $this->notify($to, 'com_jed.transfer_forced', [
                 'EXTENSIONNAME' => (string) $extension['name'],
-                'OTHERPARTY'    => $other->name,
+                'OTHERPARTY'    => $other,
                 'REASONNOTES'   => $reason,
             ]);
         }
@@ -384,10 +456,12 @@ final class TransferService
         // kept for good (`8.15` boundary 1).
         JedActionLog::record(JedActionLog::TRANSFER_FORCE, 'com_jed.extension', $extensionId, [
             'title'    => (string) $extension['name'],
-            'from'     => $owner->name,
-            'fromlink' => 'index.php?option=com_users&task=user.edit&id=' . (int) $owner->id,
-            'to'       => $recipient->name,
-            'tolink'   => 'index.php?option=com_users&task=user.edit&id=' . (int) $recipient->id,
+            'from'     => $fromName,
+            'fromlink' => $fromId !== null
+                ? 'index.php?option=com_jed&task=organisation.edit&id=' . $fromId
+                : 'index.php?option=com_users&task=user.edit&id=' . $fromUserId,
+            'to'       => (string) $toOrganisation->title,
+            'tolink'   => 'index.php?option=com_jed&task=organisation.edit&id=' . (int) $toOrganisation->id,
             'reason'   => $reason,
         ]);
 
@@ -528,52 +602,57 @@ final class TransferService
     }
 
     /**
-     * Move the owner column and clean up what ownership implies.
+     * Move the listing: `organisation_id` and its `owner` mirror (PRD-09).
      *
-     * @param int $extensionId The extension.
-     * @param int $fromUserId  The previous owner.
-     * @param int $toUserId    The new owner.
+     * Conditional on the listing still belonging where the transfer found it, so a listing that
+     * changed hands since (forced, or by another transfer) is not moved back on an old agreement.
+     * Transfers recorded before 4.1.0 carry no organisations; for those the old rule - `owner`
+     * must still be the agreed owner - applies, and the listing goes to the recipient's
+     * organisation.
      *
-     * @return bool Whether the listing was moved; false when it no longer belongs to $fromUserId.
+     * @param int      $extensionId The listing.
+     * @param int      $fromUserId  The previous owner (primary contact).
+     * @param int      $toUserId    The new owner (primary contact).
+     * @param int|null $fromOrgId   The previous organisation.
+     * @param int|null $toOrgId     The new organisation.
+     *
+     * @return bool  Whether the listing moved.
      *
      * @since 4.0.0
      */
-    private function applyOwnership(int $extensionId, int $fromUserId, int $toUserId): bool
+    private function applyOwnership(int $extensionId, int $fromUserId, int $toUserId, ?int $fromOrgId = null, ?int $toOrgId = null): bool
     {
-        // `owner` and nothing else. `created_by` stays where it is - it is the authorship record
-        // and does not move (8.8.1). The previous owner loses access purely because this column
-        // changed, which is why P1-03 had to remove every created_by permission check first.
-        $this->db->setQuery(
-            $this->db->getQuery(true)
-                ->update($this->db->quoteName('#__jed_extensions'))
-                ->set($this->db->quoteName('owner') . ' = :to')
-                ->where($this->db->quoteName('id') . ' = :eid')
-                // Only from the owner the transfer was agreed with: a listing that changed hands
-                // since (forced, or by another transfer) is not moved back on an old agreement.
-                ->where($this->db->quoteName('owner') . ' = :from')
-                ->bind(':to', $toUserId, ParameterType::INTEGER)
-                ->bind(':eid', $extensionId, ParameterType::INTEGER)
-                ->bind(':from', $fromUserId, ParameterType::INTEGER)
-        )->execute();
+        $organisations = new OrganisationService($this->db);
+        $toOrgId     ??= $organisations->personalOrganisationFor($toUserId);
+        $toPrimary     = (int) ($organisations->find((int) $toOrgId)->primary_user_id ?? $toUserId);
+
+        $query = $this->db->getQuery(true)
+            ->update($this->db->quoteName('#__jed_extensions'))
+            ->set($this->db->quoteName('organisation_id') . ' = :toorg')
+            ->set($this->db->quoteName('owner') . ' = :to')
+            ->where($this->db->quoteName('id') . ' = :eid')
+            ->bind(':toorg', $toOrgId, ParameterType::INTEGER)
+            ->bind(':to', $toPrimary, ParameterType::INTEGER)
+            ->bind(':eid', $extensionId, ParameterType::INTEGER);
+
+        if ($fromOrgId !== null) {
+            $query->where($this->db->quoteName('organisation_id') . ' = :fromorg')
+                ->bind(':fromorg', $fromOrgId, ParameterType::INTEGER);
+        } else {
+            $query->where($this->db->quoteName('owner') . ' = :from')
+                ->bind(':from', $fromUserId, ParameterType::INTEGER);
+        }
+
+        $this->db->setQuery($query)->execute();
 
         if ($this->db->getAffectedRows() !== 1) {
             return false;
         }
 
-        // If the new owner was a maintainer, that row goes. The owner is never held in the
-        // maintainers table, and leaving it would record the same person twice and break the
-        // rule P1-03 enforces on the other write path.
-        $this->db->setQuery(
-            $this->db->getQuery(true)
-                ->delete($this->db->quoteName('#__jed_extensions_maintainers'))
-                ->where($this->db->quoteName('extension_id') . ' = :eid')
-                ->where($this->db->quoteName('user_id') . ' = :uid')
-                ->bind(':eid', $extensionId, ParameterType::INTEGER)
-                ->bind(':uid', $toUserId, ParameterType::INTEGER)
-        )->execute();
+        OrganisationAccess::clearCache();
 
-        // The previous owner has no maintainer row to remove - they were never in that table -
-        // and deliberately does not gain one. 8.8.1: the old owner loses all access.
+        // The previous organisation's members lose all access through this listing, because the
+        // only thing granting it was membership of the organisation that owned it (8.8.1).
 
         $this->resetAuditConsent($extensionId);
 
@@ -628,7 +707,9 @@ final class TransferService
         $moved = $this->applyOwnership(
             (int) $transfer['extension_id'],
             (int) $transfer['from_user_id'],
-            (int) $transfer['to_user_id']
+            (int) $transfer['to_user_id'],
+            ($transfer['from_organisation_id'] ?? null) !== null ? (int) $transfer['from_organisation_id'] : null,
+            ($transfer['to_organisation_id'] ?? null) !== null ? (int) $transfer['to_organisation_id'] : null
         );
 
         if (!$moved) {
@@ -821,6 +902,36 @@ final class TransferService
     }
 
     /**
+     * The organisation a listing is handed over from. A listing the 4.1.0 migration has not
+     * reached yet is given its owner's personal organisation first, so every transfer made from
+     * now on is between organisations.
+     *
+     * @param array $extension The listing row (loadExtension()).
+     *
+     * @return object  The organisation row.
+     *
+     * @since 4.1.0
+     */
+    private function sourceOrganisation(array $extension): object
+    {
+        $organisations = new OrganisationService($this->db);
+        $organisationId = $extension['organisation_id'] !== null ? (int) $extension['organisation_id'] : 0;
+
+        if ($organisationId <= 0) {
+            $organisationId = (int) $organisations->personalOrganisationFor((int) $extension['owner']);
+            $organisations->assignListing((int) $extension['id'], $organisationId);
+        }
+
+        $organisation = $organisations->find($organisationId);
+
+        if ($organisation === null || (int) $organisation->primary_user_id <= 0) {
+            throw new RuntimeException(Text::_('COM_JED_TRANSFER_ERROR_ORGANISATION_NO_CONTACT'));
+        }
+
+        return $organisation;
+    }
+
+    /**
      * @param int $extensionId The extension.
      *
      * @return array
@@ -833,7 +944,7 @@ final class TransferService
     {
         $row = $this->db->setQuery(
             $this->db->getQuery(true)
-                ->select($this->db->quoteName(['id', 'name', 'owner', 'deleted', 'blocked']))
+                ->select($this->db->quoteName(['id', 'name', 'owner', 'deleted', 'blocked', 'organisation_id']))
                 ->from($this->db->quoteName('#__jed_extensions'))
                 ->where($this->db->quoteName('id') . ' = :eid')
                 ->bind(':eid', $extensionId, ParameterType::INTEGER)
@@ -882,10 +993,15 @@ final class TransferService
         $recipient = $users->loadUserById((int) $transfer['to_user_id']);
         $name      = JedHelper::getExtensionTitle((int) $transfer['extension_id']);
 
-        foreach ([[$owner, $recipient], [$recipient, $owner]] as [$to, $other]) {
+        // Named by organisation where the transfer has them (4.1.0 on), by person before that.
+        $organisations = new OrganisationService($this->db);
+        $fromName      = (string) ($organisations->find((int) ($transfer['from_organisation_id'] ?? 0))->title ?? $owner->name);
+        $toName        = (string) ($organisations->find((int) ($transfer['to_organisation_id'] ?? 0))->title ?? $recipient->name);
+
+        foreach ([[$owner, $toName], [$recipient, $fromName]] as [$to, $other]) {
             $this->notify($to, $template, array_merge($data, [
                 'EXTENSIONNAME' => $name,
-                'OTHERPARTY'    => $other->name,
+                'OTHERPARTY'    => $other,
             ]));
         }
     }

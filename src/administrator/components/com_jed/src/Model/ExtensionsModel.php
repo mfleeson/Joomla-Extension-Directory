@@ -167,6 +167,14 @@ class ExtensionsModel extends ListModel
         if (!empty($search)) {
             if (stripos((string) $search, 'id:') === 0) {
                 $query->where($db->quoteName('a.id') . ' = ' . (int) substr((string) $search, 3));
+            } elseif (stripos((string) $search, 'org:') === 0) {
+                // The listings of one organisation, by its code (PRD-09) - the Organisations list
+                // links its listing counts here.
+                $uid = \Jed\Component\Jed\Administrator\Organisation\OrganisationUid::normalise(substr((string) $search, 4));
+                $query->where(
+                    $db->quoteName('a.organisation_id') . ' = (SELECT ' . $db->quoteName('o.id') . ' FROM '
+                    . $db->quoteName('#__jed_organisations', 'o') . ' WHERE ' . $db->quoteName('o.uid') . ' = ' . $db->quote($uid) . ')'
+                );
             } else {
                 $search = $db->quote('%' . $db->escape($search, true) . '%');
                 $query->where($db->quoteName('a.name') . ' LIKE ' . $search);

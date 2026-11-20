@@ -18,6 +18,7 @@ use Jed\Component\Jed\Administrator\Identity\Guid;
 use Jed\Component\Jed\Administrator\Identity\IdentityLinks;
 use Jed\Component\Jed\Administrator\Identity\PingVerifier;
 use Jed\Component\Jed\Administrator\Identity\PrivilegedAccounts;
+use Jed\Component\Jed\Administrator\Organisation\OrganisationService;
 use Joomla\Application\ApplicationEvents;
 use Joomla\CMS\Application\ConsoleApplication;
 use Joomla\CMS\Event\Plugin\AjaxEvent;
@@ -155,6 +156,17 @@ final class Jedidentity extends CMSPlugin implements SubscriberInterface
                 ->bind(':uid', $userId, ParameterType::INTEGER)
                 ->bind(':old', $userId, ParameterType::INTEGER)
         )->execute();
+
+        // Organisations (com_jed PRD-09): an account that no longer exists must not stay a member
+        // or remain an organisation's primary contact. Where another administrator exists the role
+        // passes to them (and with it `owner` on the organisation's listings).
+        if (class_exists(OrganisationService::class)) {
+            try {
+                (new OrganisationService($db))->handleErasure($userId);
+            } catch (Throwable $e) {
+                $this->log(sprintf('organisation clean-up for deleted account %d failed: %s', $userId, $e->getMessage()));
+            }
+        }
     }
 
     /**

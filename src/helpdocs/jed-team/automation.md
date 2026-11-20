@@ -86,6 +86,6 @@ large import, run **Index** in Smart Search once.
 ## Action log
 
 With the *Action Log - JED* and *Action Log - VEL* plugins enabled, **Users > User Actions Log**
-records listing approvals, rejections, blocks, unblocks, deletions, restores, maintainer changes,
+records listing approvals, rejections, blocks, unblocks, deletions, restores, organisation changes,
 ownership transfers, review publish/unpublish decisions, link-check transitions, and the VEL's
 publish/retire/status/CVE decisions.

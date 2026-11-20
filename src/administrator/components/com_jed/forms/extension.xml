@@ -242,18 +242,16 @@
                hint="COM_JED_EXTENSION_POPULAR_LABEL"/>
     </fieldset>
 
-    <fieldset name="maintainers" label="COM_JED_FIELDSET_MAINTAINERS_LABEL">
-        <field name="maintainer"
-               type="subform"
-               multiple="true"
-               max="50"
-               layout="joomla.form.field.subform.repeatable"
-               label="COM_JED_EXTENSION_MAINTAINERS_LABEL"
-               buttons="add,remove"
-        >
-            <form>
-                <field name="user_id" type="user" label="JGLOBAL_FIELD_USER_LABEL" required="true"/>
-            </form>
+    <!--
+        PRD-09: the organisation that owns the listing replaces the per-listing maintainer list.
+        Chosen when the team creates a listing (or the owner's personal organisation is used);
+        read-only afterwards - moving a listing is a transfer (Ownership tab).
+    -->
+    <fieldset name="organisation" label="COM_JED_FIELDSET_ORGANISATION_LABEL">
+        <field name="organisation_id" type="jedorganisation" scope="all" filter="integer"
+               label="COM_JED_EXTENSION_ORGANISATION_LABEL"
+               description="COM_JED_EXTENSION_ORGANISATION_ADMIN_DESC">
+            <option value="0">COM_JED_ORGANISATION_FROM_OWNER</option>
         </field>
     </fieldset>
 

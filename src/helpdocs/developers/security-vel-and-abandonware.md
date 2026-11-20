@@ -9,7 +9,7 @@ Vulnerabilities are handled by the **VEL team**, separately from the JED team.
 
 1. Someone reports a vulnerability to the VEL (privately - nothing is published).
 2. The VEL team verifies it and **notifies you** ("the vendor") by e-mail. The notification goes to
-   the listing's **owner and maintainers**, any developer address the reporter gave, and any
+   the **members of the organisation** that owns the listing, any developer address the reporter gave, and any
    other address the team adds. It includes the details the reporter agreed to share and the
    **planned disclosure date** (by default 90 days after notification).
 3. **Reply to that e-mail** - replies are threaded into the case automatically (every VEL mail
@@ -89,7 +89,7 @@ the JED team opens a case. Before anything is published:
    decision - shown on the public **Abandoned Extensions** list.
 
 If you have stopped maintaining an extension, consider **handing it over** to someone who will
-continue it - see [Maintainers and ownership](maintainers-and-ownership.md). A completed handover
+continue it - see [Maintainers and ownership](organisations-and-ownership.md). A completed handover
 closes an open abandonware case automatically.
 
 If your extension is on the abandoned list and you maintain it (or want to take it over), contact

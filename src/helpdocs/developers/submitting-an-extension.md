@@ -37,7 +37,7 @@ The form has one tab per group of fields. The full list, with what each field is
 | **Info** | Intro text, description, licence name and licence URL, whether registration is required to download, type (Free/Paid/Freemium/Cloud), extension types included, Joomla versions |
 | **Links** | Download, support, demo, documentation, Git and internal download links, download key, the Joomla Update System confirmation, update URL, developer URL and e-mail, changelog URL |
 | **Media** | Logo, video link, up to 8 images |
-| **Maintainers** | Other JED users who may help maintain the listing (they have to accept) |
+| **Organisation** | The organisation that will own the listing - your personal organisation or one you are a member of (see [Organisations and ownership](organisations-and-ownership.md)) |
 | **Linked Extensions** | "Add-on For" and "Free/Paid Version" |
 | **Files** | Your installation package, for the JED team's checks |
 

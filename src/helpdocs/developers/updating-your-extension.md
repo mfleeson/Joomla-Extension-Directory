@@ -7,7 +7,7 @@
    submitted it (see the [Listing fields reference](listing-fields-reference.md)).
 3. Make your changes and choose **Submit**. **Cancel** leaves without saving.
 
-Owners and accepted **maintainers** can edit a listing.
+Every active **member of the organisation** that owns a listing can edit it.
 
 ### What happens when you save
 
@@ -16,8 +16,8 @@ Owners and accepted **maintainers** can edit a listing.
   **revision**. **The public listing does not change yet**: it keeps showing the last approved
   details.
 - Some things are stored straight away and are **not** held back for review: the **additional
-  categories**, **tags**, **screenshots** (images added or deleted), **uploaded files** and the
-  **maintainers** list.
+  categories**, **tags**, **screenshots** (images added or deleted), and **uploaded files**.
+  Who may edit the listing is decided by membership of its organisation, not on this form.
 - A ticket is opened for the JED team ("Listing *name* was edited by its developer") and you
   receive a *Listing Update Received* e-mail.
 - The JED team compares your revision with the live listing and approves it. You are e-mailed

@@ -18,10 +18,10 @@ Exceptions, which change the live record directly:
 
 - block/unblock and delete/restore (they also write an inactive revision so the history records
   who did what), and the online/offline state;
-- the owner, which changes only through a handover or a forced transfer (see
+- the organisation and owner, which change only through a handover or a forced transfer (see
   [Change the owner](how-to/change-owner.md)) - never through a revision;
 - automatic version bumps from the developer's update server;
-- additional categories, tags, screenshots, uploaded files and maintainers, which are saved
+- additional categories, tags, screenshots and uploaded files, which are saved
   straight away when the form is saved.
 
 ### 2. How visibility works
@@ -41,8 +41,8 @@ The result for a public visitor, in order of precedence:
 2. **Never approved** - not found (404). The owner works on it through the dashboard.
 3. **Blocked** - the public block notice with the reason title and code (HTTP 200, not indexed by
    search engines). The internal note is never shown.
-4. **Offline** (state not published) - not found (404) for the public; the owner and maintainers
-   can still see it.
+4. **Offline** (state not published) - not found (404) for the public; members of the owning
+   organisation can still see it.
 5. Otherwise **visible**.
 
 Blocking never changes *state*, and publishing never lifts a block. A developer therefore cannot
@@ -106,10 +106,10 @@ is live). Tabs:
 | **Links** | All the listing's links, internal download URL and key, update system confirmation, update URL, developer URL/e-mail, changelog |
 | **Media** | Logo, video, images (drag and drop area) |
 | **Scores** | The computed scores and review count, and the **Popular** flag |
-| **Maintainers** | Maintainers (see [Manage maintainers](how-to/manage-maintainers.md)) |
+| **Organisation** | The organisation that owns the listing, read only here (see [Manage organisations](how-to/manage-organisations.md)) |
 | **Files** | Uploaded packages (drag and drop area) |
 | **Publishing** | Created/modified information and an **Internal Note** (team only) |
-| **Ownership** | Only with **Force Ownership Transfer**: the current owner, any handover in progress, and the forced transfer - see [Change the owner](how-to/change-owner.md) |
+| **Ownership** | Only with **Force Ownership Transfer**: the owning organisation and its primary contact, any handover in progress, and the forced transfer - see [Change the owner](how-to/change-owner.md) |
 | **Reviews** | The listing's reviews with links to edit them |
 
 ### Edit screen toolbar
@@ -157,7 +157,7 @@ the *Pending* column until someone approves or rejects it.
 ## Where decisions are recorded
 
 - **User Actions Log** (Users > User Actions Log): approvals, rejections, blocks, unblocks,
-  deletions, restores, developers taking listings online/offline, maintainer changes, forced
+  deletions, restores, developers taking listings online/offline, organisation membership changes, forced
   ownership transfers.
 - The revision itself: who approved/rejected it, when, the reason code and notes.
 - E-mails to the developer: approval (first approval: "is now listed"; later edits: "your changes

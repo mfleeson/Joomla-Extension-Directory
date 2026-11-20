@@ -16,6 +16,7 @@ namespace Jed\Component\Jed\Site\Model;
 // phpcs:enable PSR1.Files.SideEffects
 
 use Exception;
+use Jed\Component\Jed\Administrator\Organisation\OrganisationAccess;
 use Jed\Component\Jed\Administrator\Access\JedAccessHelper;
 use Jed\Component\Jed\Administrator\Access\Privilege;
 use Jed\Component\Jed\Administrator\Traits\ExtensionUtilities;
@@ -37,7 +38,7 @@ use stdClass;
  *
  * Editing only: this form never creates a new #__jed_extensions row. It always loads the most
  * recent #__jed_extensions_history entry for the extension_id given in the URL, and only lets the
- * extension's owner, one of its maintainers, or an admin/superuser view or save it.
+ * extension's organisation members (PRD-09), or an admin/superuser view or save it.
  *
  * @since 4.0.0
  */
@@ -156,6 +157,10 @@ class ExtensionformModel extends FormModel
         if (! is_object($form)) {
             throw new Exception(Text::_('JERROR_LOADFILE_FAILED'), 500);
         }
+
+        // An existing listing stays with its organisation: moving it is a transfer (PRD-09).
+        $form->setFieldAttribute('organisation_id', 'readonly', 'true');
+        $form->setFieldAttribute('organisation_id', 'filter', 'unset');
 
         return $form;
     }
@@ -358,16 +363,15 @@ class ExtensionformModel extends FormModel
             ->bind(':eid', $extensionId, ParameterType::INTEGER);
         $this->item->categories = $db->setQuery($catQuery)->loadColumn() ?: [];
 
-        // Pre-fill the "maintainer" subform with the extension's existing maintainers.
-        $maintainerQuery = $db->getQuery(true)
-            ->select($db->quoteName('user_id'))
-            ->from($db->quoteName('#__jed_extensions_maintainers'))
-            ->where($db->quoteName('extension_id') . ' = :eid')
-            ->bind(':eid', $extensionId, ParameterType::INTEGER);
-        $this->item->maintainer = array_map(
-            static fn ($userId) => ['user_id' => (int) $userId],
-            $db->setQuery($maintainerQuery)->loadColumn() ?: []
-        );
+        // The owning organisation comes from the live row, not the revision: ownership is the
+        // listing's, and it can have changed (a transfer) since the revision was written.
+        $this->item->organisation_id = (int) $db->setQuery(
+            $db->getQuery(true)
+                ->select($db->quoteName('organisation_id'))
+                ->from($db->quoteName('#__jed_extensions'))
+                ->where($db->quoteName('id') . ' = :eid')
+                ->bind(':eid', $extensionId, ParameterType::INTEGER)
+        )->loadResult();
 
         // Pre-fill the "tags" field with the live extension's current Joomla tags - tags live on
         // #__jed_extensions, not the history table, see ExtensionUtilities::storeTags().
@@ -451,34 +455,9 @@ class ExtensionformModel extends FormModel
     }
 
     /**
-     * Load the maintainers for an extension from #__jed_extensions_maintainers.
-     *
-     * @param int $extensionId The extension id to load maintainers for.
-     *
-     * @return array
-     *
-     * @since 4.0.0
-     */
-    public function getMaintainers(?int $extensionId = null): array
-    {
-        $extensionId = (!empty($extensionId)) ? $extensionId : (int) $this->getState('extension.id');
-
-        $db    = $this->getDatabase();
-        $query = $db->getQuery(true)
-            ->select($db->quoteName(['m.user_id', 'u.name', 'u.username']))
-            ->from($db->quoteName('#__jed_extensions_maintainers', 'm'))
-            ->leftJoin($db->quoteName('#__users', 'u'), $db->quoteName('u.id') . ' = ' . $db->quoteName('m.user_id'))
-            ->where($db->quoteName('m.extension_id') . ' = :extensionId')
-            ->bind(':extensionId', $extensionId, ParameterType::INTEGER)
-            ->order($db->quoteName('u.name') . ' ASC');
-
-        return $db->setQuery($query)->loadObjectList() ?: [];
-    }
-
-    /**
      * Whether the current user may view/edit the given extension: users with core.edit may edit
-     * any extension; users with only core.edit.own may edit it if they are the owner or one of
-     * its maintainers (#__jed_extensions_maintainers). Super Users always pass core.edit.
+     * any extension; users with only core.edit.own may edit it if they are an active member of the
+     * organisation that owns it (PRD-09). Super Users always pass core.edit.
      *
      * @param int $extensionId The extension PK in #__jed_extensions.
      *
@@ -507,7 +486,7 @@ class ExtensionformModel extends FormModel
      *
      * Always updates an existing extension: inserts a new #__jed_extensions_history row (the
      * previous one is deactivated, matching the admin backend's ExtensionModel::save()), syncs
-     * categories/maintainers/images/files, and points #__jed_extensions.entry_version at the new
+     * categories/images/files, and points #__jed_extensions.entry_version at the new
      * history entry. There is no "create new extension" path.
      *
      * @param array $data The form data
@@ -554,10 +533,11 @@ class ExtensionformModel extends FormModel
         )->loadResult();
 
         // Force a new INSERT rather than an UPDATE of an existing history entry.
-        $data['id']           = 0;
-        $data['extension_id'] = $extensionId;
-        $data['active']       = 1;
-        $data['owner']        = $ownerId;
+        $data['id']              = 0;
+        $data['extension_id']    = $extensionId;
+        $data['active']          = 1;
+        $data['owner']           = $ownerId;
+        $data['organisation_id'] = OrganisationAccess::organisationIdOf($extensionId);
         unset($data['created']); // ExtensionHistoryTable::bind() sets this for new rows
 
         // Only one history entry may be active per extension; deactivate the rest
@@ -587,7 +567,6 @@ class ExtensionformModel extends FormModel
         $rawPost = (array) Factory::getApplication()->getInput()->post->get('jform', [], 'array');
 
         $this->storeCategories($extensionId, $categories);
-        $this->storeMaintainers($extensionId, (array) ($data['maintainer'] ?? []));
         $this->storeTags($extensionId, (array) ($data['tags'] ?? []));
         $this->deleteMarkedUploads($extensionId, (array) ($rawPost['deleteImages'] ?? []), '#__jed_extensions_images');
         $this->deleteMarkedUploads($extensionId, (array) ($rawPost['deleteFiles'] ?? []), '#__jed_extensions_files');
@@ -606,8 +585,8 @@ class ExtensionformModel extends FormModel
         $this->notifyListingSubmitted($extensionId, (int) $table->id, true);
 
         // An edit by a trusted developer goes live without waiting for a moderator, on the
-        // *owner's* trust rather than the editor's - a maintainer edits on the owner's listing,
-        // and it is the owner the JED team decided to trust.
+        // *owner's* trust rather than the editor's - `owner` is the owning organisation's primary
+        // contact (PRD-09), the person the JED team decided to trust, whoever of its members edits.
         $this->autoApproveIfTrusted($extensionId, $ownerId);
 
         return true;

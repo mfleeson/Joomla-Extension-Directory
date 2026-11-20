@@ -90,6 +90,16 @@ final class PrivacyDeterminations
             'handling' => self::DELETE,
             'reason'   => 'COM_JED_PRIVACY_DETERMINATION_MAINTAINERS',
         ],
+        '#__jed_organisation_members' => [
+            'export'   => true,
+            'handling' => self::DELETE,
+            'reason'   => 'COM_JED_PRIVACY_DETERMINATION_ORGANISATION_MEMBERS',
+        ],
+        '#__jed_organisations' => [
+            'export'   => true,
+            'handling' => self::CONDITIONAL,
+            'reason'   => 'COM_JED_PRIVACY_DETERMINATION_ORGANISATIONS',
+        ],
         '#__jed_extensions_images' => [
             'export'   => true,
             'handling' => self::ANONYMISE,

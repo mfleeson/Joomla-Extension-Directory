@@ -9,8 +9,8 @@ The dashboard is a set of cards. Some only appear when there is something in the
 
 | Card | What it contains |
 |---|---|
-| **Handovers** | Only for developers - ownership transfers in progress. See [Maintainers and ownership](../developers/maintainers-and-ownership.md). |
-| **Maintainer invitations** | Only when someone has invited you to help maintain their listing. Accept or Decline. |
+| **Handovers** | Only for developers - ownership transfers in progress. See [Organisations and ownership](../developers/organisations-and-ownership.md). |
+| **Organisations** | Only when an organisation has invited you to join (Accept or Decline), or - if you administer an organisation - when someone has asked to join it (Approve or Reject). |
 | **My Reviews** | The reviews you wrote - and, if you are a developer, the reviews of **your** extensions (highlighted with a red border). Columns: extension, review title, overall score, date, status (Published / Unpublished / Trashed) and actions. |
 | **My Favourites** | Extensions you bookmarked, with their category and the date you added them. |
 | **My Extensions** | Only relevant for developers - your listings with their status, and **Take offline** / **Put online** for approved ones. **Submit an extension** starts a new listing. |

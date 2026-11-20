@@ -50,7 +50,7 @@ No open items - see *Fixed* below.
 | # | Problem |
 |---|---|
 | 26 | The listing **Version** cannot be entered on the listing form; it is only ever set from the developer's update server. Listings without an update server never show a new version. |
-| 27 | Changes to **additional categories, tags, screenshots, uploaded files and maintainers** are saved immediately, not held with the revision for moderation, while all other listing fields are moderated. If that is not intended, they need to move into the revision. |
+| 27 | Changes to **additional categories, tags, screenshots, uploaded files** are saved immediately, not held with the revision for moderation, while all other listing fields are moderated. If that is not intended, they need to move into the revision. |
 
 ## Abandonware
 

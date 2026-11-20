@@ -242,6 +242,16 @@ foreach ($this->form->getFieldsets() as $fieldset) :
                                 <span class="text-muted"><?php echo Text::_('COM_JED_OWNERSHIP_NO_OWNER'); ?></span>
                             <?php endif; ?>
                         </dd>
+                        <dt class="col-sm-4"><?php echo Text::_('COM_JED_EXTENSION_ORGANISATION_LABEL'); ?></dt>
+                        <dd class="col-sm-8">
+                            <?php if (!empty($this->ownership['organisation'])) : ?>
+                                <a href="<?php echo Route::_('index.php?option=com_jed&task=organisation.edit&id=' . (int) $this->ownership['organisation']->id); ?>">
+                                    <?php echo $this->escape($this->ownership['organisation']->title); ?></a>
+                                <code><?php echo $this->escape($this->ownership['organisation']->uid); ?></code>
+                            <?php else : ?>
+                                <span class="text-muted"><?php echo Text::_('COM_JED_ORGANISATION_NONE'); ?></span>
+                            <?php endif; ?>
+                        </dd>
                         <dt class="col-sm-4"><?php echo Text::_('COM_JED_OWNERSHIP_OPEN_HANDOVER'); ?></dt>
                         <dd class="col-sm-8">
                             <?php if ($open !== null) : ?>
@@ -262,7 +272,16 @@ foreach ($this->form->getFieldsets() as $fieldset) :
                         <p class="text-muted"><?php echo Text::_('COM_JED_OWNERSHIP_FORCE_INTRO'); ?></p>
                         <div class="control-group">
                             <div class="control-label">
-                                <label for="jed-transfer-email"><?php echo Text::_('COM_JED_OWNERSHIP_NEW_OWNER_EMAIL'); ?> *</label>
+                                <label for="jed-transfer-organisation"><?php echo Text::_('COM_JED_OWNERSHIP_NEW_ORGANISATION'); ?></label>
+                            </div>
+                            <div class="controls">
+                                <input type="text" class="form-control" id="jed-transfer-organisation" name="transfer_organisation" autocomplete="off" placeholder="ORG-XXXX-XXXX">
+                                <div class="form-text"><?php echo Text::_('COM_JED_OWNERSHIP_NEW_ORGANISATION_DESC'); ?></div>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <div class="control-label">
+                                <label for="jed-transfer-email"><?php echo Text::_('COM_JED_OWNERSHIP_NEW_OWNER_EMAIL'); ?></label>
                             </div>
                             <div class="controls">
                                 <input type="email" class="form-control" id="jed-transfer-email" name="transfer_email" autocomplete="off">
@@ -300,9 +319,10 @@ foreach ($this->form->getFieldsets() as $fieldset) :
 
                     button.addEventListener('click', function () {
                         var email  = document.getElementById('jed-transfer-email');
+                        var org    = document.getElementById('jed-transfer-organisation');
                         var reason = document.getElementById('jed-transfer-reason');
 
-                        if (!email.value.trim()) {
+                        if (!email.value.trim() && !org.value.trim()) {
                             alert(Joomla.Text._('COM_JED_OWNERSHIP_JS_EMAIL_REQUIRED'));
                             email.focus();
 

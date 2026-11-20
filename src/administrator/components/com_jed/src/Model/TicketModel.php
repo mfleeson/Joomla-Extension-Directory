@@ -238,13 +238,15 @@ class TicketModel extends AdminModel
                 ->bind(':uid', $creatorId, ParameterType::INTEGER)
         )->loadObject() : null;
 
-        // Owned or created: the owner is the person answerable for a listing, created_by is
-        // who typed it in, and a ticket can be about either relationship.
+        // Owned, created, or looked after through an organisation (PRD-09): the owner is the
+        // person answerable for a listing, created_by is who typed it in, membership is who may
+        // act on it - and a ticket can be about any of those relationships.
         $extensions = $creatorId > 0 ? (array) $db->setQuery(
             $db->getQuery(true)
                 ->select($db->quoteName(['a.id', 'a.name', 'a.extension_version', 'a.state', 'a.approved', 'a.blocked', 'a.deleted', 'a.created', 'a.modified', 'a.owner']))
                 ->from($db->quoteName('#__jed_extensions', 'a'))
-                ->where('(' . $db->quoteName('a.owner') . ' = :owner OR ' . $db->quoteName('a.created_by') . ' = :creator)')
+                ->where('(' . $db->quoteName('a.owner') . ' = :owner OR ' . $db->quoteName('a.created_by') . ' = :creator OR '
+                    . \Jed\Component\Jed\Administrator\Organisation\OrganisationAccess::memberCondition($db, 'a', $creatorId) . ')')
                 ->bind([':owner', ':creator'], $creatorId, ParameterType::INTEGER)
                 ->order($db->quoteName('a.modified') . ' DESC, ' . $db->quoteName('a.id') . ' DESC')
         )->loadObjectList() : [];

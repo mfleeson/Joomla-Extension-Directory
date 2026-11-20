@@ -80,6 +80,7 @@ final class ClaimService
     private const CONTENT = [
         ['#__jed_extensions', 'owner'],
         ['#__jed_extensions_maintainers', 'user_id'],
+        ['#__jed_organisation_members', 'user_id'],
         ['#__jed_reviews', 'created_by'],
         ['#__jed_favorites', 'user_id'],
         ['#__jed_user_access', 'user_id'],

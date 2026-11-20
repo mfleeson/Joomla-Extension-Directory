@@ -14,6 +14,7 @@ namespace Jed\Component\Jed\Administrator\Listing;
 \defined('_JEXEC') or die;
 // phpcs:enable PSR1.Files.SideEffects
 
+use Jed\Component\Jed\Administrator\Organisation\OrganisationAccess;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
 use Joomla\Database\DatabaseInterface;
@@ -274,11 +275,11 @@ final class LinkedExtensions
     }
 
     /**
-     * Owner or accepted maintainer (8.8) - never `created_by`.
+     * An active member of the organisation that owns the listing (PRD-09) - never `created_by`.
      *
-     * Duplicated from the site helper rather than called through it because this class runs on
-     * both sides of the component and the site helper is not loadable from the backend. The
-     * columns it reads are the ones that matter: `owner`, and an accepted maintainer row.
+     * Until 4.1.0 this repeated the site helper's "owner or accepted maintainer" query, because
+     * the site helper is not loadable from the backend. The rule now lives in
+     * Organisation\OrganisationAccess, which both sides share.
      *
      * @param int $extensionId The listing.
      *
@@ -288,44 +289,6 @@ final class LinkedExtensions
      */
     private static function isOwnerOrMaintainer(int $extensionId): bool
     {
-        $user   = Factory::getApplication()->getIdentity();
-        $userId = (int) ($user->id ?? 0);
-
-        if ($userId <= 0 || $extensionId <= 0) {
-            return false;
-        }
-
-        $db = Factory::getContainer()->get(DatabaseInterface::class);
-
-        $isOwner = $db->setQuery(
-            $db->getQuery(true)
-                ->select('1')
-                ->from($db->quoteName('#__jed_extensions'))
-                ->where($db->quoteName('id') . ' = :eid')
-                ->where($db->quoteName('owner') . ' = :uid')
-                ->bind(':eid', $extensionId, ParameterType::INTEGER)
-                ->bind(':uid', $userId, ParameterType::INTEGER)
-        )->loadResult();
-
-        if ($isOwner) {
-            return true;
-        }
-
-        // JedHelper::MAINTAINER_ACCEPTED. Repeated as a literal because that constant lives in
-        // the site helper and nothing in the backend loads the site namespace. An invitation
-        // that has not been accepted (state 0) grants nothing.
-        $accepted = 1;
-
-        return (bool) $db->setQuery(
-            $db->getQuery(true)
-                ->select('1')
-                ->from($db->quoteName('#__jed_extensions_maintainers'))
-                ->where($db->quoteName('extension_id') . ' = :eid')
-                ->where($db->quoteName('user_id') . ' = :uid')
-                ->where($db->quoteName('state') . ' = :state')
-                ->bind(':eid', $extensionId, ParameterType::INTEGER)
-                ->bind(':uid', $userId, ParameterType::INTEGER)
-                ->bind(':state', $accepted, ParameterType::INTEGER)
-        )->loadResult();
+        return OrganisationAccess::isMemberOfExtensionOwner($extensionId);
     }
 }

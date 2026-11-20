@@ -1,16 +1,16 @@
 # Extension developers: overview
 
 This part of the help is for developers who list extensions on the JED - submitting new
-listings, keeping them up to date, answering reviews, working with maintainers, and dealing with
+listings, keeping them up to date, answering reviews, working with your organisation, and dealing with
 the JED and VEL teams.
 
 Everything you do as a developer starts from **My Dashboard**:
 
 | Dashboard card | What you do there |
 |---|---|
-| **My Extensions** | See every listing you own or maintain and its status; click a name to edit it; **Take offline** / **Put online**; **Submit an extension** |
+| **My Extensions** | See every listing owned by an organisation you belong to and its status; click a name to edit it; **Take offline** / **Put online**; **Submit an extension** |
 | **My Reviews** | Reviews of your extensions (highlighted with a red border) as well as reviews you wrote; respond, report |
-| **Maintainer invitations** | Accept or decline invitations to help maintain someone else's listing |
+| **Organisations** | Accept or decline invitations to join an organisation, approve join requests (organisation admins) and open **My Organisations** |
 | **Handovers** | Hand a listing to another developer, and follow handovers in progress |
 | **My Tickets** | Your conversations with the JED team |
 
@@ -50,7 +50,7 @@ Key principles:
 5. [Listing status, rejections and blocks](listing-status.md) - what each status means and what
    to do.
 6. [Responding to reviews](responding-to-reviews.md)
-7. [Maintainers and handing over ownership](maintainers-and-ownership.md)
+7. [Maintainers and handing over ownership](organisations-and-ownership.md)
 8. [Support tickets for developers](support-tickets.md)
 9. [Security, the VEL and abandonware](security-vel-and-abandonware.md) - vulnerability reports,
    fix notices, link checks, abandonware enquiries and automated audits.

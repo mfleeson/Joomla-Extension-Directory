@@ -23,7 +23,7 @@ Plus the two **trusted status** flags:
 
 | Flag | Effect |
 |---|---|
-| **Listings auto-approved** | New submissions and edits by this user's listings are approved automatically (the revision records the owner as approver). Applied on the **owner's** trust - a maintainer's edit to a trusted owner's listing is auto-approved too. |
+| **Listings auto-approved** | New submissions and edits by this user's listings are approved automatically (the revision records the owner as approver). Applied on the **owner's** trust - a member's edit to a listing whose organisation's primary contact is trusted is auto-approved too. |
 | **Reviews auto-approved** | Reserved for reviews by this user. |
 
 A **banned** user is never treated as trusted, whatever the flags say.

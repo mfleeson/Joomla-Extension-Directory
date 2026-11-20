@@ -143,19 +143,18 @@
         </field>
     </fieldset>
 
-    <fieldset name="maintainers" label="COM_JED_FIELDSET_MAINTAINERS_LABEL">
-        <field name="maintainer"
-               type="subform"
-               multiple="true"
-               max="50"
-               layout="joomla.form.field.subform.repeatable"
-               label="COM_JED_EXTENSION_MAINTAINERS_LABEL"
-               buttons="add,remove"
-        >
-            <form>
-                <field name="user_id" type="user" label="JGLOBAL_FIELD_USER_LABEL" required="true"/>
-            </form>
-        </field>
+    <!--
+        Who owns the listing (PRD-09). Per-listing maintainers are gone: everybody who is an active
+        member of the owning organisation looks after all of its listings, and membership is
+        managed on the organisation's own page. On a new listing the submitter picks one of the
+        organisations they belong to; on an existing listing the field is read-only - moving a
+        listing to another organisation is a transfer. The model checks the choice against the
+        database, so a posted id the submitter does not belong to is refused.
+    -->
+    <fieldset name="organisation" label="COM_JED_FIELDSET_ORGANISATION_LABEL">
+        <field name="organisation_id" type="jedorganisation" filter="integer"
+               label="COM_JED_EXTENSION_ORGANISATION_LABEL"
+               description="COM_JED_EXTENSION_ORGANISATION_DESC"/>
     </fieldset>
 
     <!--

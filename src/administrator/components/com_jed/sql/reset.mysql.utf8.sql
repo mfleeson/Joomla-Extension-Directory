@@ -18,6 +18,8 @@ DROP TABLE IF EXISTS `#__jed_extensions`;
 DROP TABLE IF EXISTS `#__jed_extensions_history`;
 DROP TABLE IF EXISTS `#__jed_extensions_category_map`;
 DROP TABLE IF EXISTS `#__jed_extensions_maintainers`;
+DROP TABLE IF EXISTS `#__jed_organisation_members`;
+DROP TABLE IF EXISTS `#__jed_organisations`;
 DROP TABLE IF EXISTS `#__jed_extensions_images`;
 DROP TABLE IF EXISTS `#__jed_extensions_files`;
 DROP TABLE IF EXISTS `#__jed_reviews`;

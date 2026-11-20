@@ -67,6 +67,13 @@ final class Jed extends ActionLogPlugin implements SubscriberInterface
         'transfer.force'     => 'PLG_ACTIONLOG_JED_TRANSFER_FORCE',
         'maintainer.add'     => 'PLG_ACTIONLOG_JED_MAINTAINER_ADD',
         'maintainer.remove'  => 'PLG_ACTIONLOG_JED_MAINTAINER_REMOVE',
+        'organisation.create'          => 'PLG_ACTIONLOG_JED_ORGANISATION_CREATE',
+        'organisation.member.add'      => 'PLG_ACTIONLOG_JED_ORGANISATION_MEMBER_ADD',
+        'organisation.member.remove'   => 'PLG_ACTIONLOG_JED_ORGANISATION_MEMBER_REMOVE',
+        'organisation.request.approve' => 'PLG_ACTIONLOG_JED_ORGANISATION_REQUEST_APPROVE',
+        'organisation.request.reject'  => 'PLG_ACTIONLOG_JED_ORGANISATION_REQUEST_REJECT',
+        'organisation.role'            => 'PLG_ACTIONLOG_JED_ORGANISATION_ROLE',
+        'organisation.primary'         => 'PLG_ACTIONLOG_JED_ORGANISATION_PRIMARY',
         'review.publish'     => 'PLG_ACTIONLOG_JED_REVIEW_PUBLISH',
         'review.unpublish'   => 'PLG_ACTIONLOG_JED_REVIEW_UNPUBLISH',
         'response.publish'   => 'PLG_ACTIONLOG_JED_RESPONSE_PUBLISH',
@@ -99,6 +106,7 @@ final class Jed extends ActionLogPlugin implements SubscriberInterface
         'com_jed.review'     => 'index.php?option=com_jed&task=review.edit&id=%d',
         'com_jed.useraccess' => 'index.php?option=com_users&task=user.edit&id=%d',
         'com_jed.ticket'     => 'index.php?option=com_jed&task=ticket.edit&id=%d',
+        'com_jed.organisation' => 'index.php?option=com_jed&task=organisation.edit&id=%d',
     ];
 
     /**

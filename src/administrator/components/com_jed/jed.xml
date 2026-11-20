@@ -33,6 +33,10 @@
                 COM_JED_EXTENSIONS
             </menu>
 
+            <menu view="organisations">
+                COM_JED_TITLE_ORGANISATIONS
+            </menu>
+
             <menu link="option=com_categories&amp;extension=com_jed">
                 COM_JED_TITLE_CATEGORIES
                 <params>

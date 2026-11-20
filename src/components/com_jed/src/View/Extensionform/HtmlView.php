@@ -36,10 +36,9 @@ class HtmlView extends BaseHtmlView
 
     protected bool $canSave;
 
-    protected array $images      = [];
-    protected array $files       = [];
-    protected array $categories  = [];
-    protected array $maintainers = [];
+    protected array $images     = [];
+    protected array $files      = [];
+    protected array $categories = [];
 
     /**
      * Get the Params
@@ -73,7 +72,6 @@ class HtmlView extends BaseHtmlView
         $this->images       = $model->getImages();
         $this->files        = $model->getFiles();
         $this->categories   = $model->getCategories();
-        $this->maintainers  = $model->getMaintainers();
 
         $this->prepareDocument();
 

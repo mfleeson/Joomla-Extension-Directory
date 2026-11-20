@@ -33,6 +33,7 @@ class HtmlView extends BaseHtmlView
     protected array $tickets          = [];
     protected array $favorites        = [];
     protected array $invitations      = [];
+    protected array $orgRequests      = [];
     protected array $transfers        = [];
     protected array $transferable     = [];
     protected Pagination $reviewsPagination;
@@ -67,7 +68,8 @@ class HtmlView extends BaseHtmlView
         $this->ticketsPagination    = $model->getTicketsPagination();
         $this->favorites            = $model->getFavorites();
         $this->favoritesPagination  = $model->getFavoritesPagination();
-        $this->invitations          = $model->getMaintainerInvitations();
+        $this->invitations          = $model->getOrganisationInvitations();
+        $this->orgRequests          = $model->getOrganisationRequests();
         $this->transfers            = $model->getTransfers();
         $this->transferable         = $model->getTransferableExtensions();
         $this->state                = $model->getState();

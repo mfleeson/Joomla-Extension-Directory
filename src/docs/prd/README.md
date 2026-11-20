@@ -14,6 +14,7 @@ what was changed, and how it was verified.
 | [PRD-06](PRD-06-ticket-return-and-pending.md) | Review actions on a ticket went to the Reviews list; the *Pending* icon showed after blocks and deletions (known issue #13) | Tickets, moderation |
 | [PRD-07](PRD-07-jedchecker-integration.md) | The ticket's JED Checker tab always said JED Checker was not installed, and could not run the current JED Checker | Tickets, JED Checker |
 | [PRD-08](PRD-08-jedchecker-joomla6-security-review.md) | JED Checker: Joomla 6 review and security fixes (HTML injection from packages, language-string override, web-reachable unpack folder, zip bombs) | com_jedchecker |
+| [PRD-09](PRD-09-organisations.md) | Organisations: listings owned by organisations with members, join requests and invitations instead of per-listing maintainers (feature) | Ownership, registration, transfers |
 
 ## Verification
 

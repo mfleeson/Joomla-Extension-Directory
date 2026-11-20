@@ -17,6 +17,7 @@ namespace Jed\Component\Jed\Site\Model;
 
 use Exception;
 use Jed\Component\Jed\Administrator\Access\JedAccessHelper;
+use Jed\Component\Jed\Administrator\Organisation\OrganisationService;
 use Jed\Component\Jed\Administrator\Parser\File as FileParser;
 use Jed\Component\Jed\Administrator\Parser\Github as GithubParser;
 use Jed\Component\Jed\Administrator\Traits\ExtensionUtilities;
@@ -166,9 +167,19 @@ class NewextensionModel extends FormModel
         // perfectly good session. The refusal names the reason rather than a generic error.
         // Also caps how many of a user's own submissions may sit in the moderation queue at
         // once, so one person cannot flood it while earlier submissions are still waiting.
-        JedAccessHelper::assertMayCreateListing((int) Factory::getApplication()->getIdentity()->id);
+        $submitterId = (int) Factory::getApplication()->getIdentity()->id;
+
+        JedAccessHelper::assertMayCreateListing($submitterId);
+
+        // The organisation the listing is submitted for (PRD-09 R12): one the submitter is an
+        // active member of, checked against the database - or their personal one. Decided before
+        // anything is written, so a refused choice leaves no half-created listing behind.
+        $organisationId = $this->organisationForNewListing((int) ($data['organisation_id'] ?? 0), $submitterId);
 
         $extensionId = $this->createExtension($data);
+
+        (new OrganisationService($this->getDatabase()))->assignListing($extensionId, $organisationId);
+        $ownerId = (int) (new OrganisationService($this->getDatabase()))->find($organisationId)->primary_user_id;
 
         Factory::getApplication()->setUserState('com_jed.edit.extension.id', $extensionId);
 
@@ -181,7 +192,10 @@ class NewextensionModel extends FormModel
         // validation into $data - set it explicitly, same as createExtension() above. Without
         // this, the history row (and everything approve() later copies from it onto the live
         // row, clobbering createExtension()'s correct value) would carry a blank owner.
-        $data['owner'] = (int) Factory::getApplication()->getIdentity()->id;
+        // `owner` is the organisation's primary contact - the mirror OrganisationService keeps -
+        // which is not necessarily the member who submitted it.
+        $data['owner']           = $ownerId;
+        $data['organisation_id'] = $organisationId;
         unset($data['created']);
 
         $table = $this->getTable();
@@ -194,7 +208,6 @@ class NewextensionModel extends FormModel
         $rawPost = (array) Factory::getApplication()->getInput()->post->get('jform', [], 'array');
 
         $this->storeCategories($extensionId, $categories);
-        $this->storeMaintainers($extensionId, (array) ($data['maintainer'] ?? []));
         $this->storeTags($extensionId, (array) ($data['tags'] ?? []));
         $this->deleteMarkedUploads($extensionId, (array) ($rawPost['deleteImages'] ?? []), '#__jed_extensions_images');
         $this->deleteMarkedUploads($extensionId, (array) ($rawPost['deleteFiles'] ?? []), '#__jed_extensions_files');
@@ -212,7 +225,11 @@ class NewextensionModel extends FormModel
         // A trusted developer's submission skips the moderation queue (P1-05 item 5). Ordered
         // after the confirmation deliberately: the developer is told their submission arrived
         // either way, and the approval mail follows if it went straight through.
-        $this->autoApproveIfTrusted($extensionId, (int) Factory::getApplication()->getIdentity()->id);
+        //
+        // On the owner's trust - the organisation's primary contact - like an edit (PRD-09): a
+        // member who is not trusted cannot route a listing past moderation by submitting it for an
+        // organisation whose contact is, and the reverse holds too.
+        $this->autoApproveIfTrusted($extensionId, $ownerId);
 
         return $extensionId;
     }

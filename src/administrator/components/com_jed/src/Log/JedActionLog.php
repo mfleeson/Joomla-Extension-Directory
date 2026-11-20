@@ -138,6 +138,55 @@ abstract class JedActionLog
     public const MAINTAINER_REMOVE = 'maintainer.remove';
 
     /**
+     * An organisation was founded. (PRD-09)
+     *
+     * @since 4.1.0
+     */
+    public const ORGANISATION_CREATE = 'organisation.create';
+
+    /**
+     * Somebody was invited into, or added to, an organisation. (PRD-09)
+     *
+     * @since 4.1.0
+     */
+    public const ORGANISATION_MEMBER_ADD = 'organisation.member.add';
+
+    /**
+     * Somebody left, or was taken out of, an organisation. (PRD-09)
+     *
+     * @since 4.1.0
+     */
+    public const ORGANISATION_MEMBER_REMOVE = 'organisation.member.remove';
+
+    /**
+     * A membership request was approved. (PRD-09)
+     *
+     * @since 4.1.0
+     */
+    public const ORGANISATION_REQUEST_APPROVE = 'organisation.request.approve';
+
+    /**
+     * A membership request was rejected. (PRD-09)
+     *
+     * @since 4.1.0
+     */
+    public const ORGANISATION_REQUEST_REJECT = 'organisation.request.reject';
+
+    /**
+     * A member's role changed. (PRD-09)
+     *
+     * @since 4.1.0
+     */
+    public const ORGANISATION_ROLE = 'organisation.role';
+
+    /**
+     * The primary-contact role passed to somebody else. (PRD-09)
+     *
+     * @since 4.1.0
+     */
+    public const ORGANISATION_PRIMARY = 'organisation.primary';
+
+    /**
      * A review was published by a moderator. (`P1-02`, `P1-06`)
      *
      * @since 4.0.0

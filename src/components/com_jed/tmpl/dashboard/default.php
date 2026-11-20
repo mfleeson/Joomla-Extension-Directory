@@ -53,6 +53,12 @@ $wa->useScript('com_jed.favorite');
      data-msg-no-entries="<?php echo Text::_('COM_JED_DASHBOARD_NO_ENTRIES'); ?>"></div>
 <div class="com-jed-dashboard">
 
+    <p class="text-end">
+        <a class="btn btn-sm btn-outline-primary" href="<?php echo Route::_('index.php?option=com_jed&view=organisations'); ?>">
+            <span class="icon-users" aria-hidden="true"></span> <?php echo Text::_('COM_JED_ORGANISATIONS_MY'); ?>
+        </a>
+    </p>
+
     <?php /* ---- Ownership handovers ---- */ ?>
     <?php if (!empty($this->transfers) || !empty($this->transferable)) : ?>
         <?php
@@ -116,13 +122,13 @@ $wa->useScript('com_jed.favorite');
                             </select>
                         </div>
                         <div class="col-md-5">
-                            <label class="form-label" for="jed-transfer-email">
-                                <?php echo Text::_('COM_JED_TRANSFER_FORM_EMAIL'); ?>
+                            <label class="form-label" for="jed-transfer-organisation">
+                                <?php echo Text::_('COM_JED_TRANSFER_FORM_ORGANISATION'); ?>
                             </label>
-                            <?php // The account address of the new owner. They must already have one.?>
-                            <input type="email" class="form-control" id="jed-transfer-email"
-                                   name="recipient_email" required
-                                   placeholder="<?php echo $this->escape(Text::_('COM_JED_TRANSFER_FORM_EMAIL_HINT')); ?>">
+                            <?php // PRD-09: the receiving organisation's code. Its administrators share it. ?>
+                            <input type="text" class="form-control" id="jed-transfer-organisation"
+                                   name="recipient_organisation" required autocomplete="off"
+                                   placeholder="ORG-XXXX-XXXX">
                         </div>
                         <div class="col-md-2">
                             <button type="submit" class="btn btn-warning w-100">
@@ -136,47 +142,70 @@ $wa->useScript('com_jed.favorite');
         </div>
     <?php endif; ?>
 
-    <?php /* ---- Maintainer invitations ---- */ ?>
-    <?php if (!empty($this->invitations)) : ?>
+    <?php /* ---- Organisation invitations and requests (PRD-09) ---- */ ?>
+    <?php if (!empty($this->invitations) || !empty($this->orgRequests)) : ?>
         <?php
-        // A maintainer invitation grants nothing until it is answered (8.8, P1-03 item 4), so
-        // this is where being named turns into actually being able to do something. Placed
-        // first on the page because it is the only item here that is waiting on the reader.
+        // Both lists are waiting on the reader: an invitation grants nothing until it is accepted,
+        // and a membership request waits for an administrator. Placed first for that reason.
         ?>
         <div class="card mb-4 border-info">
-            <div class="card-header">
-                <h3 class="mb-0"><?php echo Text::_('COM_JED_MAINTAINER_INVITE_HEADING'); ?></h3>
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="mb-0"><?php echo Text::_('COM_JED_ORGANISATION_DASHBOARD_HEADING'); ?></h3>
+                <a class="btn btn-sm btn-outline-primary" href="<?php echo Route::_('index.php?option=com_jed&view=organisations'); ?>">
+                    <?php echo Text::_('COM_JED_ORGANISATIONS_MY'); ?>
+                </a>
             </div>
             <div class="card-body">
-                <p><?php echo Text::_('COM_JED_MAINTAINER_INVITE_INTRO'); ?></p>
-                <ul class="list-group">
-                    <?php foreach ($this->invitations as $invite) : ?>
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <span>
-                                <strong><?php echo $this->escape($invite->extension_name); ?></strong>
-                                <?php if (!empty($invite->invited_by_name)) : ?>
-                                    <span class="text-muted small">
-                                        &mdash; <?php echo $this->escape($invite->invited_by_name); ?>
-                                    </span>
-                                <?php endif; ?>
-                            </span>
-                            <span class="btn-group btn-group-sm">
-                                <?php foreach ([1 => 'ACCEPT', 0 => 'DECLINE'] as $accept => $label) : ?>
-                                    <a class="btn <?php echo $accept ? 'btn-success' : 'btn-outline-secondary'; ?>"
-                                       href="<?php echo Route::_(
-                                           'index.php?option=com_jed&task=extension.respondToInvitation'
-                                           . '&extension_id=' . (int) $invite->extension_id
-                                           . '&accept=' . $accept
-                                           . '&' . Session::getFormToken() . '=1',
-                                           false
-                                       ); ?>">
-                                        <?php echo Text::_('COM_JED_MAINTAINER_INVITE_' . $label); ?>
-                                    </a>
-                                <?php endforeach; ?>
-                            </span>
-                        </li>
-                    <?php endforeach; ?>
-                </ul>
+                <?php if (!empty($this->invitations)) : ?>
+                    <p><?php echo Text::_('COM_JED_ORGANISATION_INVITATIONS_INTRO'); ?></p>
+                    <ul class="list-group mb-3">
+                        <?php foreach ($this->invitations as $invite) : ?>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>
+                                    <strong><?php echo $this->escape($invite->title); ?></strong>
+                                    <code class="small"><?php echo $this->escape($invite->uid); ?></code>
+                                    <?php if (!empty($invite->invited_by_name)) : ?>
+                                        <span class="text-muted small">
+                                            &mdash; <?php echo $this->escape($invite->invited_by_name); ?>
+                                        </span>
+                                    <?php endif; ?>
+                                </span>
+                                <span class="btn-group btn-group-sm">
+                                    <?php foreach ([1 => 'ACCEPT', 0 => 'DECLINE'] as $accept => $label) : ?>
+                                        <a class="btn <?php echo $accept ? 'btn-success' : 'btn-outline-secondary'; ?>"
+                                           href="<?php echo Route::_(
+                                               'index.php?option=com_jed&task=organisation.respond'
+                                               . '&id=' . (int) $invite->id
+                                               . '&accept=' . $accept
+                                               . '&' . Session::getFormToken() . '=1',
+                                               false
+                                           ); ?>">
+                                            <?php echo Text::_('COM_JED_ORGANISATION_INVITATION_' . $label); ?>
+                                        </a>
+                                    <?php endforeach; ?>
+                                </span>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                <?php endif; ?>
+
+                <?php if (!empty($this->orgRequests)) : ?>
+                    <p><?php echo Text::_('COM_JED_ORGANISATION_REQUESTS_INTRO'); ?></p>
+                    <ul class="list-group">
+                        <?php foreach ($this->orgRequests as $request) : ?>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>
+                                    <strong><?php echo $this->escape($request->requester_name); ?></strong>
+                                    <span class="text-muted small">&rarr; <?php echo $this->escape($request->organisation_title); ?></span>
+                                </span>
+                                <a class="btn btn-sm btn-primary"
+                                   href="<?php echo Route::_('index.php?option=com_jed&view=organisation&id=' . (int) $request->organisation_id); ?>">
+                                    <?php echo Text::_('COM_JED_ORGANISATION_REQUESTS_DECIDE'); ?>
+                                </a>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                <?php endif; ?>
             </div>
         </div>
     <?php endif; ?>

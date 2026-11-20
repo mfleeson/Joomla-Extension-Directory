@@ -16,6 +16,7 @@ namespace Jed\Component\Jed\Site\Model;
 
 use DateInterval;
 use Exception;
+use Jed\Component\Jed\Administrator\Organisation\OrganisationService;
 use Jed\Component\Jed\Administrator\Listing\LinkedExtensions;
 use Jed\Component\Jed\Administrator\Log\JedActionLog;
 use Jed\Component\Jed\Administrator\Listing\ListingAccess;
@@ -163,8 +164,17 @@ class ExtensionModel extends ItemModel
 
         $this->item->more_by_developer = $this->getMoreByDeveloper(
             (int) $this->item->owner,
-            (int) $this->item->id
+            (int) $this->item->id,
+            organisationId: $this->item->organisation_id !== null ? (int) $this->item->organisation_id : null
         );
+
+        // The organisation that publishes the listing (PRD-09), for the "by ..." line.
+        $this->item->organisation_title = '';
+
+        if (!empty($this->item->organisation_id)) {
+            $this->item->organisation_title = (string) ((new OrganisationService($this->getDatabase()))
+                ->find((int) $this->item->organisation_id)->title ?? '');
+        }
 
         $this->item->linked = $this->getLinkedExtensions((int) $this->item->id);
 
@@ -251,19 +261,19 @@ class ExtensionModel extends ItemModel
     /**
      * Other listings by the same developer.
      *
-     * Keyed on `owner`, which is the same rule the developer's public profile uses - so the two
-     * pages cannot disagree about what "by this developer" means. Maintainership deliberately
-     * does not widen it (P1-03): a maintainer helps look after a listing, they did not publish it.
+     * Keyed on the owning organisation since PRD-09 - the publisher - and on `owner` for a listing
+     * the migration has not reached.
      *
-     * @param int $ownerId     The listing's owner.
-     * @param int $excludeId   The listing being viewed.
-     * @param int $limit       How many to show.
+     * @param int      $ownerId        The listing's owner.
+     * @param int      $excludeId      The listing being viewed.
+     * @param int      $limit          How many to show.
+     * @param int|null $organisationId The owning organisation.
      *
      * @return array<int, object>
      *
      * @since 4.0.0
      */
-    public function getMoreByDeveloper(int $ownerId, int $excludeId, int $limit = 4): array
+    public function getMoreByDeveloper(int $ownerId, int $excludeId, int $limit = 4, ?int $organisationId = null): array
     {
         if (!$ownerId) {
             return [];
@@ -284,7 +294,10 @@ class ExtensionModel extends ItemModel
             ->from($db->quoteName('#__jed_extensions', 'a'))
             ->innerJoin($db->quoteName('#__categories', 'cat'), 'cat.id = a.catid')
             ->leftJoin($db->quoteName('#__users', 'u'), 'u.id = a.created_by')
-            ->where($db->quoteName('a.owner') . ' = :owner')
+            // The same publisher: the owning organisation since PRD-09, the owner before.
+            ->where($organisationId !== null
+                ? $db->quoteName('a.organisation_id') . ' = ' . $organisationId
+                : $db->quoteName('a.owner') . ' = :owner')
             ->where($db->quoteName('a.id') . ' <> :exclude')
             // The public half of the four-carrier rule (4.8), spelled out for the same reason the
             // profile page spells it out: this is not a moderation view.
@@ -292,10 +305,13 @@ class ExtensionModel extends ItemModel
             ->where($db->quoteName('a.state') . ' = 1')
             ->where($db->quoteName('a.blocked') . ' = 0')
             ->where($db->quoteName('a.deleted') . ' = 0')
-            ->bind(':owner', $ownerId, ParameterType::INTEGER)
             ->bind(':exclude', $excludeId, ParameterType::INTEGER)
             ->order($db->quoteName('a.score_count') . ' DESC')
             ->order($db->quoteName('a.name') . ' ASC');
+
+        if ($organisationId === null) {
+            $query->bind(':owner', $ownerId, ParameterType::INTEGER);
+        }
 
         $rows = $db->setQuery($query, 0, $limit)->loadObjectList() ?: [];
 
@@ -660,105 +676,6 @@ class ExtensionModel extends ItemModel
             $extensionId,
             ['title' => (string) $listing->name]
         );
-    }
-
-    /**
-     * Answer a maintainer invitation.
-     *
-     * Accepting is what turns a named person into a maintainer - until then the row exists but
-     * grants nothing, which is the whole point of the state column (8.8, `P1-03` item 4).
-     * Declining keeps the row rather than deleting it, so an owner can see the invitation was
-     * refused instead of wondering whether it ever went out; re-inviting is a fresh save.
-     *
-     * The row is matched on the extension **and** the user, so possessing an extension id is
-     * never enough to answer somebody else's invitation.
-     *
-     * @param int  $extensionId The extension id.
-     * @param int  $userId      The invited user.
-     * @param bool $accept      True to accept, false to decline.
-     *
-     * @return bool  False when there is no open invitation for this user.
-     *
-     * @since 4.0.0
-     */
-    public function respondToMaintainerInvitation(int $extensionId, int $userId, bool $accept): bool
-    {
-        if ($extensionId <= 0 || $userId <= 0) {
-            return false;
-        }
-
-        $db      = $this->getDatabase();
-        $invited = JedHelper::MAINTAINER_INVITED;
-
-        $exists = (bool) $db->setQuery(
-            $db->getQuery(true)
-                ->select('1')
-                ->from($db->quoteName('#__jed_extensions_maintainers'))
-                ->where($db->quoteName('extension_id') . ' = :eid')
-                ->where($db->quoteName('user_id') . ' = :uid')
-                ->where($db->quoteName('state') . ' = :state')
-                ->bind(':eid', $extensionId, ParameterType::INTEGER)
-                ->bind(':uid', $userId, ParameterType::INTEGER)
-                ->bind(':state', $invited, ParameterType::INTEGER)
-        )->loadResult();
-
-        if (!$exists) {
-            return false;
-        }
-
-        $newState = $accept ? JedHelper::MAINTAINER_ACCEPTED : JedHelper::MAINTAINER_DECLINED;
-        $now      = Factory::getDate()->toSql();
-
-        $query = $db->getQuery(true)
-            ->update($db->quoteName('#__jed_extensions_maintainers'))
-            ->set($db->quoteName('state') . ' = :state')
-            ->where($db->quoteName('extension_id') . ' = :eid')
-            ->where($db->quoteName('user_id') . ' = :uid')
-            ->bind(':state', $newState, ParameterType::INTEGER)
-            ->bind(':eid', $extensionId, ParameterType::INTEGER)
-            ->bind(':uid', $userId, ParameterType::INTEGER);
-
-        if ($accept) {
-            $query->set($db->quoteName('accepted_time') . ' = :now')->bind(':now', $now, ParameterType::STRING);
-        }
-
-        $db->setQuery($query)->execute();
-
-        return true;
-    }
-
-    /**
-     * The open maintainer invitations for a user.
-     *
-     * Feeds the dashboard, which is where an invited person finds out they were named at all.
-     *
-     * @param int $userId The user.
-     *
-     * @return array
-     *
-     * @since 4.0.0
-     */
-    public function getMaintainerInvitations(int $userId): array
-    {
-        if ($userId <= 0) {
-            return [];
-        }
-
-        $db      = $this->getDatabase();
-        $invited = JedHelper::MAINTAINER_INVITED;
-
-        return (array) $db->setQuery(
-            $db->getQuery(true)
-                ->select($db->quoteName(['m.extension_id', 'm.invited_time', 'm.invited_by']))
-                ->select($db->quoteName('e.name', 'extension_name'))
-                ->from($db->quoteName('#__jed_extensions_maintainers', 'm'))
-                ->innerJoin($db->quoteName('#__jed_extensions', 'e'), $db->quoteName('e.id') . ' = ' . $db->quoteName('m.extension_id'))
-                ->where($db->quoteName('m.user_id') . ' = :uid')
-                ->where($db->quoteName('m.state') . ' = :state')
-                ->where($db->quoteName('e.deleted') . ' = 0')
-                ->bind(':uid', $userId, ParameterType::INTEGER)
-                ->bind(':state', $invited, ParameterType::INTEGER)
-        )->loadObjectList();
     }
 
     /**

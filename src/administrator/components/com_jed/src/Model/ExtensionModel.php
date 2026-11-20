@@ -30,6 +30,9 @@ use Jed\Component\Jed\Site\Helper\JedscoreHelper;
 use Joomla\CMS\Date\Date;
 use Joomla\CMS\Event\Model\AfterChangeStateEvent;
 use Joomla\CMS\Event\Model\AfterSaveEvent;
+use Jed\Component\Jed\Administrator\Organisation\MembershipState;
+use Jed\Component\Jed\Administrator\Organisation\OrganisationAccess;
+use Jed\Component\Jed\Administrator\Organisation\OrganisationService;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Form\Form;
 use Joomla\CMS\Form\FormFactoryInterface;
@@ -145,16 +148,15 @@ class ExtensionModel extends AdminModel
             ->bind(':eid', $mapId, ParameterType::INTEGER);
         $item->categories = $db->setQuery($catQuery)->loadColumn() ?: [];
 
-        // Pre-fill the "maintainer" subform with the extension's existing maintainers.
-        $maintainerQuery = $db->getQuery(true)
-            ->select($db->quoteName('user_id'))
-            ->from($db->quoteName('#__jed_extensions_maintainers'))
-            ->where($db->quoteName('extension_id') . ' = :eid')
-            ->bind(':eid', $mapId, ParameterType::INTEGER);
-        $item->maintainer = array_map(
-            static fn ($userId) => ['user_id' => (int) $userId],
-            $db->setQuery($maintainerQuery)->loadColumn() ?: []
-        );
+        // The owning organisation (PRD-09) from the live row: ownership is the listing's, and may
+        // have changed by transfer since this revision was written.
+        $item->organisation_id = (int) $db->setQuery(
+            $db->getQuery(true)
+                ->select($db->quoteName('organisation_id'))
+                ->from($db->quoteName('#__jed_extensions'))
+                ->where($db->quoteName('id') . ' = :eid')
+                ->bind(':eid', $mapId, ParameterType::INTEGER)
+        )->loadResult();
 
         // Pre-fill the "tags" field with the live extension's current Joomla tags - tags live on
         // #__jed_extensions, not the history table, see ExtensionUtilities::storeTags().
@@ -291,6 +293,7 @@ class ExtensionModel extends AdminModel
         // owner whenever a revision written before a transfer was approved after it.
         unset(
             $liveData['owner'],
+            $liveData['organisation_id'],
             $liveData['state'],
             $liveData['parent_confirmed'],
             $liveData['blocked'],
@@ -738,6 +741,9 @@ class ExtensionModel extends AdminModel
         if ((int) Factory::getApplication()->getUserState('com_jed.edit.extension.live_id') > 0) {
             $form->setFieldAttribute('owner', 'readonly', 'true');
             $form->setFieldAttribute('owner', 'description', 'COM_JED_EXTENSION_OWNER_READONLY_DESC');
+            // Same for the organisation (PRD-09): moving a listing is a transfer.
+            $form->setFieldAttribute('organisation_id', 'readonly', 'true');
+            $form->setFieldAttribute('organisation_id', 'filter', 'unset');
         }
 
         return $form;
@@ -817,28 +823,27 @@ class ExtensionModel extends AdminModel
     }
 
     /**
-     * Load the maintainers for an extension from #__jed_extensions_maintainers.
+     * The organisation that owns the listing, with its active members (PRD-09). Replaces the
+     * per-listing maintainer list.
      *
-     * @param int $extensionId The extension id to load maintainers for.
+     * @param int|null $extensionId The listing; the one being edited when null.
      *
-     * @return array
+     * @return object|null  The organisation row with a `members` array, or null.
      *
-     * @since 4.0.0
+     * @since 4.1.0
      */
-    public function getMaintainers(?int $extensionId = null): array
+    public function getOrganisation(?int $extensionId = null): ?object
     {
         $extensionId = (!empty($extensionId)) ? $extensionId : (int) $this->getState($this->getName() . '.id');
+        $service     = new OrganisationService($this->getDatabase());
+        $orgId       = $service->organisationIdOfExtension((int) $extensionId);
+        $org         = $orgId !== null ? $service->find($orgId) : null;
 
-        $db    = $this->getDatabase();
-        $query = $db->getQuery(true)
-            ->select($db->quoteName(['m.user_id', 'u.name', 'u.username']))
-            ->from($db->quoteName('#__jed_extensions_maintainers', 'm'))
-            ->leftJoin($db->quoteName('#__users', 'u'), $db->quoteName('u.id') . ' = ' . $db->quoteName('m.user_id'))
-            ->where($db->quoteName('m.extension_id') . ' = :extensionId')
-            ->bind(':extensionId', $extensionId, ParameterType::INTEGER)
-            ->order($db->quoteName('u.name') . ' ASC');
+        if ($org !== null) {
+            $org->members = $service->members((int) $org->id, [MembershipState::ACTIVE]);
+        }
 
-        return $db->setQuery($query)->loadObjectList() ?: [];
+        return $org;
     }
 
     /**
@@ -1289,6 +1294,10 @@ class ExtensionModel extends AdminModel
             $data['owner'] = (int) $liveOwner;
         }
 
+        // Same for the organisation (PRD-09): the revision says which one owned the listing when
+        // it was written. Never from the form - the field is read-only for an existing listing.
+        $data['organisation_id'] = OrganisationAccess::organisationIdOf($extensionId);
+
         // Force a new INSERT rather than an UPDATE of an existing history entry
         $data['id']           = 0;
         $data['extension_id'] = $extensionId;
@@ -1331,7 +1340,6 @@ class ExtensionModel extends AdminModel
         $rawPost = (array) Factory::getApplication()->getInput()->post->get('jform', [], 'array');
 
         $this->storeCategories($extensionId, $categories);
-        $this->storeMaintainers($extensionId, (array) ($data['maintainer'] ?? []));
         $this->storeTags($extensionId, (array) ($data['tags'] ?? []));
         $this->deleteMarkedUploads($extensionId, (array) ($rawPost['deleteImages'] ?? []), '#__jed_extensions_images');
         $this->deleteMarkedUploads($extensionId, (array) ($rawPost['deleteFiles'] ?? []), '#__jed_extensions_files');
@@ -1357,6 +1365,15 @@ class ExtensionModel extends AdminModel
     {
         $user = Factory::getApplication()->getIdentity();
 
+        // PRD-09: a listing the team creates belongs to an organisation - the one picked on the
+        // form, or the personal organisation of the user picked as owner (created if needed).
+        $organisations  = new OrganisationService($this->getDatabase());
+        $organisationId = (int) ($data['organisation_id'] ?? 0);
+
+        if ($organisationId <= 0 || $organisations->find($organisationId) === null) {
+            $organisationId = (int) $organisations->personalOrganisationFor(!empty($data['owner']) ? (int) $data['owner'] : (int) $user->id);
+        }
+
         /** @var ExtensionTable $table */
         $table = $this->getTable('Extension');
         $table->setUseExceptions(true);
@@ -1373,6 +1390,9 @@ class ExtensionModel extends AdminModel
         $table->save($liveData);
 
         $extensionId = (int) $table->id;
+
+        // Sets organisation_id and makes `owner` the organisation's primary contact.
+        $organisations->assignListing($extensionId, $organisationId);
 
         $this->setState($this->getName() . '.id', $extensionId);
 

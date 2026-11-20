@@ -64,7 +64,7 @@ Tabs:
 - **References**, **Credits** (public or internal), **Dates** (the automatic dates are shown).
 - **Reports & Messages** - the thread. Reply with a visibility: *internal*, *reporter*, *vendor* or
   *all*; anything not internal is e-mailed. **Send vendor notification** writes to the JED
-  listing's owner and maintainers, any developer address on the reports and an address you add,
+  listing's organisation members (owner included), any developer address on the reports and an address you add,
   with the report details the reporters agreed to share and the disclosure date. It sets *Vendor
   notified* and, if empty, the *Disclosure date* (today plus the configured disclosure days,
   default 90).

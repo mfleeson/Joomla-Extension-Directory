@@ -86,12 +86,12 @@ The links on published listings are also checked every few days - see
 | **Video (URL)** | One YouTube or Vimeo video, or an MP4, WebM or OGV file you host. Links to channels, user pages or playlists are not accepted. The video only loads when a visitor clicks it. |
 | **Images (Up to 8)** | Screenshots: PNG, JPEG or GIF, by default at most **2 MB** and **4000 pixels** in width or height. Smaller copies are generated automatically. Each image has a status; you can remove an image by ticking it for deletion. |
 
-## Maintainers
+## Organisation
 
-Other JED users who may edit the listing and answer its reviews. Pick them with the user picker.
-They are **invited** and must accept on their own dashboard before they get any rights. You
-cannot add yourself (the owner) as a maintainer. See
-[Maintainers and ownership](maintainers-and-ownership.md).
+The organisation the listing belongs to. Every active member of that organisation can edit the
+listing and answer its reviews. On a new listing choose one of your organisations (or leave your
+personal one); on an existing listing it is shown only - moving a listing to another organisation
+is a handover. See [Organisations and ownership](organisations-and-ownership.md).
 
 ## Linked Extensions
 

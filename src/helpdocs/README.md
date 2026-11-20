@@ -41,7 +41,7 @@ The JED site is made up of three parts that work together:
 - [Updating your extension](developers/updating-your-extension.md)
 - [Listing status, rejections and blocks](developers/listing-status.md)
 - [Responding to reviews](developers/responding-to-reviews.md)
-- [Maintainers and handing over ownership](developers/maintainers-and-ownership.md)
+- [Organisations and handing over ownership](developers/organisations-and-ownership.md)
 - [Support tickets for developers](developers/support-tickets.md)
 - [Security, the VEL and abandonware](developers/security-vel-and-abandonware.md)
 
@@ -63,7 +63,7 @@ The JED site is made up of three parts that work together:
   - [Rename an extension](jed-team/how-to/rename-an-extension.md)
   - [Unpublish, block or delete a listing](jed-team/how-to/unpublish-block-or-delete.md)
   - [Change the owner of a listing](jed-team/how-to/change-owner.md)
-  - [Manage maintainers](jed-team/how-to/manage-maintainers.md)
+  - [Manage organisations](jed-team/how-to/manage-organisations.md)
   - [Link an add-on or a free/paid version](jed-team/how-to/linked-extensions.md)
   - [Change a listing's category](jed-team/how-to/change-category.md)
   - [Restore an older version of a listing](jed-team/how-to/restore-older-version.md)

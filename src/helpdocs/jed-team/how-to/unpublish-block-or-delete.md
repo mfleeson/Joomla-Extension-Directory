@@ -16,7 +16,7 @@ keeps the block history.
 ## Unpublish (take offline)
 
 Developers take their own approved listings offline and back online from **My Dashboard > My
-Extensions** (*Take offline* / *Put online*); owners and accepted maintainers can do this, and it is
+Extensions** (*Take offline* / *Put online*); members of the owning organisation can do this, and it is
 recorded in the action log. So when a developer asks, point them to the dashboard.
 
 To do it on their behalf - permission **Edit State**:

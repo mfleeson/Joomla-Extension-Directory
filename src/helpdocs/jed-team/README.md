@@ -72,7 +72,7 @@ See the [Ticket response playbook](ticket-response-playbook.md) for what to do w
 - [Rename an extension](how-to/rename-an-extension.md)
 - [Unpublish, block or delete a listing](how-to/unpublish-block-or-delete.md)
 - [Change the owner of a listing](how-to/change-owner.md)
-- [Manage maintainers](how-to/manage-maintainers.md)
+- [Manage organisations](how-to/manage-organisations.md)
 - [Link an add-on or a free/paid version](how-to/linked-extensions.md)
 - [Change a listing's category](how-to/change-category.md)
 - [Restore an older version of a listing](how-to/restore-older-version.md)

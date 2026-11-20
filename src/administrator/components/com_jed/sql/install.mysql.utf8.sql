@@ -19,8 +19,9 @@
 -- removed; SET NULL cannot apply to the columns that are NOT NULL. None of the three is safe, so
 -- those stay plain, unconstrained indexes, same as every other Joomla component.
 --
--- FOREIGN_KEY_CHECKS is off for the whole file so table order below is free; every FK here would
--- also resolve without it, since every referenced table is created earlier in this file.
+-- FOREIGN_KEY_CHECKS is off for the whole file so table order below is free. Every FK resolves to
+-- a table created earlier in this file, except `#__jed_extensions`.`organisation_id` (PRD-09),
+-- whose `#__jed_organisations` is created further down next to the membership table.
 
 SET FOREIGN_KEY_CHECKS = 0;
 
@@ -128,9 +129,16 @@ CREATE TABLE IF NOT EXISTS `#__jed_extensions`
 	`variant_of_id`          int unsigned    DEFAULT NULL,
 	`parent_id`              int unsigned    DEFAULT NULL,
 	`parent_confirmed`       tinyint(1)      NOT NULL DEFAULT '0',
+	-- The organisation that owns the listing (PRD-09). One owner per listing, so a column and not
+	-- a mapping table. `owner` above stays, as the owning organisation's primary contact - a
+	-- mirror written only by OrganisationService - because transfers, abandonware and VEL mail,
+	-- trust and privacy all need an accountable *person*. Permissions read this column, never
+	-- `owner`. NULL only for rows the 4.1.0 migration has not reached yet.
+	`organisation_id`        int unsigned    DEFAULT NULL,
 	PRIMARY KEY (`id`),
 	KEY `IDX_jed_extensions_catid` (`catid`),
 	KEY `IDX_jed_extensions_owner` (`owner`),
+	KEY `IDX_jed_extensions_organisation` (`organisation_id`),
 	KEY `IDX_jed_extensions_state` (`state`),
 	KEY `IDX_jed_extensions_visibility` (`approved`, `state`, `blocked`, `deleted`),
 	KEY `IDX_jed_extensions_alias` (`alias`),
@@ -141,7 +149,10 @@ CREATE TABLE IF NOT EXISTS `#__jed_extensions`
 	-- SET NULL, not CASCADE: both columns already use NULL to mean "no relation" (see above), so
 	-- deleting the target listing removes exactly the claim, not the listing making it.
 	CONSTRAINT `FK_jed_extensions_variant_of_id` FOREIGN KEY (`variant_of_id`) REFERENCES `#__jed_extensions` (`id`) ON DELETE SET NULL,
-	CONSTRAINT `FK_jed_extensions_parent_id` FOREIGN KEY (`parent_id`) REFERENCES `#__jed_extensions` (`id`) ON DELETE SET NULL
+	CONSTRAINT `FK_jed_extensions_parent_id` FOREIGN KEY (`parent_id`) REFERENCES `#__jed_extensions` (`id`) ON DELETE SET NULL,
+	-- RESTRICT: an organisation that still owns listings cannot be deleted by accident. The JED
+	-- team transfers the listings first.
+	CONSTRAINT `FK_jed_extensions_organisation_id` FOREIGN KEY (`organisation_id`) REFERENCES `#__jed_organisations` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 DEFAULT COLLATE=utf8mb4_unicode_ci;
 
 
@@ -249,6 +260,10 @@ CREATE TABLE IF NOT EXISTS `#__jed_extensions_history`
 	-- present here is by definition a column a developer can set.
 	`variant_of_id`          int unsigned    DEFAULT NULL,
 	`parent_id`              int unsigned    DEFAULT NULL,
+	-- Mirrored so a revision says truthfully which organisation it was written for. Never
+	-- promoted by ExtensionModel::approve(), exactly like `owner`: ownership changes only through
+	-- TransferService (PRD-05, PRD-09).
+	`organisation_id`        int unsigned    DEFAULT NULL,
 	PRIMARY KEY (`id`),
 	KEY `IDX_jed_extensions_catid` (`catid`),
 	KEY `IDX_jed_extensions_owner` (`owner`),
@@ -271,6 +286,73 @@ CREATE TABLE IF NOT EXISTS `#__jed_extensions_category_map`
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 DEFAULT COLLATE=utf8mb4_unicode_ci;
 
 
+-- Organisations (PRD-09): the party that owns listings. `uid` is the public, random, immutable
+-- code people use to ask to join and to address transfers - never the row id, which would let
+-- anybody walk every organisation. `primary_user_id` is the accountable person: always an active
+-- administrator, and mirrored into #__jed_extensions.owner for every listing the organisation
+-- owns. `accept_requests` is the administrators' switch for membership requests.
+CREATE TABLE IF NOT EXISTS `#__jed_organisations`
+(
+	`id`               int unsigned NOT NULL AUTO_INCREMENT,
+	`uid`              varchar(16)  NOT NULL,
+	`title`            varchar(255) NOT NULL,
+	`alias`            varchar(255) NOT NULL,
+	`description`      text,
+	`contact_name`     varchar(255) NOT NULL DEFAULT '',
+	`contact_email`    varchar(255) NOT NULL DEFAULT '',
+	`contact_phone`    varchar(50)  NOT NULL DEFAULT '',
+	`website`          varchar(255) NOT NULL DEFAULT '',
+	`address`          text,
+	`country`          char(2)      NOT NULL DEFAULT '',
+	`accept_requests`  tinyint(1)   NOT NULL DEFAULT '1',
+	-- Created for a single developer (by the 4.1.0 migration or "create my organisation"), as
+	-- opposed to a company. Only changes the wording shown; the rules are the same.
+	`is_personal`      tinyint(1)   NOT NULL DEFAULT '0',
+	-- 1 active, 0 disabled by the JED team (members keep their rows, nothing can be changed).
+	`state`            tinyint(1)   NOT NULL DEFAULT '1',
+	`primary_user_id`  int unsigned NOT NULL DEFAULT '0',
+	`created`          datetime     NOT NULL,
+	`created_by`       int unsigned NOT NULL DEFAULT '0',
+	`modified`         datetime     DEFAULT NULL,
+	`modified_by`      int unsigned DEFAULT NULL,
+	`checked_out`      int unsigned DEFAULT NULL,
+	`checked_out_time` datetime     DEFAULT NULL,
+	PRIMARY KEY (`id`),
+	UNIQUE KEY `UQ_jed_organisations_uid` (`uid`),
+	UNIQUE KEY `UQ_jed_organisations_alias` (`alias`),
+	KEY `IDX_jed_organisations_primary` (`primary_user_id`),
+	KEY `IDX_jed_organisations_state` (`state`, `accept_requests`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 DEFAULT COLLATE=utf8mb4_unicode_ci;
+
+
+-- Who belongs to an organisation, and how far they got. `state`: 0 requested (the user asked,
+-- an administrator decides), 2 invited (an administrator asked, the user decides), 1 active,
+-- -1 declined (invitation refused), -2 rejected (request refused). Only an active row grants
+-- anything. `role` is 'admin' or 'member'. One row per organisation and user: a refused request
+-- or invitation is re-opened on the same row rather than accumulating.
+CREATE TABLE IF NOT EXISTS `#__jed_organisation_members`
+(
+	`organisation_id`  int unsigned  NOT NULL,
+	`user_id`          int unsigned  NOT NULL,
+	`role`             varchar(10)   NOT NULL DEFAULT 'member',
+	`state`            tinyint(1)    NOT NULL DEFAULT '0',
+	`request_message`  varchar(1000) NOT NULL DEFAULT '',
+	`requested_time`   datetime      DEFAULT NULL,
+	`invited_by`       int unsigned  DEFAULT NULL,
+	`invited_time`     datetime      DEFAULT NULL,
+	`decided_by`       int unsigned  DEFAULT NULL,
+	`decided_time`     datetime      DEFAULT NULL,
+	`joined_time`      datetime      DEFAULT NULL,
+	PRIMARY KEY (`organisation_id`, `user_id`),
+	KEY `IDX_jed_org_members_user_state` (`user_id`, `state`),
+	KEY `IDX_jed_org_members_org_state_role` (`organisation_id`, `state`, `role`),
+	CONSTRAINT `FK_jed_org_members_organisation_id` FOREIGN KEY (`organisation_id`) REFERENCES `#__jed_organisations` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 DEFAULT COLLATE=utf8mb4_unicode_ci;
+
+
+-- DEPRECATED by PRD-09 (4.1.0): no longer read or written - organisations own listings now and
+-- their members replace per-listing maintainers. Kept for one release for rollback and audit.
+--
 -- Additional maintainers only. The owner lives in #__jed_extensions.owner and is never
 -- duplicated here (8.8) - "owner OR a row in this table" is the permission rule, so a person in
 -- both places would be a second, silently divergent record of the same fact. The application
@@ -506,6 +588,10 @@ CREATE TABLE IF NOT EXISTS `#__jed_extension_transfers`
 	`completed_time`      datetime     DEFAULT NULL,
 	`cancelled_by`        int unsigned DEFAULT NULL,
 	`cancel_reason`       text,
+	-- PRD-09: a transfer moves a listing between organisations; the two user columns above are
+	-- the organisations' primary contacts, who confirm. NULL on transfers made before 4.1.0.
+	`from_organisation_id` int unsigned DEFAULT NULL,
+	`to_organisation_id`   int unsigned DEFAULT NULL,
 	PRIMARY KEY (`id`),
 	KEY `IDX_transfers_extension` (`extension_id`, `state`),
 	KEY `IDX_transfers_to_user` (`to_user_id`, `state`),

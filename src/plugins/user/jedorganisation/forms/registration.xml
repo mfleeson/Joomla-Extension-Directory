@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    PRD-09 R6: the organisation choice offered on registration. All optional - nobody has to belong
+    to an organisation to register, and one is created on first submission if needed (R12).
+-->
+<form addfieldprefix="Jed\Component\Jed\Administrator\Field">
+    <fields name="jedorganisation">
+        <fieldset name="jedorganisation" label="PLG_USER_JEDORGANISATION_FIELDSET_LABEL"
+                  description="PLG_USER_JEDORGANISATION_FIELDSET_DESC">
+            <field name="choice" type="radio" default="none" filter="cmd"
+                   label="PLG_USER_JEDORGANISATION_FIELD_CHOICE_LABEL">
+                <option value="none">PLG_USER_JEDORGANISATION_CHOICE_NONE</option>
+                <option value="create">PLG_USER_JEDORGANISATION_CHOICE_CREATE</option>
+                <option value="join">PLG_USER_JEDORGANISATION_CHOICE_JOIN</option>
+            </field>
+            <field name="title" type="text" maxlength="255" filter="string" showon="choice:create"
+                   label="PLG_USER_JEDORGANISATION_FIELD_TITLE_LABEL"
+                   description="PLG_USER_JEDORGANISATION_FIELD_TITLE_DESC"/>
+            <field name="contact_email" type="email" maxlength="255" filter="string" validate="email" showon="choice:create"
+                   label="PLG_USER_JEDORGANISATION_FIELD_CONTACT_EMAIL_LABEL"
+                   description="PLG_USER_JEDORGANISATION_FIELD_CONTACT_EMAIL_DESC"/>
+            <field name="website" type="url" maxlength="255" filter="url" validate="url" schemes="http,https" showon="choice:create"
+                   label="PLG_USER_JEDORGANISATION_FIELD_WEBSITE_LABEL"/>
+            <field name="organisation_id" type="jedorganisation" scope="accepting" filter="integer" showon="choice:join"
+                   label="PLG_USER_JEDORGANISATION_FIELD_ORGANISATION_LABEL">
+                <option value="0">PLG_USER_JEDORGANISATION_FIELD_ORGANISATION_BY_CODE</option>
+            </field>
+            <field name="uid" type="text" maxlength="20" filter="string" showon="choice:join"
+                   label="PLG_USER_JEDORGANISATION_FIELD_UID_LABEL"
+                   description="PLG_USER_JEDORGANISATION_FIELD_UID_DESC" hint="ORG-XXXX-XXXX"/>
+            <field name="message" type="textarea" rows="2" maxlength="1000" filter="string" showon="choice:join"
+                   label="PLG_USER_JEDORGANISATION_FIELD_MESSAGE_LABEL"/>
+        </fieldset>
+    </fields>
+</form>

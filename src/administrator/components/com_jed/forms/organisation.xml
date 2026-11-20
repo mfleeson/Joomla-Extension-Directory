@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The JED team's form for an organisation (PRD-09). Same details as the site form, plus the
+    team's own carrier (state) and, for a new organisation only, who runs it. Members, roles and
+    the primary contact are changed with their own actions on the edit screen, never through this
+    form: each of them has a rule (OrganisationService) a plain save would walk past.
+-->
+<form addfieldprefix="Jed\Component\Jed\Administrator\Field">
+    <fieldset name="details" label="COM_JED_ORGANISATION_FIELDSET_DETAILS">
+        <field name="id" type="hidden" default="0" filter="integer"/>
+        <field name="uid" type="text" readonly="true" filter="unset" label="COM_JED_ORGANISATION_UID"/>
+        <field name="title" type="text" required="true" maxlength="255" filter="string"
+               label="COM_JED_ORGANISATION_FIELD_TITLE_LABEL"/>
+        <field name="description" type="textarea" rows="4" filter="string"
+               label="COM_JED_ORGANISATION_FIELD_DESCRIPTION_LABEL"/>
+        <field name="website" type="url" maxlength="255" filter="url" validate="url" schemes="http,https"
+               label="COM_JED_ORGANISATION_FIELD_WEBSITE_LABEL"/>
+        <field name="state" type="list" default="1" filter="integer" label="JSTATUS">
+            <option value="1">COM_JED_ORGANISATION_STATE_ACTIVE</option>
+            <option value="0">COM_JED_ORGANISATION_STATE_DISABLED</option>
+        </field>
+        <field name="primary_user_id" type="user" required="true" filter="integer"
+               label="COM_JED_ORGANISATION_PRIMARY_CONTACT"
+               description="COM_JED_ORGANISATION_PRIMARY_CONTACT_NEW_DESC"/>
+    </fieldset>
+    <fieldset name="contact" label="COM_JED_ORGANISATION_FIELDSET_CONTACT">
+        <field name="contact_name" type="text" maxlength="255" filter="string"
+               label="COM_JED_ORGANISATION_FIELD_CONTACT_NAME_LABEL"/>
+        <field name="contact_email" type="email" required="true" maxlength="255" filter="string" validate="email"
+               label="COM_JED_ORGANISATION_FIELD_CONTACT_EMAIL_LABEL"/>
+        <field name="contact_phone" type="tel" maxlength="50" filter="string"
+               label="COM_JED_ORGANISATION_FIELD_CONTACT_PHONE_LABEL"/>
+        <field name="address" type="textarea" rows="3" filter="string"
+               label="COM_JED_ORGANISATION_FIELD_ADDRESS_LABEL"/>
+        <field name="country" type="text" maxlength="2" size="2" filter="cmd"
+               label="COM_JED_ORGANISATION_FIELD_COUNTRY_LABEL"/>
+        <field name="accept_requests" type="radio" default="1" layout="joomla.form.field.radio.switcher" filter="integer"
+               label="COM_JED_ORGANISATION_FIELD_ACCEPT_REQUESTS_LABEL">
+            <option value="0">JNO</option>
+            <option value="1">JYES</option>
+        </field>
+    </fieldset>
+</form>

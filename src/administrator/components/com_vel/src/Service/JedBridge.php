@@ -252,7 +252,8 @@ class JedBridge
     /**
      * The user ids the vendor notification goes to: the owner and every accepted maintainer.
      * Read from `owner` and the maintainers table, never `created_by` - authorship does not
-     * follow a transfer (CaseService::mailOwner()'s reasoning).
+     * follow a transfer (CaseService::mailOwner()'s reasoning). Since com_jed 4.1.0: the active
+     * members of the organisation owning the listing.
      *
      * @param int $extensionId The listing.
      *
@@ -268,23 +269,32 @@ class JedBridge
             return [];
         }
 
+        // The owner (since com_jed 4.1.0 the owning organisation's primary contact)...
         $ids = [(int) $listing->owner];
 
+        // ...and every active member of the organisation that owns the listing (com_jed PRD-09),
+        // which replaced per-listing maintainers. Plain SQL rather than com_jed's classes: this
+        // bridge must keep working against a com_jed that predates organisations, in which case
+        // the query fails and the owner alone is written to - the same fallback as before.
         try {
-            $accepted    = 1;
-            $maintainers = $this->db->setQuery(
+            $active  = 1;
+            $members = $this->db->setQuery(
                 $this->db->getQuery(true)
-                    ->select($this->db->quoteName('user_id'))
-                    ->from($this->db->quoteName('#__jed_extensions_maintainers'))
-                    ->where($this->db->quoteName('extension_id') . ' = :eid')
-                    ->where($this->db->quoteName('state') . ' = :accepted')
+                    ->select($this->db->quoteName('m.user_id'))
+                    ->from($this->db->quoteName('#__jed_organisation_members', 'm'))
+                    ->innerJoin(
+                        $this->db->quoteName('#__jed_extensions', 'e'),
+                        $this->db->quoteName('e.organisation_id') . ' = ' . $this->db->quoteName('m.organisation_id')
+                    )
+                    ->where($this->db->quoteName('e.id') . ' = :eid')
+                    ->where($this->db->quoteName('m.state') . ' = :active')
                     ->bind(':eid', $extensionId, ParameterType::INTEGER)
-                    ->bind(':accepted', $accepted, ParameterType::INTEGER)
+                    ->bind(':active', $active, ParameterType::INTEGER)
             )->loadColumn() ?: [];
 
-            $ids = array_merge($ids, array_map('intval', $maintainers));
+            $ids = array_merge($ids, array_map('intval', $members));
         } catch (Throwable $e) {
-            // No maintainers table: the owner alone.
+            // No organisations in this com_jed: the owner alone.
         }
 
         return array_values(array_unique(array_filter($ids, static fn (int $id): bool => $id > 0)));

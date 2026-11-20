@@ -1,6 +1,6 @@
 # Responding to reviews
 
-As the owner or a maintainer of a listing you can publicly answer each review of it **once**.
+As a member of the organisation that owns a listing you can publicly answer each review of it **once**.
 
 ## Finding reviews of your extensions
 

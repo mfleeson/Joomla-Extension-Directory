@@ -108,6 +108,11 @@ class ExtensionTable extends Table implements TaggableTableInterface
         $task = $app->getInput()->get('task');
         $user = $app->getIdentity();
 
+        // PRD-09: "no organisation" is NULL, never '' or 0 - the column is a foreign key.
+        if (\is_array($src) && \array_key_exists('organisation_id', $src) && (int) $src['organisation_id'] <= 0) {
+            $src['organisation_id'] = null;
+        }
+
         if ($src['id'] == 0 && empty($src['created_by'])) {
             $src['created_by'] = $user->id;
         }

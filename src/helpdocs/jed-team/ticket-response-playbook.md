@@ -75,7 +75,7 @@ Do not remove honest negative reviews.
 | "Please rename my listing" | [Rename an extension](how-to/rename-an-extension.md) |
 | "Please take my listing offline" | Developers can do this themselves: *My Dashboard > My Extensions > Take offline*. Point them to it. |
 | "Please delete my listing" | [Delete](how-to/unpublish-block-or-delete.md) |
-| "My listing was approved but I can't see it" | Check its status: if *Offline*, the developer (or a maintainer) took it offline - *Put online* on their dashboard |
+| "My listing was approved but I can't see it" | Check its status: if *Offline*, the developer (or another member of their organisation) took it offline - *Put online* on their dashboard |
 | "Please unblock my listing" (VEL resolved link, fixed broken links...) | Verify, then **Unblock** |
 | Ownership questions, adopting an abandoned listing | [Change the owner](how-to/change-owner.md) |
 | Free/paid or add-on links between listings of different owners | [Linked extensions](how-to/linked-extensions.md) |

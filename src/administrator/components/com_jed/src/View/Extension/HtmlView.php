@@ -17,6 +17,7 @@ namespace Jed\Component\Jed\Administrator\View\Extension;
 use Jed\Component\Jed\Administrator\Helper\JedHelper;
 use Jed\Component\Jed\Administrator\Listing\BlockReasons;
 use Jed\Component\Jed\Administrator\Model\ExtensionModel;
+use Jed\Component\Jed\Administrator\Organisation\OrganisationService;
 use Jed\Component\Jed\Administrator\Transfer\TransferService;
 use Joomla\CMS\Factory;
 use Joomla\Database\DatabaseInterface;
@@ -48,7 +49,7 @@ class HtmlView extends BaseHtmlView
     protected array $images          = [];
     protected array $files           = [];
     protected array $categories      = [];
-    protected array $maintainers     = [];
+    protected ?object $organisation  = null;
     protected array $history         = [];
     protected array $reviews         = [];
 
@@ -170,7 +171,7 @@ class HtmlView extends BaseHtmlView
         $this->images      = $model->getImages();
         $this->files       = $model->getFiles();
         $this->categories  = $model->getCategories();
-        $this->maintainers = $model->getMaintainers();
+        $this->organisation = $model->getOrganisation((int) ($this->item->extension_id ?? 0));
         $this->history     = $model->getHistory();
         $this->reviews     = $model->getReviews();
         $this->ownership   = $this->loadOwnership((int) ($this->item->extension_id ?? 0));
@@ -207,10 +208,14 @@ class HtmlView extends BaseHtmlView
 
         $open = (new TransferService($db))->getOpenTransfer($extensionId);
 
+        $organisations = new OrganisationService($db);
+        $organisation  = $organisations->organisationIdOfExtension($extensionId);
+
         return [
-            'owner'  => $ownerId > 0 ? $users->loadUserById($ownerId) : null,
-            'open'   => $open,
-            'openTo' => $open !== null ? $users->loadUserById((int) $open['to_user_id']) : null,
+            'owner'        => $ownerId > 0 ? $users->loadUserById($ownerId) : null,
+            'organisation' => $organisation !== null ? $organisations->find($organisation) : null,
+            'open'         => $open,
+            'openTo'       => $open !== null ? $users->loadUserById((int) $open['to_user_id']) : null,
         ];
     }
 

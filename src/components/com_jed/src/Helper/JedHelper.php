@@ -19,6 +19,7 @@ use Jed\Component\Jed\Administrator\Helper\JedHelper as AdminJedHelper;
 use Jed\Component\Jed\Administrator\Listing\ListingAccess;
 use Jed\Component\Jed\Administrator\MediaHandling\ImageSize;
 use Joomla\CMS\Component\ComponentHelper;
+use Jed\Component\Jed\Administrator\Organisation\OrganisationAccess;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Form\Form;
 use Joomla\CMS\HTML\HTMLHelper;
@@ -234,123 +235,64 @@ class JedHelper
      *
      * @since 4.0.0
      */
+    /**
+     * States of the retired per-listing maintainer table (#__jed_extensions_maintainers). Kept
+     * for code that still reads old rows; nothing writes them since 4.1.0 (PRD-09).
+     *
+     * @deprecated 4.1.0 Organisations replace maintainers - see Organisation\MembershipState.
+     */
     public const MAINTAINER_INVITED  = 0;
     public const MAINTAINER_ACCEPTED = 1;
     public const MAINTAINER_DECLINED = -1;
 
     /**
-     * Whether the current user owns the given extension.
+     * Whether the current user is an active **administrator** of the organisation that owns the
+     * listing (PRD-09).
      *
-     * The owner-only half of the 8.8 matrix: soft delete and ownership transfer are the owner's
-     * and a maintainer must not reach them. Kept separate from isOwnerOrMaintainer() rather than
-     * expressed as a flag, so a call site cannot pick the laxer rule by leaving an argument out.
+     * The name is kept from the time a listing had a single owning user: the callers ask "may
+     * this person decide who the listing belongs to" - start or cancel a transfer - and since
+     * 4.1.0 that is the organisation's administrators. `created_by` is never consulted (8.8.1).
      *
-     * Reads `owner`, never `created_by`. `created_by` is the authorship record and does not
-     * follow a transfer - a check keyed on it would leave the previous owner able to delete an
-     * extension they no longer own (8.8.1).
-     *
-     * @param int $extensionId The extension PK in #__jed_extensions.
+     * @param int $extensionId The listing.
      *
      * @return bool
      *
-     * @since  4.0.0
-     * @throws Exception
+     * @since 4.0.0
      */
     public static function isOwner(int $extensionId): bool
     {
-        $userId = (int) self::getUser()->id;
-
-        if (!$userId || $extensionId <= 0) {
-            return false;
-        }
-
-        $db = Factory::getContainer()->get('DatabaseDriver');
-
-        $owner = (int) $db->setQuery(
-            $db->getQuery(true)
-                ->select($db->quoteName('owner'))
-                ->from($db->quoteName('#__jed_extensions'))
-                ->where($db->quoteName('id') . ' = :eid')
-                ->bind(':eid', $extensionId, ParameterType::INTEGER)
-        )->loadResult();
-
-        return $owner === $userId;
+        return OrganisationAccess::isAdminOfExtensionOwner($extensionId, (int) self::getUser()->id);
     }
 
     /**
-     * Whether the current user owns or maintains the given extension.
+     * Whether the current user may look after the listing: an active member (any role) of the
+     * organisation that owns it (PRD-09). Replaces "owner or accepted maintainer".
      *
-     * The rule for everything both roles may do: edit, publish, change images, answer reviews.
-     * Owner OR an **accepted** maintainer row - an invitation that has not been accepted grants
-     * nothing, which is the point of having a state on that table at all (P1-03 item 4).
-     *
-     * Never `created_by`. See isOwner() for why.
-     *
-     * @param int $extensionId The extension PK in #__jed_extensions.
+     * @param int $extensionId The listing.
      *
      * @return bool
      *
-     * @since  4.0.0
-     * @throws Exception
+     * @since 4.0.0
      */
     public static function isOwnerOrMaintainer(int $extensionId): bool
     {
-        if (self::isOwner($extensionId)) {
-            return true;
-        }
-
-        $userId = (int) self::getUser()->id;
-
-        if (!$userId || $extensionId <= 0) {
-            return false;
-        }
-
-        $db       = Factory::getContainer()->get('DatabaseDriver');
-        $accepted = self::MAINTAINER_ACCEPTED;
-
-        return (bool) $db->setQuery(
-            $db->getQuery(true)
-                ->select('1')
-                ->from($db->quoteName('#__jed_extensions_maintainers'))
-                ->where($db->quoteName('extension_id') . ' = :eid')
-                ->where($db->quoteName('user_id') . ' = :uid')
-                ->where($db->quoteName('state') . ' = :state')
-                ->bind(':eid', $extensionId, ParameterType::INTEGER)
-                ->bind(':uid', $userId, ParameterType::INTEGER)
-                ->bind(':state', $accepted, ParameterType::INTEGER)
-        )->loadResult();
+        return OrganisationAccess::isMemberOfExtensionOwner($extensionId, (int) self::getUser()->id);
     }
 
     /**
-     * A SQL condition selecting the extensions the current user owns or maintains.
+     * SQL condition: the listing aliased `$alias` belongs to an organisation the current user is an
+     * active member of (PRD-09). '0' for a guest.
      *
-     * The list counterpart of isOwnerOrMaintainer(), for the places that need the *set* rather
-     * than a yes/no - the dashboard, "my extensions" pickers. Those used to filter on
-     * `created_by = me`, which is wrong twice over: it misses everything the user maintains, and
-     * it keeps showing extensions they have transferred away.
+     * @param DatabaseInterface $db    The database.
+     * @param string            $alias The alias of #__jed_extensions in the query.
      *
-     * @param DatabaseInterface $db    The database driver, for quoting.
-     * @param string            $alias The table alias used for #__jed_extensions in the query.
+     * @return string
      *
-     * @return string  A parenthesised SQL condition, or a never-true one when logged out.
-     *
-     * @since  4.0.0
-     * @throws Exception
+     * @since 4.0.0
      */
     public static function getOwnedOrMaintainedCondition(DatabaseInterface $db, string $alias = 'a'): string
     {
-        $userId = (int) self::getUser()->id;
-
-        if ($userId <= 0) {
-            return '0';
-        }
-
-        $maintained = 'EXISTS (SELECT 1 FROM ' . $db->quoteName('#__jed_extensions_maintainers', 'jm')
-            . ' WHERE ' . $db->quoteName('jm.extension_id') . ' = ' . $db->quoteName($alias . '.id')
-            . ' AND ' . $db->quoteName('jm.user_id') . ' = ' . $userId
-            . ' AND ' . $db->quoteName('jm.state') . ' = ' . self::MAINTAINER_ACCEPTED . ')';
-
-        return '(' . $db->quoteName($alias . '.owner') . ' = ' . $userId . ' OR ' . $maintained . ')';
+        return OrganisationAccess::memberCondition($db, $alias, (int) self::getUser()->id);
     }
 
     /**

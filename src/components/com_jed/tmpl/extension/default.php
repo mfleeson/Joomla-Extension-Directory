@@ -76,7 +76,7 @@ $extensionUrl = Route::_('index.php?option=com_jed&view=extension&catid=' . (int
         }
 ?>
         <?php
-        // An offline listing is only reachable by its owner and maintainers (ListingAccess). Say
+        // An offline listing is only reachable by its organisation's members (ListingAccess). Say
         // so, so they do not mistake their own view for what the public sees, and let them put
         // it back online from here.
         if ((int) ($item->state ?? 1) !== 1 && JedHelper::isLoggedIn() && JedHelper::isOwnerOrMaintainer((int) $item->id)) : ?>
@@ -105,8 +105,10 @@ $extensionUrl = Route::_('index.php?option=com_jed&view=extension&catid=' . (int
                     <div class="jed-extension-header__developer">
                         <?php echo Text::sprintf(
                             'COM_JED_EXTENSION_BY_DEVELOPER',
+                            // The publishing organisation (PRD-09); the account that created the
+                            // listing for one the migration has not reached.
                             '<a href="' . Route::_('index.php?option=com_jed&view=profile&id=' . (int) $item->owner) . '">'
-                            . $this->escape($item->created_by_name) . '</a>'
+                            . $this->escape(($item->organisation_title ?? '') !== '' ? $item->organisation_title : $item->created_by_name) . '</a>'
                         ); ?>
                     </div>
                     <div class="stars-wrapper">
