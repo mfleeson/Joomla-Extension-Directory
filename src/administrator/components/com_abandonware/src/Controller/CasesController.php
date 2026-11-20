@@ -76,7 +76,10 @@ class CasesController extends AdminController
         $scanner = new SignalScanner($db, new CaseService($db));
 
         try {
-            $result      = $scanner->run((int) $this->input->getInt('batch', 50));
+            // Bounded: a batch of 0 or less is "no LIMIT" to the query builder, which would make one
+            // click scan the whole catalogue inside a single web request.
+            $batch       = max(1, min(500, (int) $this->input->getInt('batch', 50)));
+            $result      = $scanner->run($batch);
             $transferred = $scanner->closeTransferredCases();
         } catch (Throwable $e) {
             $this->setRedirect(

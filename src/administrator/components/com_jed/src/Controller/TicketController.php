@@ -334,7 +334,7 @@ class TicketController extends FormController
      *
      * @throws Exception
      */
-    public function storeMessage(int $ticket_id, $subject, $message)
+    private function storeMessage(int $ticket_id, $subject, $message): void
     {
         $user                                = Factory::getApplication()->getIdentity();
         $ticket_message_model                = $this->getModel('Ticketmessage', 'Administrator');
@@ -345,8 +345,10 @@ class TicketController extends FormController
         $ticket_message['message']           = $message;
         $ticket_message['message_direction'] = 0; /* 1 for coming in, 0 for going out */
         $ticket_message['created_by']        = $user->id;
-        $ticket_message['created_on']        = 'now()';
-        $ticket_message['modified_on']       = 'now()';
+        // Real timestamps: the literal string 'now()' is bound as a value, not run as SQL, and is
+        // not a valid datetime (TicketmessageTable::bind() replaced created_on, not modified_on).
+        $ticket_message['created_on']        = Factory::getDate()->toSql();
+        $ticket_message['modified_on']       = Factory::getDate()->toSql();
 
         $ticket_message_model->save($ticket_message);
     }

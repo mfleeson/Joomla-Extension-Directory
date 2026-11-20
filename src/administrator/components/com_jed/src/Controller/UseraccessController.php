@@ -140,6 +140,17 @@ class UseraccessController extends BaseController
     {
         $app = Factory::getApplication();
 
+        // Nobody decides about their own account. The same screen grants trust (auto-approval of
+        // one's own listings and reviews, i.e. skipping moderation) and lifts bans, so without this
+        // a team member with jed.user.ban could exempt themselves from moderation or unban
+        // themselves. Another team member has to make that call.
+        if ($userId > 0 && $userId === (int) $app->getIdentity()->id) {
+            $app->enqueueMessage(Text::_('COM_JED_USERACCESS_ERROR_SELF'), 'error');
+            $this->setRedirect($this->listUrl());
+
+            return;
+        }
+
         try {
             /** @var UseraccessModel $model */
             $model = $this->getModel('Useraccess', 'Administrator', ['ignore_request' => true]);

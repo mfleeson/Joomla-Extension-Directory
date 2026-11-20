@@ -229,6 +229,33 @@ class AdvisoryModel extends AdminModel
         $db     = $this->getDatabase();
         $bridge = new JedBridge($db);
 
+        // --- A public advisory is changed by somebody who may publish ---------------------------
+        // access.xml splits the work: drafting rides on core.edit, while "putting a statement
+        // about somebody's product on the site and into every feed and checker" is vel.publish.
+        // Saving a published (or withdrawn, still publicly readable) advisory changes that public
+        // statement on the spot - touchPublished() below bumps date_updated and drops the caches -
+        // so it needs the same right as publishing it did.
+        $existingId = (int) ($data['id'] ?? 0);
+
+        if ($existingId > 0) {
+            $currentState = (string) $db->setQuery(
+                $db->getQuery(true)
+                    ->select($db->quoteName('state'))
+                    ->from($db->quoteName('#__vel_advisories'))
+                    ->where($db->quoteName('id') . ' = :sid')
+                    ->bind(':sid', $existingId, ParameterType::INTEGER)
+            )->loadResult();
+
+            if (
+                \in_array($currentState, [AdvisoryState::PUBLISHED->value, AdvisoryState::RETIRED->value], true)
+                && !Factory::getApplication()->getIdentity()->authorise('vel.publish', 'com_vel')
+            ) {
+                $this->setError(Text::_('COM_VEL_ERROR_EDIT_PUBLIC_NEEDS_PUBLISH'));
+
+                return false;
+            }
+        }
+
         // --- Children: normalise before anything is written -----------------------------------
         try {
             $products   = $this->normaliseProducts((array) ($data['products'] ?? []), $bridge);

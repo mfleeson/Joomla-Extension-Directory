@@ -96,6 +96,14 @@ class MessageController extends BaseController
                         continue;
                     }
 
+                    // Written on one report's screen: it goes to that report's reporter, not to
+                    // every reporter of the advisory the report was attached to. Each reporter is
+                    // a separate person and only ever sees their own report's thread
+                    // (MessageService::thread()).
+                    if ($reportId > 0 && $role === ParticipantRole::REPORTER && (int) ($participant->report_id ?? 0) !== $reportId) {
+                        continue;
+                    }
+
                     if ($messages->deliver($messageId, $participant, null)) {
                         $sent++;
                     }

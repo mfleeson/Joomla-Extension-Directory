@@ -634,6 +634,26 @@ class CaseService
     }
 
     /**
+     * Whether a case's grace period is over.
+     *
+     * @param object $case The case row (needs `grace_until`).
+     *
+     * @return bool  False while it is running, and when no grace period was ever started.
+     *
+     * @since 4.0.0
+     */
+    public static function graceHasEnded(object $case): bool
+    {
+        $until = trim((string) ($case->grace_until ?? ''));
+
+        if ($until === '' || str_starts_with($until, '0000')) {
+            return false;
+        }
+
+        return Factory::getDate($until)->toUnix() <= Factory::getDate()->toUnix();
+    }
+
+    /**
      * Conclude that an extension is abandoned.
      *
      * The gate is `contact_time`, not the status. A status is a column somebody can edit; the
@@ -672,6 +692,19 @@ class CaseService
                 'COM_ABANDONWARE_ERROR_ILLEGAL_TRANSITION',
                 Text::_($current->label()),
                 Text::_(CaseStatus::ABANDONED->label())
+            ));
+        }
+
+        // The grace period has to have run out. A recorded contact attempt alone is not enough:
+        // OWNER_CONTACTED may move to ABANDONED (so a case does not have to wait for the next
+        // scheduled pass to flip it to GRACE_EXPIRED), but without this check it could do so one
+        // second after the mail went out - and the developer documentation promises "You have a
+        // grace period (30 days by default) to reply ... Only if nobody answers can the extension
+        // be marked as abandoned". A developer who replies gets the case resolved instead.
+        if (!self::graceHasEnded($case)) {
+            throw new RuntimeException(Text::sprintf(
+                'COM_ABANDONWARE_ERROR_GRACE_RUNNING',
+                (string) ($case->grace_until ?? '')
             ));
         }
 

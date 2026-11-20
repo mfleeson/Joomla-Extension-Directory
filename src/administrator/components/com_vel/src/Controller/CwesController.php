@@ -62,15 +62,19 @@ class CwesController extends BaseController
             $tmp = tempnam(sys_get_temp_dir(), 'cwe');
             file_put_contents($tmp, (string) $response->body);
 
-            $zip = new \ZipArchive();
+            try {
+                $zip = new \ZipArchive();
 
-            if ($zip->open($tmp) !== true || $zip->numFiles < 1) {
-                throw new \RuntimeException(Text::_('COM_VEL_ERROR_CWE_NOT_ZIP'));
+                if ($zip->open($tmp) !== true || $zip->numFiles < 1) {
+                    throw new \RuntimeException(Text::_('COM_VEL_ERROR_CWE_NOT_ZIP'));
+                }
+
+                $xml = $zip->getFromIndex(0);
+                $zip->close();
+            } finally {
+                // Also on failure: a rejected download must not be left behind in the temp folder.
+                @unlink($tmp);
             }
-
-            $xml = $zip->getFromIndex(0);
-            $zip->close();
-            @unlink($tmp);
 
             $count = $this->import((string) $xml);
         } catch (Throwable $e) {
@@ -113,10 +117,18 @@ class CwesController extends BaseController
                 continue;
             }
 
-            $db->setQuery(
-                'INSERT INTO ' . $db->quoteName('#__vel_cwe') . ' (' . $db->quoteName(['cwe_id', 'name', 'status']) . ') VALUES (:id, :name, :status)'
+            // A query object carries the bindings: DatabaseDriver::setQuery() returns the driver,
+            // which has no bind(), so chaining bind() onto it was a fatal Error on the first row.
+            // quoteName() of an array returns an array, so it is imploded rather than concatenated
+            // (which produced the literal column list "(Array)").
+            $query = $db->getQuery(true);
+            $query->setQuery(
+                'INSERT INTO ' . $db->quoteName('#__vel_cwe') . ' (' . implode(', ', $db->quoteName(['cwe_id', 'name', 'status'])) . ') VALUES (:id, :name, :status)'
                 . ' ON DUPLICATE KEY UPDATE ' . $db->quoteName('name') . ' = :name2, ' . $db->quoteName('status') . ' = :status2'
-            )->bind(':id', $id)->bind(':name', $name)->bind(':status', $status)->bind(':name2', $name)->bind(':status2', $status)->execute();
+            );
+            $query->bind(':id', $id)->bind(':name', $name)->bind(':status', $status)->bind(':name2', $name)->bind(':status2', $status);
+
+            $db->setQuery($query)->execute();
 
             $count++;
         }

@@ -238,6 +238,15 @@ class ReviewModel extends ItemModel
             throw new Exception(Text::_("JERROR_ALERTNOAUTHOR"), 401);
         }
 
+        // "You get one response per review, and it cannot be edited after submission" and a
+        // deleted response cannot be replaced (helpdocs/developers/responding-to-reviews.md). The
+        // review page only draws the form when there is no response, but the task accepted any
+        // POST: a developer could overwrite a response the JED team had already approved - which
+        // also unpublished it - or bring back one the team had deleted.
+        if (trim((string) ($table->developer_response ?? '')) !== '' || (int) ($table->developer_response_published ?? 0) === -2) {
+            throw new Exception(Text::_('COM_JED_REVIEW_DEVELOPER_RESPONSE_ONCE'), 409);
+        }
+
         $table->developer_response           = $text;
         $table->developer_responded_on       = Factory::getDate()->toSql();
         $table->developer_response_published = 0;

@@ -42,7 +42,16 @@ class File extends Parser
         }
 
         $this->tempDir = $this->extract($filePath);
-        $this->loadManifest($this->tempDir);
+
+        try {
+            $this->loadManifest($this->tempDir);
+        } catch (\Throwable $e) {
+            // A constructor that throws never reaches __destruct(), so without this every upload
+            // without a usable manifest left its extracted copy (up to SafeZip::MAX_BYTES) behind.
+            $this->removeDirectory($this->tempDir);
+
+            throw $e;
+        }
     }
 
     public function __destruct()
@@ -119,16 +128,20 @@ class File extends Parser
      */
     private function extract(string $filePath): string
     {
-        $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'jed_file_' . uniqid();
+        $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'jed_file_' . bin2hex(random_bytes(8));
 
-        $zip = new ZipArchive();
-
-        if ($zip->open($filePath) !== true) {
-            throw new RuntimeException(Text::sprintf('COM_JED_PARSER_ZIP_UNREADABLE', $filePath));
+        // Through SafeZip, never ZipArchive::extractTo(). The archive is whatever a logged-in
+        // user uploaded (or whatever a GitHub release contains): extractTo() writes it however
+        // large it expands - a few hundred KB of zeros become gigabytes in the temp folder -
+        // and this class also named ZipArchive without importing it, so it resolved to
+        // Jed\Component\Jed\Administrator\Parser\ZipArchive and every parse died with a fatal
+        // "class not found". SafeZip counts what it writes, caps the entries and skips any
+        // entry that would land outside the folder; it removes what it wrote when it refuses.
+        try {
+            SafeZip::extract($filePath, $tmpDir);
+        } catch (RuntimeException $e) {
+            throw new RuntimeException(Text::sprintf('COM_JED_PARSER_ZIP_UNREADABLE', basename($filePath)) . ' ' . $e->getMessage(), 0, $e);
         }
-
-        $zip->extractTo($tmpDir);
-        $zip->close();
 
         return $tmpDir;
     }

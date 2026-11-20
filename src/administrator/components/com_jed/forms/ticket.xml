@@ -14,11 +14,11 @@
         <field name="ticket_subject" filter="safehtml" type="text" label="COM_JED_GENERAL_SUBJECT_LABEL"
                description="COM_JED_TICKETS_TICKET_SUBJECT_DESCR"
                hint="COM_JED_GENERAL_SUBJECT_LABEL"/>
-        <field name="ticket_text" editor="tinymce" buttons="false" filter="JComponentHelper::filterText" type="editor"
+        <field name="ticket_text" editor="tinymce" buttons="false" filter="Joomla\CMS\Component\ComponentHelper::filterText" type="editor"
                label="COM_JED_TICKETS_TICKET_TEXT_LABEL"
                description="COM_JED_TICKETS_TICKET_TEXT_DESCR"
                hint="COM_JED_TICKETS_TICKET_TEXT_LABEL"/>
-        <field name="internal_notes" editor="tinymce" buttons="false" filter="JComponentHelper::filterText"
+        <field name="internal_notes" editor="tinymce" buttons="false" filter="Joomla\CMS\Component\ComponentHelper::filterText"
                type="editor"
                label="COM_JED_TICKETS_INTERNAL_NOTES_LABEL"
                description="COM_JED_TICKETS_INTERNAL_NOTES_DESCR"
@@ -111,7 +111,7 @@
                label="COM_JED_TICKET_INTERNAL_NOTE_FIELD_SUMMARY_LABEL"
                description="COM_JED_TICKET_INTERNAL_NOTE_FIELD_SUMMARY_DESCR"
                hint="COM_JED_TICKET_INTERNAL_NOTE_FIELD_SUMMARY_LABEL"/>
-        <field name="note_text" editor="tinymce" buttons="false" filter="JComponentHelper::filterText" type="editor"
+        <field name="note_text" editor="tinymce" buttons="false" filter="Joomla\CMS\Component\ComponentHelper::filterText" type="editor"
                label="COM_JED_GENERAL_NOTE_LABEL"
                description="COM_JED_TICKETINTERNALNOTE_FIELD_NOTE_DESCR"
                hint="COM_JED_GENERAL_NOTE_LABEL"/>
@@ -119,7 +119,7 @@
                label="COM_JED_GENERAL_SUBJECT_LABEL"
                description="COM_JED_TICKETS_TICKET_SUBJECT_DESCR"
                hint="COM_JED_GENERAL_SUBJECT_LABEL"/>
-        <field name="message_text" editor="tinymce" buttons="false" filter="JComponentHelper::filterText" type="editor"
+        <field name="message_text" editor="tinymce" buttons="false" filter="Joomla\CMS\Component\ComponentHelper::filterText" type="editor"
                label="COM_JED_TICKETS_MESSAGE_LABEL"
         />
     </fieldset>

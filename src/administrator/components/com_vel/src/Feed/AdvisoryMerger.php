@@ -29,6 +29,7 @@ use Jed\Component\Vel\Administrator\Service\VelService;
 use Jed\Component\Vel\Administrator\Version\Version;
 use Joomla\CMS\Component\ComponentHelper;
 use Joomla\CMS\Factory;
+use Joomla\CMS\Filter\InputFilter;
 use Joomla\CMS\Language\Text;
 use Joomla\Database\DatabaseInterface;
 use Joomla\Database\ParameterType;
@@ -70,6 +71,33 @@ final class AdvisoryMerger
     }
 
     /**
+     * Make third-party HTML safe to store as an advisory description.
+     *
+     * Blocks script, style, iframe, object, form and the other tags Joomla's input filter treats
+     * as dangerous, every on* attribute, and javascript:/data: style URLs - while keeping ordinary
+     * formatting (paragraphs, lists, links, code).
+     *
+     * @param string $html Markup from a feed record.
+     *
+     * @return string
+     *
+     * @since 4.0.0
+     */
+    public static function cleanHtml(string $html): string
+    {
+        if (trim($html) === '') {
+            return '';
+        }
+
+        return (string) InputFilter::getInstance(
+            [],
+            [],
+            InputFilter::ONLY_BLOCK_DEFINED_TAGS,
+            InputFilter::ONLY_BLOCK_DEFINED_ATTRIBUTES
+        )->clean($html, 'html');
+    }
+
+    /**
      * Create a draft advisory from a record.
      *
      * @param FeedRecord $record  The record.
@@ -99,7 +127,12 @@ final class AdvisoryMerger
             $title = $record->externalId;
         }
 
-        $description = (string) ($n['description_html'] ?? '');
+        // description_html is the CVE record's `supportingMedia` of type text/html: markup written
+        // by whichever CNA published the record, i.e. by a third party. It becomes the advisory's
+        // description, which the public advisory page and the vendor's case page print through
+        // content.prepare without escaping - so it is cleaned here exactly as a form post would be
+        // (the form applies JComponentHelper::filterText, which the feed path never reached).
+        $description = self::cleanHtml((string) ($n['description_html'] ?? ''));
 
         if (trim($description) === '') {
             $description = '<p>' . nl2br(htmlspecialchars((string) ($n['description'] ?? ''), ENT_QUOTES, 'UTF-8')) . '</p>';

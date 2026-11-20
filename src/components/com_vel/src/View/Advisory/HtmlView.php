@@ -76,7 +76,9 @@ class HtmlView extends BaseHtmlView
             $requested = (string) $input->get('id', '', 'string');
 
             if (!str_contains($requested, ':') || explode(':', $requested, 2)[1] !== (string) $this->item->alias) {
-                $app->redirect(VelHelper::route($this->item), 301);
+                // Not HTML-escaped: this is a Location header, where "&amp;" is not an entity but part
+                // of the address (it broke the redirect on sites without SEF URLs).
+                $app->redirect(VelHelper::route($this->item, false), 301);
             }
         }
 

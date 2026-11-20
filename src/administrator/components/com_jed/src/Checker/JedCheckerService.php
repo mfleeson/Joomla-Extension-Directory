@@ -16,6 +16,7 @@ namespace Jed\Component\Jed\Administrator\Checker;
 \defined('_JEXEC') or die;
 // phpcs:enable PSR1.Files.SideEffects
 
+use Jed\Component\Jed\Administrator\Url\SafeHttpFetcher;
 use Joomla\CMS\Component\ComponentHelper;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
@@ -25,7 +26,6 @@ use Joomla\Database\ParameterType;
 use Joomla\Filesystem\File;
 use Joomla\Filesystem\Folder;
 use Joomla\Filesystem\Path;
-use Joomla\Http\HttpFactory;
 use RuntimeException;
 use Throwable;
 
@@ -358,19 +358,27 @@ class JedCheckerService
      */
     private function download(string $url, string $workspace): string
     {
+        // The link is the developer's (download_url / internal_download_url), so it gets the same
+        // treatment as every other outbound fetch of a developer's URL: SafeHttpFetcher resolves
+        // the host itself, refuses private, loopback, link-local (cloud metadata) and reserved
+        // addresses - on every redirect hop - speaks only http(s), and stops reading at a byte cap.
+        // The plain HTTP client used here before followed redirects anywhere, including into the
+        // JED's own network, and read the whole body into memory before looking at its size.
         try {
-            $response = (new HttpFactory())->getHttp()->get($url, ['User-Agent' => 'JoomlaExtensionsDirectory/4.1 (+https://extensions.joomla.org/; JED Checker)'], 60);
+            $result = (new SafeHttpFetcher(self::MAX_PACKAGE_BYTES + 1, 60))->fetch($url);
         } catch (Throwable $e) {
             throw new RuntimeException(Text::sprintf('COM_JED_JEDCHECKER_DOWNLOAD_FAILED', $url, $e->getMessage()));
         }
 
-        $status = $response->getStatusCode();
-
-        if ($status < 200 || $status >= 300) {
-            throw new RuntimeException(Text::sprintf('COM_JED_JEDCHECKER_DOWNLOAD_FAILED', $url, 'HTTP ' . $status));
+        if ($result->refused) {
+            throw new RuntimeException(Text::sprintf('COM_JED_JEDCHECKER_DOWNLOAD_FAILED', $url, $result->reason));
         }
 
-        $body = (string) $response->getBody();
+        if (!$result->isOk()) {
+            throw new RuntimeException(Text::sprintf('COM_JED_JEDCHECKER_DOWNLOAD_FAILED', $url, 'HTTP ' . $result->status));
+        }
+
+        $body = $result->body;
 
         if (\strlen($body) > self::MAX_PACKAGE_BYTES) {
             throw new RuntimeException(Text::sprintf('COM_JED_JEDCHECKER_PACKAGE_TOO_LARGE', $url));

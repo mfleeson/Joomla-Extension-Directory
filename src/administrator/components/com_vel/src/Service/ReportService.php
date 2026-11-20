@@ -227,7 +227,19 @@ class ReportService
         $advisoryId = null;
 
         if (!empty($data['advisory_reference'])) {
-            $advisoryId = (new AdvisoryRepository($this->db))->resolveReference((string) $data['advisory_reference']) ?: null;
+            // The public forms may point at a *public* advisory and nothing else. resolveReference()
+            // turns "VEL-0042" into 42 without looking the advisory up, so a submitter could pin
+            // their report to a draft (or to an id that does not exist) simply by guessing the next
+            // number - and a report carrying advisory_id is treated as belonging to that advisory
+            // (notifyVendor() reads the reports of an advisory, the Reports tab lists them).
+            // Anything else stays in the text of the report for the team to attach by hand.
+            $repository = new AdvisoryRepository($this->db);
+            $candidate  = $repository->resolveReference((string) $data['advisory_reference']);
+            $advisoryId = $candidate > 0 && $repository->find($candidate, true) !== null ? $candidate : null;
+
+            if ($advisoryId === null && trim((string) ($data['tracking_reference'] ?? '')) === '') {
+                $data['tracking_reference'] = (string) $data['advisory_reference'];
+            }
         }
 
         $row = (object) [
@@ -823,6 +835,15 @@ class ReportService
                 ->where($this->db->quoteName('advisory_id') . ' = :id')->bind(':id', $advisoryId, ParameterType::INTEGER)
                 ->order($this->db->quoteName('created') . ' ASC')
         )->loadObjectList() ?: [];
+
+        // A report that was thrown out is not a source of vendor contacts or of text for the
+        // vendor: developer_email is whatever the reporter typed, and whoever it names receives a
+        // vendor case link (the draft advisory and the vendor thread).
+        $discarded = [ReportState::SPAM->value, ReportState::REJECTED->value, ReportState::VERIFYING->value];
+        $reports   = array_values(array_filter(
+            $reports,
+            static fn (object $report): bool => !\in_array((string) $report->state, $discarded, true)
+        ));
 
         foreach ($reports as $report) {
             $email = mb_strtolower(trim((string) $report->developer_email));

@@ -186,7 +186,13 @@ class ReportService
             throw new RuntimeException(Text::_('COM_ABANDONWARE_ERROR_NO_SUBJECT'));
         }
 
-        $detail = Text::sprintf('COM_ABANDONWARE_SIGNAL_REPORT_DETAIL', $user->username);
+        // The signal text is not private: it is copied into the JED ticket body and into the
+        // REASON of the owner-contact mail (CaseService::signalSummary()), i.e. it is sent to the
+        // developer whose extension is being reported. It must therefore never carry anything
+        // that identifies the reporter - the reporter's identity lives in
+        // #__jed_abandonware_reports and nowhere else (see install.mysql.utf8.sql). Previously
+        // this interpolated the reporter's username, which was mailed to the reported developer.
+        $detail = Text::sprintf('COM_ABANDONWARE_SIGNAL_REPORT_DETAIL', Factory::getDate()->format('Y-m-d'));
 
         if ($extensionId > 0) {
             $open = $this->cases->findOpenCase($extensionId);

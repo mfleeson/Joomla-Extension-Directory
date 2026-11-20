@@ -31,14 +31,15 @@ final class VelHelper
 {
     /**
      * @param object $advisory An advisory row with id and alias.
+     * @param bool   $xhtml    Whether to HTML-escape the URL (false for redirects and headers).
      *
      * @return string  The SEF route.
      *
      * @since 4.0.0
      */
-    public static function route(object $advisory): string
+    public static function route(object $advisory, bool $xhtml = true): string
     {
-        return Route::_('index.php?option=com_vel&view=advisory&id=' . (int) $advisory->id . ':' . (string) $advisory->alias);
+        return Route::_('index.php?option=com_vel&view=advisory&id=' . (int) $advisory->id . ':' . (string) $advisory->alias, $xhtml);
     }
 
     /**

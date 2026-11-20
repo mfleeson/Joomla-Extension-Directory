@@ -26,6 +26,9 @@ use Joomla\CMS\MVC\View\HtmlView as BaseHtmlView;
 use Joomla\CMS\Router\Route;
 use Joomla\CMS\Uri\Uri;
 use Joomla\Registry\Registry;
+use Joomla\CMS\User\User;
+use Jed\Component\Jed\Site\Helper\JedHelper;
+use Jed\Component\Jed\Administrator\Ticket\TicketTypeHandlerInterface;
 
 /**
  * View class for a single ticket.
@@ -161,21 +164,8 @@ class HtmlView extends BaseHtmlView
         $model->setUseExceptions(true);
         $this->state    = $model->getState();
         $this->item     = $model->getItem();
-        $this->messages = $model->getMessages();
-        $this->form     = $model->getForm();
-        $this->params   = $app->getParams('com_jed');
-        $handler        = $model->getTicketTypeHandler($this->item);
 
-        $this->linkedItemData   = $handler->getMasterData((int) ($this->item->linked_item_id ?? 0));
-        $this->linkedItemLayout = $handler->getMasterDataLayout();
-
-        // The master-data layouts are the administrator's (see tmpl/ticket/default.php) and are
-        // worded with the administrator's strings; without this they would print raw keys here.
-        // Both paths, in core's order: an override in administrator/language wins, the
-        // component's own file is the fallback.
-        $app->getLanguage()->load('com_jed', JPATH_ADMINISTRATOR)
-            || $app->getLanguage()->load('com_jed', JPATH_ADMINISTRATOR . '/components/com_jed');
-
+        // Who may read the ticket is settled before anything else about it is loaded.
         if (!$user->id) {
             $return                = base64_encode(Uri::getInstance());
             $login_url_with_return = Route::_('index.php?option=com_users&view=login&return=' . $return);
@@ -187,11 +177,90 @@ class HtmlView extends BaseHtmlView
             !$user->authorise('core.manage', 'com_jed')
             && $this->item->created_by != $user->id
         ) {
-            throw new \Exception(Text::_('JERROR_ALERTNOAUTHOR'));
+            throw new \Exception(Text::_('JERROR_ALERTNOAUTHOR'), 403);
         }
+
+        $this->messages = $model->getMessages();
+        $this->form     = $model->getForm();
+        $this->params   = $app->getParams('com_jed');
+        $handler        = $model->getTicketTypeHandler($this->item);
+
+        if ($this->mayShowMasterData($user, $handler)) {
+            $this->linkedItemData   = $handler->getMasterData((int) ($this->item->linked_item_id ?? 0));
+            $this->linkedItemLayout = $handler->getMasterDataLayout();
+
+            // A listing's pending revision is unmoderated text; only its owner/maintainers and the
+            // JED team see it before approval.
+            if (
+                $this->linkedItemData !== null
+                && !$user->authorise('core.manage', 'com_jed')
+                && TicketType::tryFrom((int) ($this->item->linked_item_type ?? 0)) === TicketType::Extension
+                && !JedHelper::isOwnerOrMaintainer((int) ($this->item->linked_item_id ?? 0))
+            ) {
+                $this->linkedItemData->pending          = null;
+                $this->linkedItemData->isPending        = false;
+                $this->linkedItemData->pendingHistoryId = 0;
+            }
+        } else {
+            $this->linkedItemData   = null;
+            $this->linkedItemLayout = 'ticket.masterdata_other';
+        }
+
+        // The master-data layouts are the administrator's (see tmpl/ticket/default.php) and are
+        // worded with the administrator's strings; without this they would print raw keys here.
+        // Both paths, in core's order: an override in administrator/language wins, the
+        // component's own file is the fallback.
+        $app->getLanguage()->load('com_jed', JPATH_ADMINISTRATOR)
+            || $app->getLanguage()->load('com_jed', JPATH_ADMINISTRATOR . '/components/com_jed');
+
 
         $this->prepareDocument();
 
         parent::display($tpl);
+    }
+
+
+    /**
+     * Whether the master-data panel may be shown to this reader.
+     *
+     * The panels are the administrator's (layouts/ticket/masterdata_*.php): they show a listing's
+     * pending, unmoderated revision, a review whatever its state, a VEL advisory's products and
+     * affected versions, an abandonware case's signals. The JED team may see all of it. The person
+     * who raised the ticket sees only what the public site would show them anyway: a listing or a
+     * review they can view, and the review behind a developer-response ticket on their own
+     * listing. Advisories, abandonware cases and link checks are never shown on the public site.
+     *
+     * @param User                       $user    The reader.
+     * @param TicketTypeHandlerInterface $handler The ticket's type handler.
+     *
+     * @return bool
+     *
+     * @since 4.0.0
+     */
+    private function mayShowMasterData(User $user, TicketTypeHandlerInterface $handler): bool
+    {
+        if ($user->authorise('core.manage', 'com_jed')) {
+            return true;
+        }
+
+        $type     = TicketType::tryFrom((int) ($this->item->linked_item_type ?? 0));
+        $linkedId = (int) ($this->item->linked_item_id ?? 0);
+
+        if ($linkedId <= 0) {
+            return true;
+        }
+
+        if ($type === TicketType::DeveloperResponse) {
+            $extensionId = $handler->getExtensionId($linkedId);
+
+            return $extensionId !== null && JedHelper::isOwnerOrMaintainer($extensionId);
+        }
+
+        return match ($type) {
+            TicketType::Extension   => JedHelper::canViewExtensionById($linkedId),
+            TicketType::Review      => JedHelper::canViewReviewById($linkedId),
+            TicketType::Other, null => true,
+            default                 => false,
+        };
     }
 }

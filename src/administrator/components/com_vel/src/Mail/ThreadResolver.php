@@ -190,6 +190,13 @@ class ThreadResolver
             default                   => MessageVisibility::TEAM,
         };
 
+        // A reporter's reply belongs to their own report, also once that report lives on an
+        // advisory: recorded against the advisory alone it would be shown to every other reporter
+        // of the advisory (MessageService::thread() keeps reporters apart by report_id).
+        if ($role === ParticipantRole::REPORTER && $reportId === null && (int) ($known->report_id ?? 0) > 0) {
+            $reportId = (int) $known->report_id;
+        }
+
         $body      = InboundMessage::stripQuoted($mail->text);
         $messageId = $messages->record($advisoryId, $reportId, (int) $known->id, 'in', 'email', $visibility, mb_substr($mail->subject, 0, 255), $body, (int) ($known->user_id ?? 0), $mail->messageId, $mail->inReplyTo);
 
@@ -328,6 +335,9 @@ class ThreadResolver
                 ->innerJoin($this->db->quoteName('#__vel_participants', 'p'), $this->db->quoteName('p.id') . ' = ' . $this->db->quoteName('m.participant_id'))
                 ->where($this->db->quoteName('p.email') . ' = :email')
                 ->where($this->db->quoteName('m.channel') . ' = :channel')
+                // What this address sent us, not what we sent it: the team's own outbound mail to
+                // a participant (vendor notifications, replies) must not use up their inbound cap.
+                ->where($this->db->quoteName('m.direction') . ' = ' . $this->db->quote('in'))
                 ->where($this->db->quoteName('m.created') . ' >= :since')
                 ->bind(':email', $email)
                 ->bind(':channel', $mail)

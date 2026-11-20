@@ -766,7 +766,10 @@ class JedHelper
 
         $db    = Factory::getContainer()->get('DatabaseDriver');
         $query = $db->getQuery(true)
-            ->select($db->quoteName(['id', 'state', 'approved']))
+            // All four carriers canViewExtension() reads. With only id/state/approved selected,
+            // `blocked` and `deleted` were read as missing - i.e. 0 - so a review of a blocked or
+            // deleted listing was shown on the public review page while the listing itself was not.
+            ->select($db->quoteName(['id', 'state', 'approved', 'blocked', 'deleted']))
             ->from($db->quoteName('#__jed_extensions'))
             ->where($db->quoteName('id') . ' = :eid')
             ->bind(':eid', $extensionId, ParameterType::INTEGER);

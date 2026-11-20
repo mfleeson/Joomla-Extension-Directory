@@ -82,11 +82,26 @@ class TicketformController extends FormController
         $previousId = (int) $app->getUserState('com_jed.edit.ticket.id');
         $editId     = $app->getInput()->getInt('id', 0);
 
-        // Set the user id for the user to edit in the session.
-        $app->setUserState('com_jed.edit.ticket.id', $editId);
-
         // Get the model.
         $model = $this->getModel('Ticketform', 'Site');
+
+        // A ticket is only ever opened by the person who raised it (or the JED team). Checking out
+        // somebody else's ticket locked it against the team's own edit screen.
+        if ($editId > 0) {
+            $user  = $app->getIdentity();
+            $table = $model->getTable();
+
+            if (
+                (int) $user->id <= 0
+                || !$table->load($editId)
+                || ((int) $table->created_by !== (int) $user->id && !$user->authorise('core.manage', 'com_jed'))
+            ) {
+                throw new Exception(Text::_('JERROR_ALERTNOAUTHOR'), 403);
+            }
+        }
+
+        // Set the user id for the user to edit in the session.
+        $app->setUserState('com_jed.edit.ticket.id', $editId);
 
         // Check out the item
         if ($editId) {
@@ -112,35 +127,13 @@ class TicketformController extends FormController
      */
     public function remove(): void
     {
-        $app   = Factory::getApplication();
-        $model = $this->getModel('Ticketform', 'Site');
-        $pk    = $app->getInput()->getInt('id');
+        // Tickets are not deleted from the site. This used to call TicketformModel::delete(), a
+        // method that does not exist (FormModel has none), so the request died with a fatal error
+        // - and it did so without a token check. A ticket is closed by the JED team instead.
+        $this->checkToken('request');
 
-        // Attempt to save the data
-        try {
-            $return = $model->delete($pk);
-
-            // Check in the profile
-            $model->checkin($return);
-
-            // Clear the profile id from the session.
-            $app->setUserState('com_jed.edit.ticket.id', null);
-
-            $menu = $app->getMenu();
-            $item = $menu->getActive();
-            $url  = (empty($item->link) ? 'index.php?option=com_jed&view=tickets' : $item->link);
-
-            // Redirect to the list screen
-            $this->setMessage(Text::_('COM_JED_ITEM_DELETED_SUCCESSFULLY'));
-            $this->setRedirect(Route::_($url, false));
-
-            // Flush the data from the session.
-            $app->setUserState('com_jed.edit.ticket.data', null);
-        } catch (Exception $e) {
-            $errorType = ($e->getCode() == '404') ? 'error' : 'warning';
-            $this->setMessage($e->getMessage(), $errorType);
-            $this->setRedirect('index.php?option=com_jed&view=tickets');
-        }
+        $this->setMessage(Text::_('JERROR_ALERTNOAUTHOR'), 'error');
+        $this->setRedirect(Route::_('index.php?option=com_jed&view=tickets', false));
     }
 
     /**
@@ -175,14 +168,7 @@ class TicketformController extends FormController
 
         // Validate the posted data.
         $data = $model->validate($form, $data);
-        if ($data['ticket_category_type'] == 2) { //Extension
-            $data['linked_item_type'] = TicketType::Extension->value;
-            $data['linked_item_id']   = $data['myextension_varied_name'];
-        }
-        if ($data['ticket_category_type'] == 14) { //My Extension
-            $data['linked_item_type'] = TicketType::Extension->value;
-            $data['linked_item_id']   = $data['reported_varied_name'];
-        }
+
         // Check for errors.
         if ($data === false) {
             $this->app->enqueueMessage(Text::_('COM_JED_ERROR_SAVING_DATA'), 'warning');
@@ -198,6 +184,19 @@ class TicketformController extends FormController
             $this->redirect();
         }
 
+        // "My Extension" (category 2) names one of the submitter's own listings; "Reported
+        // Extension" (14) any listing. Which listings the submitter may actually attach is decided
+        // by TicketformModel::resolveLinkedItem(), not here.
+        if ((int) ($data['ticket_category_type'] ?? 0) === 2) {
+            $data['linked_item_type'] = TicketType::Extension->value;
+            $data['linked_item_id']   = (int) ($data['myextension_varied_name'] ?? 0);
+        }
+
+        if ((int) ($data['ticket_category_type'] ?? 0) === 14) {
+            $data['linked_item_type'] = TicketType::Extension->value;
+            $data['linked_item_id']   = (int) ($data['reported_varied_name'] ?? 0);
+        }
+
         // Attempt to save the data.
         $return = $model->save($data);
 
@@ -210,6 +209,9 @@ class TicketformController extends FormController
             $id = (int) $app->getUserState('com_jed.edit.ticket.id');
             $this->setMessage(Text::_('JLIB_APPLICATION_ERROR_SAVE_FAILED'), 'warning');
             $this->setRedirect(Route::_('index.php?option=com_jed&view=ticketform&layout=edit&id=' . $id, false));
+
+            // Without this the failure fell through to "saved successfully" and the tickets list.
+            return;
         }
 
         // Check in the profile.

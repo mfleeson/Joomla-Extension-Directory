@@ -24,6 +24,7 @@ use Joomla\CMS\Form\Form;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\Model\FormModel;
 use Joomla\CMS\Table\Table;
+use Joomla\Database\ParameterType;
 use Joomla\Utilities\ArrayHelper;
 use stdClass;
 
@@ -292,6 +293,15 @@ class ReviewformModel extends FormModel
 
             $data['id'] = $id;
 
+            // A review stays attached to the listing it was written for. extension_id is a form
+            // field, and posting another value moved the review - with its ratings - onto a
+            // different listing, past every check the new-review path makes (self-review, one
+            // review per listing, a listing the user can actually see). The ban check above was
+            // made against the posted id, so it is repeated for the real one.
+            $data['extension_id'] = (int) $table->extension_id;
+
+            JedAccessHelper::assertMayReview((int) Factory::getApplication()->getIdentity()->id, (int) $table->extension_id);
+
             if ($table->save($data) === true) {
                 $this->id = $table->id;
 
@@ -301,7 +311,9 @@ class ReviewformModel extends FormModel
         }
 
         if (!$id && $isLoggedIn) {
-            /* Any logged-in user can make a new review */
+            /* Any logged-in user can make a new review - of a listing they can see, that is not
+               their own, and that they have not reviewed already. */
+            $this->assertMayWriteNewReview((int) ($data['extension_id'] ?? 0), (int) Factory::getApplication()->getIdentity()->id);
 
             $table = $this->getTable();
 
@@ -319,5 +331,72 @@ class ReviewformModel extends FormModel
             return false;
         }
         throw new Exception(Text::_("JERROR_ALERTNOAUTHOR"), 401);
+    }
+
+    /**
+     * Refuse a new review the rules do not allow.
+     *
+     * - The listing must exist and be visible to the reviewer (published, approved, not blocked,
+     *   not deleted). Otherwise reviews could be attached to listings awaiting approval, blocked
+     *   or deleted ones - and they feed the listing's score.
+     * - Not one's own listing: "Developers must not review their own extensions"
+     *   (helpdocs/developers/responding-to-reviews.md). Owners and accepted maintainers alike.
+     * - One review per listing and person. The edit link already opens the existing review; this
+     *   makes the rule hold for a direct POST as well, so nobody can stack ratings.
+     *
+     * @param int $extensionId The listing.
+     * @param int $userId      The reviewer.
+     *
+     * @return void
+     *
+     * @throws Exception
+     *
+     * @since 4.0.0
+     */
+    private function assertMayWriteNewReview(int $extensionId, int $userId): void
+    {
+        if ($extensionId <= 0) {
+            throw new Exception(Text::_('COM_JED_ITEM_DOESNT_EXIST'), 404);
+        }
+
+        $db      = $this->getDatabase();
+        $listing = $db->setQuery(
+            $db->getQuery(true)
+                ->select($db->quoteName(['id', 'approved', 'state', 'blocked', 'deleted']))
+                ->from($db->quoteName('#__jed_extensions'))
+                ->where($db->quoteName('id') . ' = :eid')
+                ->bind(':eid', $extensionId, ParameterType::INTEGER)
+        )->loadObject();
+
+        if (
+            $listing === null
+            || (int) $listing->approved !== 1
+            || (int) $listing->state !== 1
+            || (int) $listing->blocked !== 0
+            || (int) $listing->deleted !== 0
+        ) {
+            throw new Exception(Text::_('COM_JED_ITEM_DOESNT_EXIST'), 404);
+        }
+
+        if (JedHelper::isOwnerOrMaintainer($extensionId)) {
+            throw new Exception(Text::_('COM_JED_REVIEW_ERROR_OWN_EXTENSION'), 403);
+        }
+
+        $existing = $db->setQuery(
+            $db->getQuery(true)
+                ->select('1')
+                ->from($db->quoteName('#__jed_reviews'))
+                ->where($db->quoteName('extension_id') . ' = :eid')
+                ->where($db->quoteName('created_by') . ' = :uid')
+                ->where($db->quoteName('state') . ' <> -2')
+                ->bind(':eid', $extensionId, ParameterType::INTEGER)
+                ->bind(':uid', $userId, ParameterType::INTEGER),
+            0,
+            1
+        )->loadResult();
+
+        if ($existing) {
+            throw new Exception(Text::_('COM_JED_REVIEW_ERROR_ALREADY_REVIEWED'), 409);
+        }
     }
 }

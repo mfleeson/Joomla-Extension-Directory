@@ -180,6 +180,16 @@ class AdvisoryController extends FormController
             return;
         }
 
+        // Only a published advisory may cross into the JED ticket queue. The ticket is built from
+        // the advisory's title, products and affected versions; for a draft or a "ready" advisory
+        // those are still under embargo. The edit screen only offers the button for a published
+        // advisory, but jedticket() is reachable by any POST, so the rule has to live here.
+        if ((string) $advisory->state !== AdvisoryState::PUBLISHED->value) {
+            $this->app->enqueueMessage(Text::_('COM_VEL_ERROR_JED_TICKET_NOT_PUBLISHED'), 'warning');
+
+            return;
+        }
+
         $mode = (string) $service->option('jed_open_ticket_on_publish', 'ask');
         $want = $mode === 'always' || ($mode === 'ask' && (int) $this->input->getInt('open_jed_ticket', 0) === 1);
 

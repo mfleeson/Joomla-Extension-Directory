@@ -50,11 +50,22 @@ class Github extends Parser
             throw new RuntimeException(Text::sprintf('COM_JED_PARSER_GITHUB_NO_RELEASE', $owner, $repo));
         }
 
-        $zipFile       = $this->download($release->zipball_url);
-        $this->tempDir = $this->extract($zipFile);
-        unlink($zipFile);
+        $zipFile = $this->download($release->zipball_url);
 
-        $this->loadManifest($this->tempDir);
+        try {
+            $this->tempDir = $this->extract($zipFile);
+        } finally {
+            @unlink($zipFile);
+        }
+
+        try {
+            $this->loadManifest($this->tempDir);
+        } catch (\Throwable $e) {
+            // See Parser\File: a throwing constructor never reaches __destruct().
+            $this->removeDirectory($this->tempDir);
+
+            throw $e;
+        }
     }
 
     public function __destruct()
@@ -186,16 +197,20 @@ class Github extends Parser
      */
     private function extract(string $zipFile): string
     {
-        $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'jed_github_' . uniqid();
+        $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'jed_github_' . bin2hex(random_bytes(8));
 
-        $zip = new ZipArchive();
-
-        if ($zip->open($zipFile) !== true) {
-            throw new RuntimeException(Text::sprintf('COM_JED_PARSER_ZIP_UNREADABLE', $zipFile));
+        // Through SafeZip, never ZipArchive::extractTo(). The archive is whatever a logged-in
+        // user uploaded (or whatever a GitHub release contains): extractTo() writes it however
+        // large it expands - a few hundred KB of zeros become gigabytes in the temp folder -
+        // and this class also named ZipArchive without importing it, so it resolved to
+        // Jed\Component\Jed\Administrator\Parser\ZipArchive and every parse died with a fatal
+        // "class not found". SafeZip counts what it writes, caps the entries and skips any
+        // entry that would land outside the folder; it removes what it wrote when it refuses.
+        try {
+            SafeZip::extract($zipFile, $tmpDir);
+        } catch (RuntimeException $e) {
+            throw new RuntimeException(Text::sprintf('COM_JED_PARSER_ZIP_UNREADABLE', basename($zipFile)) . ' ' . $e->getMessage(), 0, $e);
         }
-
-        $zip->extractTo($tmpDir);
-        $zip->close();
 
         return $tmpDir;
     }

@@ -283,7 +283,9 @@ class MessageService
      * The thread, filtered by what the reader may see.
      *
      * @param int|null        $advisoryId The advisory.
-     * @param int|null        $reportId   The report.
+     * @param int|null        $reportId   The report. For a REPORTER reader this must be the
+     *                                    reader's own report: messages of other reports attached
+     *                                    to the same advisory are left out.
      * @param ParticipantRole $reader     Who is reading (TEAM sees everything).
      *
      * @return object[]  Messages with `participant` (object|null) and `attachments` (array).
@@ -312,6 +314,19 @@ class MessageService
             $visibility = MessageVisibility::tryFrom((string) $message->visibility) ?? MessageVisibility::TEAM;
 
             if (!$visibility->readableBy($reader)) {
+                continue;
+            }
+
+            // Several independent reports can be attached to one advisory, and adopt() moves
+            // every report's conversation onto it. Role-based visibility alone would then show
+            // reporter A the report summary, messages and attachments of reporter B - a different
+            // person who never agreed to share anything with A. A reporter reads the messages of
+            // their own report plus what the team addressed to the case as a whole (no report_id).
+            if (
+                $reader === ParticipantRole::REPORTER
+                && (int) ($message->report_id ?? 0) > 0
+                && (int) $message->report_id !== (int) $reportId
+            ) {
                 continue;
             }
 

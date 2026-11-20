@@ -23,7 +23,7 @@
         <field name="subject" filter="safehtml" type="text" required="true" message="COM_JED_FORM_ENTER_SUBJECT"
                label="COM_JED_GENERAL_SUBJECT_LABEL"
                hint="COM_JED_GENERAL_SUBJECT_LABEL"/>
-        <field name="message" editor="jce|codemirror||" buttons="false" filter="JComponentHelper::filterText"
+        <field name="message" editor="jce|codemirror||" buttons="false" filter="Joomla\CMS\Component\ComponentHelper::filterText"
                type="editor" required="true" message="COM_JED_FORM_ENTER_MESSAGE"
                label="COM_JED_EXTENSION_MESSAGE_LABEL"
                hint="COM_JED_EXTENSION_MESSAGE_LABEL"/>

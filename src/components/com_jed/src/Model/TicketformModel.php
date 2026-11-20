@@ -18,6 +18,7 @@ defined('_JEXEC') or die;
 // phpcs:enable PSR1.Files.SideEffects
 
 use Exception;
+use Jed\Component\Jed\Administrator\Enum\TicketType;
 use Jed\Component\Jed\Site\Helper\JedHelper;
 use Jed\Component\Jed\Site\Helper\TicketHelper;
 use Joomla\CMS\Factory;
@@ -179,6 +180,12 @@ class TicketformModel extends FormModel
         $query = $db->getQuery(true);
         $query->select('*')->from($db->quoteName('#__jed_ticket_messages'))->where('ticket_id = ' . $db->quote($ticketId));
 
+        // The JED team's internal messages are not for the person who raised the ticket - the
+        // same rule as TicketModel::getMessages(). This item is loaded for the ticket's creator.
+        if (!$this->getCurrentUser()->authorise('core.manage', 'com_jed')) {
+            $query->where($db->quoteName('internal') . ' = 0');
+        }
+
         return $db->setQuery($query)->loadObjectList();
     }
 
@@ -312,41 +319,117 @@ class TicketformModel extends FormModel
      */
     public function save(array $data)
     {
-       // echo "<pre>";print_r($data);echo "</pre>";exit();
-        $isLoggedIn      = JedHelper::isLoggedIn();
-        $data['user_ip'] = $_SERVER['REMOTE_ADDR'];
-        $user            = Factory::getApplication()->getIdentity();
-        if ($isLoggedIn) {
-            /* Any logged-in user can make a new ticket */
-            $table = $this->getTable();
+        $isLoggedIn = JedHelper::isLoggedIn();
+        $user       = Factory::getApplication()->getIdentity();
 
-            if ($table->save($data) === true) {
-                $this->id                            = $table->id;
-                $ticket_message                      = TicketHelper::createEmptyTicketMessage();
-                $ticket_message['subject']           = $data['ticket_subject'];
-                $ticket_message['message']           = $data['ticket_text'];
-                $ticket_message['message_direction'] = 1; /*  1 for coming in, 0 for going out */
-                $ticket_message['ticket_id']         = $this->id;
-                $ticket_message_model                = new TicketmessageformModel();
-                $ticket_message_model->save($ticket_message);
-                /* We need to email standard message to user and store message in ticket */
-                $message_out = JedHelper::sendMailTemplate(TicketHelper::MAIL_TEMPLATE_TICKET_CONFIRMATION, $user);
-                if ($message_out !== null) {
-                    $ticket_message['id']                = 0;
-                    $ticket_message['subject']           = $message_out->subject;
-                    $ticket_message['message']           = $message_out->htmlbody;
-                    $ticket_message['message_direction'] = 0; /* 1 for coming in, 0 for going out */
-                    $ticket_message['created_by']        = -1;
-                    $ticket_message_model->save($ticket_message);
-                }
-                return $table->id;
-            }
-            echo "can't save";
+        if (!$isLoggedIn) {
+            throw new Exception(Text::_("JERROR_ALERTNOAUTHOR"), 401);
+        }
+
+        // The public form only ever opens a *new* ticket, and only the submitter's own words come
+        // from the request. Everything else is the JED team's or the system's.
+        //
+        // This used to hand the validated form data to TicketTable::save() as it was - and
+        // ticketform.xml declares id, created_by, ticket_status, internal_notes, allocated_to,
+        // linked_item_type/id, parent_id and state, all of them filled in by hidden inputs. So a
+        // logged-in user could post jform[id]=<somebody else's ticket> to overwrite it, add
+        // jform[created_by]=<their own id> to take it over and then read it with all its
+        // messages, write internal notes, close or assign tickets, or link a ticket to a draft
+        // VEL advisory or an abandonware case and read its master data on their own ticket page.
+        [$linkedType, $linkedId] = $this->resolveLinkedItem($data);
+
+        $row = [
+            'id'                      => 0,
+            'ticket_origin'           => 0,
+            'ticket_category_type'    => (int) ($data['ticket_category_type'] ?? 0),
+            'ticket_subject'          => (string) ($data['ticket_subject'] ?? ''),
+            'ticket_text'             => (string) ($data['ticket_text'] ?? ''),
+            'uploaded_files_preview'  => (string) ($data['uploaded_files_preview'] ?? ''),
+            'uploaded_files_location' => (string) ($data['uploaded_files_location'] ?? ''),
+            // The queue a report is routed to (the form pre-selects the review or listing
+            // specialists). Routing, not a privilege, so it may come from the form - as a number.
+            'allocated_group'         => max(0, (int) ($data['allocated_group'] ?? 0)),
+            'allocated_to'            => 0,
+            'linked_item_type'        => $linkedType,
+            'linked_item_id'          => $linkedId,
+            'ticket_status'           => 0,
+            'internal_notes'          => '',
+            'parent_id'               => -1,
+            'state'                   => 1,
+            'created_by'              => (int) $user->id,
+            'user_ip'                 => (string) ($_SERVER['REMOTE_ADDR'] ?? ''),
+        ];
+
+        $table = $this->getTable();
+
+        if ($table->save($row) !== true) {
             return false;
         }
-        throw new Exception(Text::_("JERROR_ALERTNOAUTHOR"), 401);
+
+        $this->id                            = $table->id;
+        $ticket_message                      = TicketHelper::createEmptyTicketMessage();
+        $ticket_message['subject']           = $row['ticket_subject'];
+        $ticket_message['message']           = $row['ticket_text'];
+        $ticket_message['message_direction'] = 1; /*  1 for coming in, 0 for going out */
+        $ticket_message['ticket_id']         = $this->id;
+        $ticket_message_model                = new TicketmessageformModel();
+        $ticket_message_model->save($ticket_message);
+        /* We need to email standard message to user and store message in ticket */
+        $message_out = JedHelper::sendMailTemplate(TicketHelper::MAIL_TEMPLATE_TICKET_CONFIRMATION, $user);
+        if ($message_out !== null) {
+            $ticket_message['id']                = 0;
+            $ticket_message['subject']           = $message_out->subject;
+            $ticket_message['message']           = $message_out->htmlbody;
+            $ticket_message['message_direction'] = 0; /* 1 for coming in, 0 for going out */
+            $ticket_message['created_by']        = -1;
+            $ticket_message_model->save($ticket_message);
+        }
+
+        return $table->id;
     }
 
+    /**
+     * What a member of the public may attach their ticket to.
+     *
+     * A listing they can see, a review they can see, or nothing. A ticket raised about "my
+     * extension" (category 2, the "My Extension" picker) must be about a listing the submitter
+     * owns or maintains. Every other linked type - VEL advisories, abandonware cases, link-check
+     * and developer-response tickets - is opened by the system or the JED team only, and its
+     * master data is internal.
+     *
+     * @param array $data The validated form data.
+     *
+     * @return array{0: int, 1: int}  [linked_item_type, linked_item_id]
+     *
+     * @since 4.0.0
+     */
+    private function resolveLinkedItem(array $data): array
+    {
+        $type = (int) ($data['linked_item_type'] ?? 0);
+        $id   = (int) ($data['linked_item_id'] ?? 0);
+
+        if ($id <= 0) {
+            return [0, 0];
+        }
+
+        if ($type === TicketType::Extension->value) {
+            if (!JedHelper::canViewExtensionById($id)) {
+                return [0, 0];
+            }
+
+            if ((int) ($data['ticket_category_type'] ?? 0) === 2 && !JedHelper::isOwnerOrMaintainer($id)) {
+                return [0, 0];
+            }
+
+            return [$type, $id];
+        }
+
+        if ($type === TicketType::Review->value) {
+            return JedHelper::canViewReviewById($id) ? [$type, $id] : [0, 0];
+        }
+
+        return [0, 0];
+    }
 
     /**
      * getTicketCategory

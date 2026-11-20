@@ -189,14 +189,22 @@ class AuditPipeline
         }
 
         // The URL comes from a developer's own update feed: same guard as every other outbound fetch.
-        $result = (new SafeHttpFetcher(self::MAX_ZIP_BYTES, 60))->fetch($url);
+        $result = (new SafeHttpFetcher(self::MAX_ZIP_BYTES + 1, 60))->fetch($url);
 
         if ($result->refused) {
             throw new RuntimeException(\sprintf('Refused to download extension zip: %s', $result->reason));
         }
 
-        if ($response->getStatusCode() < 200 || $response->getStatusCode() >= 300) {
-            throw new RuntimeException(Text::sprintf('COM_JED_AUDIT_DOWNLOAD_FAILED', $response->getStatusCode()));
+        // $result, not $response: there is no $response in this method, so every audit that got
+        // this far died with "Call to a member function getStatusCode() on null".
+        if (!$result->isOk()) {
+            throw new RuntimeException(Text::sprintf('COM_JED_AUDIT_DOWNLOAD_FAILED', $result->status));
+        }
+
+        // SafeHttpFetcher stops reading at its cap and hands back what it has; a package that
+        // reached the cap is cut short, and auditing half a zip would report on the wrong thing.
+        if ($result->size > self::MAX_ZIP_BYTES) {
+            throw new RuntimeException('Refused to download extension zip: the package is larger than the allowed size.');
         }
 
         file_put_contents($destination, $result->body);

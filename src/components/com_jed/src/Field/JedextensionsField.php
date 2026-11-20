@@ -15,6 +15,7 @@ namespace Jed\Component\Jed\Site\Field;
 // phpcs:enable PSR1.Files.SideEffects
 
 use Exception;
+use Jed\Component\Jed\Site\Helper\JedHelper;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Form\Field\ListField;
 use Joomla\CMS\Language\Text;
@@ -230,10 +231,14 @@ class JedextensionsField extends ListField
         $options = [];
         $db      = Factory::getContainer()->get('DatabaseDriver');
         try {
+            // Only listings the current user could open on the site. This picker is on the public
+            // ticket form, and it used to list every row of #__jed_extensions - the names of
+            // submissions still awaiting approval, rejected, blocked and deleted listings included.
             $query = $db->getQuery(true)
-                ->select("id as value, CONCAT(name,' (',type,')') as text")
-                ->from($db->quoteName('#__jed_extensions'))
-                ->order($db->quoteName('name') . ' ASC')
+                ->select("a.id as value, CONCAT(a.name,' (',a.type,')') as text")
+                ->from($db->quoteName('#__jed_extensions', 'a'))
+                ->where(JedHelper::getExtensionVisibilityCondition($db, 'a'))
+                ->order($db->quoteName('a.name') . ' ASC')
                 ->setLimit(500);
             $db->setQuery($query);
             $results = $db->loadObjectList();

@@ -15,7 +15,6 @@ namespace Jed\Component\Jed\Administrator\Model;
 // phpcs:enable PSR1.Files.SideEffects
 
 use Exception;
-use Jed\Component\Jed\Administrator\Helper\JedHelper;
 use Joomla\CMS\Factory;
 use Joomla\CMS\MVC\Model\ListModel;
 use Joomla\Component\Fields\Administrator\Helper\FieldsHelper;
@@ -79,8 +78,13 @@ class ExtensionimagesModel extends ListModel
         // Join over the users for the checked out user
         $query->select("uc.name AS uEditor");
         $query->leftJoin($db->quoteName("#__users", "uc"), "uc.id=a.checked_out");
-        if (jedHelper::isAdminOrSuperUser()) {
-            $query->where("a.created_by = " . Factory::getApplication()->getIdentity()->id);
+        // Only somebody who may edit every listing sees every image; anyone else with access to
+        // this list sees the images they uploaded. The test used to be the other way round - the
+        // Administrator and Super User groups saw only their own uploads, everybody else saw all.
+        $user = Factory::getApplication()->getIdentity();
+
+        if (!$user->authorise('core.edit', 'com_jed')) {
+            $query->where($db->quoteName('a.created_by') . ' = ' . (int) $user->id);
         }
 
         // Join over the user field 'created_by'

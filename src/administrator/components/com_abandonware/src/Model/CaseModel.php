@@ -16,9 +16,11 @@ namespace Jed\Component\Abandonware\Administrator\Model;
 \defined('_JEXEC') or die;
 // phpcs:enable PSR1.Files.SideEffects
 
+use Jed\Component\Abandonware\Administrator\Enum\CaseStatus;
 use Jed\Component\Abandonware\Administrator\Service\CaseService;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Form\Form;
+use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\Model\AdminModel;
 use Joomla\CMS\Table\Table;
 use Joomla\Database\ParameterType;
@@ -169,8 +171,41 @@ class CaseModel extends AdminModel
      */
     public function save($data): bool
     {
-        foreach (['status', 'contact_time', 'contact_by', 'grace_until', 'abandoned_time', 'abandoned_by', 'resolved_time', 'resolved_by', 'resolution', 'published', 'signals', 'ticket_id'] as $owned) {
+        foreach (['status', 'contact_time', 'contact_by', 'contact_note', 'grace_until', 'abandoned_time', 'abandoned_by', 'resolved_time', 'resolved_by', 'resolution', 'published', 'signals', 'ticket_id', 'open_extension_id', 'created', 'created_by'] as $owned) {
             unset($data[$owned]);
+        }
+
+        // The listing a case is about may only be changed while the case is still being triaged.
+        // Once the owner has been contacted, the contact attempt, the grace period and - for an
+        // abandoned case - the public marker all belong to *that* listing. Re-pointing the case
+        // afterwards would put a public "abandoned" marker on a different listing whose owner was
+        // never contacted, walking straight past the invariant CaseService::markAbandoned()
+        // enforces ("cannot be marked abandoned without a recorded contact attempt").
+        $id = (int) ($data['id'] ?? 0);
+
+        if ($id > 0 && \array_key_exists('extension_id', $data)) {
+            $existing = $this->getDatabase()->setQuery(
+                $this->getDatabase()->getQuery(true)
+                    ->select($this->getDatabase()->quoteName(['extension_id', 'status', 'contact_time']))
+                    ->from($this->getDatabase()->quoteName('#__jed_abandonware_cases'))
+                    ->where($this->getDatabase()->quoteName('id') . ' = :id')
+                    ->bind(':id', $id, ParameterType::INTEGER)
+            )->loadObject();
+
+            $newExtension = (int) ($data['extension_id'] ?? 0);
+
+            if (
+                $existing !== null
+                && $newExtension !== (int) $existing->extension_id
+                && (
+                    !empty($existing->contact_time)
+                    || !\in_array((string) $existing->status, [CaseStatus::RECEIVED->value, CaseStatus::REVIEWING->value], true)
+                )
+            ) {
+                $this->setError(Text::_('COM_ABANDONWARE_ERROR_EXTENSION_LOCKED'));
+
+                return false;
+            }
         }
 
         return parent::save($data);

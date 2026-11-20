@@ -58,7 +58,13 @@ $schema = [
 ];
 ?>
 <article class="com-vel-advisory" itemscope itemtype="https://schema.org/TechArticle">
-    <script type="application/ld+json"><?php echo json_encode($schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?></script>
+    <?php
+    // JSON_HEX_* and not JSON_UNESCAPED_SLASHES alone: this is the body of a <script> element, so
+    // a "</script>" anywhere in the data ends it. description_text is entity-decoded text, and an
+    // advisory about an XSS flaw routinely quotes a payload such as "</script><script>...", which
+    // would otherwise run on the public advisory page. \u003C is still a valid JSON string.
+    ?>
+    <script type="application/ld+json"><?php echo json_encode($schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?></script>
 
     <nav aria-label="breadcrumb" class="small mb-2">
         <a href="<?php echo Route::_('index.php?option=com_vel&view=advisories'); ?>">&larr; <?php echo Text::_('COM_VEL_LIST_HEADING'); ?></a>

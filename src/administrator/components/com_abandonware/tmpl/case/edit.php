@@ -16,6 +16,7 @@
 use Jed\Component\Abandonware\Administrator\Enum\CaseSource;
 use Jed\Component\Abandonware\Administrator\Enum\CaseStatus;
 use Jed\Component\Abandonware\Administrator\Enum\Resolution;
+use Jed\Component\Abandonware\Administrator\Service\CaseService;
 use Joomla\CMS\HTML\HTMLHelper;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\Router\Route;
@@ -33,6 +34,7 @@ $hasContact = !empty($item->contact_time);
 // stated rather than left to be guessed at. CaseService checks both again - this only decides
 // what to draw.
 $canReachAbandoned = $status->canMoveTo(CaseStatus::ABANDONED);
+$graceEnded        = CaseService::graceHasEnded($item);
 ?>
 
 <form action="<?php echo Route::_('index.php?option=com_abandonware&layout=edit&id=' . (int) $item->id); ?>"
@@ -198,6 +200,10 @@ $canReachAbandoned = $status->canMoveTo(CaseStatus::ABANDONED);
                             <?php elseif (!$canReachAbandoned) : ?>
                                 <div class="alert alert-info small mb-0">
                                     <?php echo Text::_('COM_ABANDONWARE_WARN_NOT_MARKABLE_YET'); ?>
+                                </div>
+                            <?php elseif (!$graceEnded) : ?>
+                                <div class="alert alert-info small mb-0">
+                                    <?php echo Text::_('COM_ABANDONWARE_WARN_GRACE_RUNNING'); ?>
                                 </div>
                             <?php else : ?>
                                 <div class="form-check mb-2">

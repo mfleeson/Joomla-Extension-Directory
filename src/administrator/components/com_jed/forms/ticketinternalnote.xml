@@ -23,7 +23,7 @@
         <field name="summary" filter="safehtml" type="text" label="COM_JED_TICKET_INTERNAL_NOTE_FIELD_SUMMARY_LABEL"
                description="COM_JED_TICKET_INTERNAL_NOTE_FIELD_SUMMARY_DESCR"
                hint="COM_JED_TICKET_INTERNAL_NOTE_FIELD_SUMMARY_LABEL"/>
-        <field name="note" editor="tinymce" buttons="false" filter="JComponentHelper::filterText" type="editor"
+        <field name="note" editor="tinymce" buttons="false" filter="Joomla\CMS\Component\ComponentHelper::filterText" type="editor"
                label="COM_JED_GENERAL_NOTE_LABEL"
                description="COM_JED_TICKETINTERNALNOTE_FIELD_NOTE_DESCR"
                hint="COM_JED_GENERAL_NOTE_LABEL"/>
