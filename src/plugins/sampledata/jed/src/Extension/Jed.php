@@ -10,6 +10,7 @@
 
 namespace Joomla\Plugin\SampleData\Jed\Extension;
 
+use Joomla\CMS\Dispatcher\DispatcherInterface;
 use Joomla\CMS\Event\Plugin\AjaxEvent;
 use Joomla\CMS\Event\SampleData\GetOverviewEvent;
 use Joomla\CMS\Language\Text;
@@ -20,6 +21,8 @@ use Joomla\CMS\Table\Category;
 use Joomla\CMS\User\UserFactoryAwareInterface;
 use Joomla\CMS\User\UserFactoryAwareTrait;
 use Joomla\Database\DatabaseAwareTrait;
+use Joomla\Event\DispatcherAwareInterface;
+use Joomla\Event\DispatcherAwareTrait;
 use Joomla\Event\SubscriberInterface;
 
 // phpcs:disable PSR1.Files.SideEffects
@@ -35,9 +38,10 @@ use Joomla\Event\SubscriberInterface;
  *
  * @since  4.0.0
  */
-final class Jed extends CMSPlugin implements SubscriberInterface, UserFactoryAwareInterface
+final class Jed extends CMSPlugin implements SubscriberInterface, UserFactoryAwareInterface, DispatcherAwareInterface
 {
     use DatabaseAwareTrait;
+    use DispatcherAwareTrait;
     use UserFactoryAwareTrait;
 
     /**

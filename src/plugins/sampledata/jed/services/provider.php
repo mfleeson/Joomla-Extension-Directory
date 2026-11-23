@@ -19,6 +19,7 @@ use Joomla\CMS\User\UserFactoryInterface;
 use Joomla\Database\DatabaseInterface;
 use Joomla\DI\Container;
 use Joomla\DI\ServiceProviderInterface;
+use Joomla\Event\DispatcherInterface;
 use Joomla\Plugin\SampleData\Jed\Extension\Jed;
 
 return new class () implements ServiceProviderInterface {
@@ -43,6 +44,7 @@ return new class () implements ServiceProviderInterface {
                 $plugin->setDatabase($container->get(DatabaseInterface::class));
                 $plugin->setUserFactory($container->get(UserFactoryInterface::class));
 
+                $plugin->setDispatcher($container->get(DispatcherInterface::class));
                 return $plugin;
             })
         );
