@@ -133,10 +133,10 @@ $action = function (string $task, array $fields, string $label, string $class = 
             <table class="table table-striped mb-0">
                 <thead>
                     <tr>
-                        <th scope="col"><?php echo Text::_('JGLOBAL_FIELD_USER_LABEL'); ?></th>
+                        <th scope="col"><?php echo Text::_('COM_JED_GENERAL_USER_LABEL'); ?></th>
                         <th scope="col"><?php echo Text::_('COM_JED_ORGANISATION_ROLE'); ?></th>
                         <?php if ($isAdmin) : ?>
-                            <th scope="col"><?php echo Text::_('JACTION'); ?></th>
+                            <th scope="col"><?php echo Text::_('COM_JED_GENERAL_ACTIONS_LABEL'); ?></th>
                         <?php endif; ?>
                     </tr>
                 </thead>
@@ -151,7 +151,7 @@ $action = function (string $task, array $fields, string $label, string $class = 
                                 <?php endif; ?>
                             </th>
                             <td>
-                                <?php echo Text::_('COM_JED_ORGANISATION_ROLE_' . strtoupper((string) $member->role)); ?>
+                                <?php echo Text::_('COM_JED_ORGANISATION_ROLE_' . strtoupper((string) $member->role)); ?>y
                                 <?php if ($isPrimary) : ?>
                                     <span class="badge bg-info"><?php echo Text::_('COM_JED_ORGANISATION_PRIMARY_CONTACT'); ?></span>
                                 <?php endif; ?>

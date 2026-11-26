@@ -33,7 +33,7 @@ $state = static fn (object $m): MembershipState => MembershipState::tryFrom((int
 // reads it by this name, and a normal Save ignores it.
 $memberForm = Form::getInstance(
     'com_jed.organisation.member',
-    '<form><field name="member_user_id" type="user" label="JGLOBAL_FIELD_USER_LABEL"/></form>'
+    '<form><field name="member_user_id" type="user" label="COM_JED_GENERAL_USER_LABEL"/></form>'
 );
 ?>
 <form action="<?php echo Route::_('index.php?option=com_jed&layout=edit&id=' . $id); ?>" method="post" name="adminForm" id="organisation-form" class="form-validate">
@@ -57,9 +57,9 @@ $memberForm = Form::getInstance(
                     <table class="table table-sm">
                         <thead>
                             <tr>
-                                <th scope="col"><?php echo Text::_('JGLOBAL_FIELD_USER_LABEL'); ?></th>
+                                <th scope="col"><?php echo Text::_('COM_JED_GENERAL_USER_LABEL'); ?></th>
                                 <th scope="col"><?php echo Text::_('JSTATUS'); ?></th>
-                                <th scope="col"><?php echo Text::_('JACTION'); ?></th>
+                                <th scope="col"><?php echo Text::_('COM_JED_EXTENSION_HISTORY_LOG_ACTIONLOG'); ?></th>
                             </tr>
                         </thead>
                         <tbody>

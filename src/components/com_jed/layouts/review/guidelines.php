@@ -45,4 +45,4 @@ use Joomla\CMS\Language\Text;
         </div>
     </div>
     </div>
-<div><button class="btn btn-secondary" id="reviewBtn" ><?php echo Text::_('JCONTINUE'); ?></button></div>
+<div><button class="btn btn-secondary" id="reviewBtn" ><?php echo Text::_('COM_JED_REVIEW_CONTINUE'); ?></button></div>

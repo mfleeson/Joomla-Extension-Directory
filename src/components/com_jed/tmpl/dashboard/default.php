@@ -225,7 +225,7 @@ $wa->useScript('com_jed.favorite');
                             <th><?php echo Text::_('COM_JED_REVIEWS_OVERALL_SCORE_LABEL'); ?></th>
                             <th><?php echo Text::_('COM_JED_GENERAL_CREATED_ON_LABEL'); ?></th>
                             <th><?php echo Text::_('JSTATUS'); ?></th>
-                            <th><?php echo Text::_('JACTION'); ?></th>
+                            <th><?php echo Text::_('COM_JED_GENERAL_ACTIONS_LABEL'); ?></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -321,7 +321,7 @@ $wa->useScript('com_jed.favorite');
                             <th><?php echo Text::_('COM_JED_EXTENSION_NAME_LABEL'); ?></th>
                             <th><?php echo Text::_('JCATEGORY'); ?></th>
                             <th><?php echo Text::_('COM_JED_DASHBOARD_COL_DATE_ADDED'); ?></th>
-                            <th><?php echo Text::_('JACTION'); ?></th>
+                            <th><?php echo Text::_('COM_JED_GENERAL_ACTIONS_LABEL'); ?></th>
                         </tr>
                     </thead>
                     <tbody id="jed-favorites-tbody">
