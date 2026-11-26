@@ -29,12 +29,6 @@ $wa->useScript('keepalive')
     ->useScript('com_jed.reviewForm-changeRequired');
 HTMLHelper::_('bootstrap.tooltip');
 
-$user    = $this->getCurrentUser();
-$canEdit = JedHelper::canUserEdit($this->item);
-
-$isLoggedIn  = JedHelper::isLoggedIn();
-$redirectURL = JedHelper::getLoginlink();
-
 echo LayoutHelper::render('review.guidelines', $this->extension_details);
 
 ?>
@@ -45,12 +39,60 @@ echo LayoutHelper::render('review.guidelines', $this->extension_details);
                       method="post" class="form-validate form-horizontal" enctype="multipart/form-data">
 
                     <?php
+
+                    /*
                     // The "review" fieldset only, never every fieldset the form declares.
                     // reviewform.xml keeps state/flagged/ip_address in a separate "moderation"
                     // fieldset, and rendering them here is what put a publish checkbox on the
                     // public form in the first place (9.2). Naming the one fieldset means a
                     // field added to "moderation" later cannot leak onto this page by default.
-                    echo $this->form->renderFieldset('review');
+                    echo $this->form->renderFieldset('review');*/
+                    $fieldsets['overview']['title']       = Text::_('COM_JED_REVIEW_OVERVIEW_TITLE') . $this->extension_details->name;
+                    $fieldsets['overview']['description'] = Text::_('COM_JED_REVIEW_OVERVIEW_DESCR');
+                    $fieldsets['overview']['fields']      = ['id',
+                            'supply_option_id', 'version',
+                            'extension_id', 'used_for'];
+                    $fieldsets['overview']['hidden']      = ['id', 'extension_id'];
+                    $fieldsets['details']['title']       = Text::_('COM_JED_REVIEW_DETAILS_TITLE');
+                    $fieldsets['details']['description'] = Text::_('COM_JED_REVIEW_DETAILS_DESCR');
+                    $fieldsets['details']['fields']      = ['title',
+                            'alias',
+                            'body'];
+                    $fieldsets['details']['hidden']      = ['alias'];
+
+                    $fieldsets['scores']['title']       = Text::_('COM_JED_REVIEW_SCORES_TITLE');
+                    $fieldsets['scores']['description'] = Text::_('COM_JED_REVIEW_SCORES_DESCR');
+                    $fieldsets['scores']['fields']      = [
+                            'func_num',
+                            'ease_num',
+                            'support_num',
+                            'doc_num',
+                            'value_num',
+                            'functionality',
+                            'ease_of_use',
+                            'support',
+                            'documentation',
+                            'value_for_money',
+                            'overall_score'];
+                    $fieldsets['scores']['hidden'] = ['overall_score',
+                            'func_num',
+                            'ease_num',
+                            'support_num',
+                            'doc_num',
+                            'value_num'];
+                    $fieldsets['comments']['title']       = Text::_('COM_JED_REVIEW_COMMENTS_TITLE');
+                    $fieldsets['comments']['description'] = Text::_('COM_JED_REVIEW_COMMENTS_DESCR');
+                    $fieldsets['comments']['fields']      = ['functionality_comment',
+                            'ease_of_use_comment',
+                            'support_comment',
+                            'documentation_comment',
+                            'value_for_money_comment'];
+                    $fieldsets['comments']['hidden']      = [];
+
+                    $fieldsets['hidden']['title']       = '';
+                    $fieldsets['hidden']['description'] = '';
+
+                    JedHelper::outputFieldsets( $fieldsets, $this->form);
 ?>
 
 

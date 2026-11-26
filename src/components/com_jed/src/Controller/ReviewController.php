@@ -37,31 +37,13 @@ class ReviewController extends BaseController
      */
     public function edit(): void
     {
-        /* @var $app \Joomla\CMS\Application\SiteApplication */
-        $app = Factory::getApplication();
+        // Editing happens in the review form, whose controller owns the edit id and the checkout.
+        // This used to call checkout() on the site ReviewModel - an ItemModel, which has no such
+        // method - so the "Edit" button on every review page ended in a fatal error; and it held
+        // the edit id and checked rows in and out for anybody, logged in or not.
+        $editId = (int) $this->input->getInt('id', 0);
 
-        // Get the previous edit id (if any) and the current edit id.
-        $previousId = (int) $app->getUserState('com_jed.edit.review.id');
-        $editId     = $app->getInput()->getInt('id', 0);
-
-        // Set the user id for the user to edit in the session.
-        $app->setUserState('com_jed.edit.review.id', $editId);
-
-        // Get the model.
-        $model = $this->getModel('Review', 'Site');
-
-        // Check out the item
-        if ($editId) {
-            $model->checkout($editId);
-        }
-
-        // Check in the previous user.
-        if ($previousId && $previousId !== $editId) {
-            $model->checkin($previousId);
-        }
-
-        // Redirect to the edit screen.
-        $this->setRedirect(Route::_('index.php?option=com_jed&view=reviewform&layout=edit', false));
+        $this->setRedirect(Route::_('index.php?option=com_jed&task=reviewform.edit&id=' . $editId, false));
     }
 
     /**

@@ -63,6 +63,22 @@ class ReviewformController extends FormController
             }
         }
 
+        // Only the author (or a moderator) edits a review. Anything else is treated as "write a new
+        // review": holding somebody else's id here checked their review out to this user - any
+        // logged-in user could lock any review against editing by its author and by moderators.
+        if ($editId > 0) {
+            $user  = $app->getIdentity();
+            $table = $this->getModel('Reviewform', 'Site')->getTable();
+
+            if (
+                !JedHelper::isLoggedIn()
+                || !$table->load($editId)
+                || ((int) $table->created_by !== (int) $user->id && !$user->authorise('core.edit', 'com_jed'))
+            ) {
+                $editId = 0;
+            }
+        }
+
         // Set the user id for the user to edit in the session.
         $app->setUserState('com_jed.edit.review.id', $editId);
 
@@ -113,8 +129,31 @@ class ReviewformController extends FormController
         $model = $this->getModel('Reviewform', 'Site');
 
         // Get the user data.
-        $data                    = $app->getInput()->get('jform', [], 'array');
+        $data = $app->getInput()->get('jform', [], 'array');
 
+        // The five ratings arrive in the hidden *_num inputs the star widget fills. They were
+        // copied across unchecked, so a hand-made POST could store any number the decimal(2,1)
+        // column accepts (-9.9 to 9.9) on a 0-5 scale and drag a listing's average wherever it
+        // liked; and the overall score divided by five even when an optional rating was left
+        // unscored (the widget sends -1), punishing the listing for a question not answered.
+        $ratings = [
+            'functionality'   => 'func_num',
+            'ease_of_use'     => 'ease_num',
+            'support'         => 'support_num',
+            'documentation'   => 'doc_num',
+            'value_for_money' => 'value_num',
+        ];
+        $scored = [];
+
+        foreach ($ratings as $column => $input) {
+            $data[$column] = self::rating($data[$input] ?? null);
+
+            if ($data[$column] !== null) {
+                $scored[] = $data[$column];
+            }
+        }
+
+        $data['overall_score'] = $scored === [] ? null : round(array_sum($scored) / \count($scored), 1);
         // Validate the posted data.
         $form = $model->getForm();
 
@@ -136,8 +175,18 @@ class ReviewformController extends FormController
             $this->redirect();
         }
 
-        // Attempt to save the data.
-        $return = $model->save($data);
+        // Attempt to save the data. The model refuses reviews the rules do not allow (own
+        // listing, second review, a listing that is not public, a ban) with an exception whose
+        // message is meant for the reviewer.
+        try {
+            $return = $model->save($data);
+        } catch (Exception $e) {
+            $app->setUserState('com_jed.edit.review.data', $data);
+            $this->setMessage($e->getMessage(), 'warning');
+            $this->setRedirect(Route::_('index.php?option=com_jed&view=reviews', false));
+
+            return;
+        }
 
         // Check for errors.
         if ($return === false) {
@@ -196,5 +245,25 @@ class ReviewformController extends FormController
         $item = $menu->getActive();
         $url  = (empty($item->link) ? 'index.php?option=com_jed&view=reviews' : $item->link);
         $this->setRedirect(Route::_($url, false));
+    }
+
+    /**
+     * A star rating as stored: 0.5 to 5 in half steps, or null for "not scored".
+     *
+     * @param mixed $value The posted value.
+     *
+     * @return float|null
+     *
+     * @since 4.0.0
+     */
+    private static function rating(mixed $value): ?float
+    {
+        if (!is_numeric($value)) {
+            return null;
+        }
+
+        $value = round((float) $value * 2) / 2;
+
+        return $value >= 0.5 && $value <= 5.0 ? $value : null;
     }
 }

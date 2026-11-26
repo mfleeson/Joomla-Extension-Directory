@@ -51,6 +51,13 @@ class TicketModel extends AdminModel
      * @since 4.0.0
      */
     protected $item = null;
+    /**
+     * Default ticket id
+     *
+     * @var   int
+     * @since 4.0.0
+     **/
+    private int $id = -1;
 
     /**
      * @var   int  Linked Item Type
@@ -380,5 +387,31 @@ class TicketModel extends AdminModel
     public function getDB(): DatabaseInterface
     {
         return $this->getDatabase();
+    }
+
+    public function getTicketId(): int
+    {
+        return $this->id;
+    }
+
+    /**
+     * Method to save the ticket data.
+     *
+     * @param array $data The form data
+     *
+     * @return bool
+     *
+     * @since  4.0.0
+     * @throws Exception
+     */
+    public function save($data):bool
+    {
+        $table = $this->getTable();
+
+        if ($table->save($data) === true) {
+            $this->id = $table->id;
+            return true;
+        }
+        return false;
     }
 }

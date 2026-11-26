@@ -26,7 +26,7 @@ use Joomla\CMS\Router\Route;
 
 <div id="ticket-guidelines">
 
-    <p><?php echo Text::sprintf('COM_JED_TICKETFORM_INTRO', Route::_('index.php?option=com_jed&view=velabandonedreportform')); ?></p>
+    <p><?php echo Text::sprintf('COM_JED_TICKETFORM_INTRO', Route::_('index.php?option=com_abandonware&view=report')); ?></p>
     <?php if (empty($displayData->isReport)) : ?>
         <p><?php echo Text::sprintf('COM_JED_TICKETFORM_NEW_EXTENSION_HINT', Route::_('index.php?option=com_jed&view=extensionform')); ?></p>
         <p><?php echo Text::_('COM_JED_TICKETFORM_SUPPORT_HINT'); ?></p>

@@ -16,6 +16,8 @@ namespace Jed\Component\Jed\Site\View\Tickets;
 \defined('_JEXEC') or die;
 // phpcs:enable PSR1.Files.SideEffects
 
+use Jed\Component\Jed\Administrator\Enum\TicketType;
+use Jed\Component\Jed\Administrator\Traits\TicketHandlingTrait;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Form\Form;
 use Joomla\CMS\Language\Text;
@@ -32,6 +34,8 @@ use Joomla\CMS\Pagination\Pagination;
  */
 class HtmlView extends BaseHtmlView
 {
+    use TicketHandlingTrait;
+
     public Form $filterForm;
 
     public array $activeFilters;

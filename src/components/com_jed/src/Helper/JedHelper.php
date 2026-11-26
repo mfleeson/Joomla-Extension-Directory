@@ -30,9 +30,11 @@ use Joomla\CMS\Router\Route;
 use Joomla\CMS\Uri\Uri;
 use Joomla\CMS\User;
 use Joomla\Component\Mails\Administrator\Model\TemplateModel;
+use Joomla\Database\DatabaseDriver;
 use Joomla\Database\DatabaseInterface;
 use Joomla\Database\ParameterType;
 
+use stdClass;
 use function defined;
 
 /**
@@ -79,6 +81,14 @@ class JedHelper
         }
     }
 
+    public static function getMailTemplate( string $ticketId): stdClass
+    {
+        $db       = Factory::getContainer()->get(DatabaseDriver::class);
+        $query = $db->getQuery(true)->select('a.*')->from('#__mail_templates as a')->where('a.template_id = ' . $db->quote($ticketId))->where('a.extension = "com_jed"');
+        $db->setQuery($query);
+        return $db->loadObject();
+//        return $result;//->body;
+    }
 
     /**
      * Sends a Joomla mail template (#__mail_templates) to the given recipient and returns the
@@ -95,19 +105,7 @@ class JedHelper
      */
     public static function sendMailTemplate(string $templateId, User\User $recipient): ?object
     {
-        $app      = Factory::getApplication();
-        $language = $app->getLanguage()->getTag();
-        /** @var TemplateModel $model */
-        $model    = $app->bootComponent('com_mails')->getMVCFactory()->createModel('Template', 'Administrator');
-        $model->setState($model->getName() . '.template_id', $templateId);
-        $model->setState($model->getName() . '.language', $language);
-        $mail     = $model->getItem();
-
-        if ($mail === null) {
-            return null;
-        }
-
-        $mailtemplate = new MailTemplate($templateId, $language);
+        $mailtemplate = new MailTemplate($templateId, '');
         $mailtemplate->addRecipient($recipient->email, $recipient->name);
         $mailtemplate->send();
 

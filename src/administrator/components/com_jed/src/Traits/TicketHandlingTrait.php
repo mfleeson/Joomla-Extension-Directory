@@ -72,8 +72,7 @@ trait TicketHandlingTrait
         if (!$model->save($data)) {
             return 0;
         }
-
-        $ticketId = (int) $model->getState($model->getName() . '.id');
+        $ticketId = $model->getTicketId();
 
         $messageModel = new TicketmessageModel();
         $messageModel->save([
