@@ -9,7 +9,9 @@
 
 namespace Jed\Component\Jed\Site\Helper;
 
+use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
+use Joomla\Database\DatabaseInterface;
 
 // phpcs:disable PSR1.Files.SideEffects
 \defined('_JEXEC') or die;
@@ -152,28 +154,28 @@ class JedtrophyHelper
      */
     public static function getTrophyVersionsStringFull($versionstr): string
     {
-        //  echo $versionstr;exit();
+        //echo $versionstr;
         $l_version = str_replace('[', '', $versionstr);
-
         $l_version = str_replace(']', '', $l_version);
         $l_version = str_replace('"', '', $l_version);
 
         $trophies = explode(',', $l_version);
 
-        $output      = '';//<div class="trophies versions">';
+        $db     = Factory::getContainer()->get(DatabaseInterface::class);
+        $query  = $db->getQuery(true);
+        $query->select('a.id AS value, a.label AS label, a.long_label as long_label')->from($db->quoteName('#__jed_joomla_versions', 'a'))->where('a.published=1');
+        $db->setQuery($query);
+        $rows = $db->loadAssocList('value');
+
+        $output      = '';
         $comma_count = 0;
         foreach ($trophies as $v) {
-            $title = 'Joomla!&nbsp;' . ((float)$v) / 10;
-            $comma_count++;
 
-            if ($comma_count > 1) {
-                $output .= '<br />' . $title;
-            } else {
-                $output .= $title;
-            }
+            $title = $rows[$v]['long_label'] ?? $rows[$v]['label'];
+            $txt = '<span class="fab fa-joomla"></span>&nbsp;'.$rows[$v]['label'].'&nbsp;';
+            $output .= '<span title="' . $title . '" class="joomla-version-badge">' . $txt . '</span>';
         }
 
-        //$output .= '</div>';
         return $output;
     }
 }
