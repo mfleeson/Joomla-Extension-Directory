@@ -53,17 +53,7 @@ class JedHelper extends ContentHelper
             $bar->linkButton('tickets')->text(Text::_('COM_JED_TITLE_TICKETS'))->url('index.php?option=com_jed&view=tickets')->icon('fa fa-ticket-alt');
         }
 
-        $bar->linkButton('vulnerable')->text(Text::_('COM_JED_TITLE_VEL_VULNERABLEITEMS'))->url('index.php?option=com_jed&view=velvulnerableitems')->icon('fa fa-bug');
         $bar->linkButton('extensions')->text(Text::_('COM_JED_EXTENSIONS'))->url('index.php?option=com_jed&view=extensions')->icon('fa fa-puzzle-piece');
-
-
-        /*
-         * Only for finally moving live to test
-         */
-        if($caller == '') {
-            $bar->linkButton('copyjed3data')->text('COM_JED_TITLE_COPY_JED3_DATA')->icon('fa fa-link')->url('index.php?option=com_jed&view=copyjed3data');
-        }
-
     }
 
     /**

@@ -99,7 +99,7 @@ class HtmlView extends BaseHtmlView
         $toolbar = $doc->getToolbar();
 
         if ($canDo->get('core.create')) {
-            $toolbar->addNew('extension.add');
+            //$toolbar->addNew('extension.add'); Extensions are not created via the backend UI
         }
 
         if ($canDo->get('core.edit.state')) {
