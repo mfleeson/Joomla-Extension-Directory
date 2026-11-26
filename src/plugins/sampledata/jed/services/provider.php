@@ -40,10 +40,10 @@ return new class () implements ServiceProviderInterface {
                 $plugin = new Jed(
                     (array) PluginHelper::getPlugin('sampledata', 'jed')
                 );
+                $plugin->setDispatcher($container->get(DispatcherInterface::class));
                 $plugin->setApplication(Factory::getApplication());
                 $plugin->setDatabase($container->get(DatabaseInterface::class));
                 $plugin->setUserFactory($container->get(UserFactoryInterface::class));
-
                 $plugin->setDispatcher($container->get(DispatcherInterface::class));
                 return $plugin;
             })
