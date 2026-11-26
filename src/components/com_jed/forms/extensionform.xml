@@ -4,10 +4,10 @@
         <field name="id" type="hidden" readonly="true" class="readonly" default="0" description="JGLOBAL_FIELD_ID_DESC"/>
         <field name="name" filter="safehtml" type="text" label="JGLOBAL_TITLE" required="true"
                hint="COM_JED_GENERAL_TITLE_LABEL"/>
-        <field name="alias" type="text" class="inputbox" generator="title" label="JFIELD_ALIAS_LABEL" hint="JALIAS"/>
+        <field name="alias" type="text" class="inputbox" readonly="" generator="title" label="JFIELD_ALIAS_LABEL" hint="JALIAS"/>
         <field name="catid" extension="com_jed" type="category" published="1" multiple="false" required="true"
-               label="COM_JED_GENERAL_CATEGORY_ID_LABEL"
-               hint="COM_JED_GENERAL_CATEGORY_ID_LABEL"/>
+               label="COM_JED_GENERAL_CATEGORY_PRIMARY_LABEL"
+               hint="COM_JED_GENERAL_CATEGORY_PRIMARY_LABEL"/>
         <field name="categories" extension="com_jed" type="category" published="1" multiple="true"
                label="COM_JED_EXTENSION_CATEGORIES_LABEL"
                hint="COM_JED_EXTENSION_CATEGORIES_LABEL"/>
@@ -22,10 +22,13 @@
         <field name="description" filter="Joomla\CMS\Component\ComponentHelper::filterText"
                type="textarea" rows="20" label="COM_JED_EXTENSION_DESCRIPTION_LABEL"
                hint="COM_JED_EXTENSION_DESCRIPTION_LABEL"/>
-        <field name="license" filter="safehtml" type="text" label="COM_JED_EXTENSION_LICENSE_LABEL"
-               hint="COM_JED_EXTENSION_LICENSE_LABEL"/>
+        <field name="license" type="list" default="" label="COM_JED_EXTENSION_LICENSE_LABEL" readonly="true">
+            <option value="GPLv2 or later">COM_JED_EXTENSION_GPL_LICENSE_TYPE_OPTION_GPL2</option>
+            <option value="AGPL">COM_JED_EXTENSION_GPL_LICENSE_TYPE_OPTION_AGPL</option>
+            <option value="LGPL">COM_JED_EXTENSION_GPL_LICENSE_TYPE_OPTION_LGPL</option>
+        </field>
         <field name="license_url" type="jedurl" validate="jedurl" validator="reachable" label="COM_JED_EXTENSION_LICENSE_URL_LABEL"
-               description="COM_JED_EXTENSION_LICENSE_URL_DESC"/>
+               description="COM_JED_EXTENSION_LICENSE_URL_DESC" required="true"/>
         <field
                 name="requires_registration"
                 type="radio"
@@ -37,7 +40,7 @@
             <option value="0">JNO</option>
             <option value="1">JYES</option>
         </field>
-        <field name="type" type="list" default="free" label="COM_JED_GENERAL_TYPE_LABEL">
+        <field name="type" type="list" default="free" label="COM_JED_GENERAL_TYPE_LABEL" required="true">
             <option value="free">COM_JED_GENERAL_TYPE_LABEL_FREE</option>
             <option value="paid">COM_JED_GENERAL_TYPE_LABEL_PAID</option>
             <option value="freemium">COM_JED_GENERAL_TYPE_LABEL_FREEMIUM</option>
@@ -47,6 +50,7 @@
                 name="extension_types"
                 type="checkboxes"
                 label="COM_JED_EXTENSION_EXTENSION_TYPE_LABEL"
+                required="true"
         >
             <option value="com">COM_JED_EXTENSION_COMPONENT_LABEL</option>
             <option value="mod">COM_JED_EXTENSION_MODULE_LABEL</option>
@@ -55,23 +59,17 @@
         </field>
         <field
                 name="joomla_versions"
-                type="checkboxes"
+                type="joomlaversion"
+                description="COM_JED_EXTENSION_JOOMLA_VERSIONS_DESCR"
                 label="COM_JED_EXTENSION_JOOMLA_VERSIONS_LABEL"
-        >
-            <option value="30">3.0</option>
-            <option value="40">4.0</option>
-            <option value="41">4.1</option>
-            <option value="42">4.2</option>
-            <option value="43">4.3</option>
-            <option value="44">4.4</option>
-            <option value="50">5.0</option>
-            <option value="60">6.0</option>
-        </field>
+                multiple="true"
+                required="true"
+        />
     </fieldset>
 
     <fieldset name="links" label="COM_JED_FIELDSET_LINKS_LABEL">
         <field name="download_url" type="jedurl" validate="jedurl" validator="download" label="COM_JED_EXTENSION_DOWNLOAD_LINK_LABEL"
-               hint="COM_JED_EXTENSION_DOWNLOAD_LINK_LABEL"/>
+               hint="COM_JED_EXTENSION_DOWNLOAD_LINK_LABEL" required="true" />
         <field name="support_url" type="jedurl" validate="jedurl" validator="reachable" label="COM_JED_EXTENSION_SUPPORT_LINK_LABEL"
                hint="COM_JED_EXTENSION_SUPPORT_LINK_LABEL"/>
         <field name="demo_url" type="jedurl" validate="jedurl" validator="reachable" label="COM_JED_EXTENSION_DEMO_LINK_LABEL"
@@ -81,7 +79,7 @@
                hint="COM_JED_EXTENSION_DOCUMENTATION_LINK_LABEL"/>
         <field name="git_url" type="jedurl" validate="jedurl" validator="git" label="COM_JED_EXTENSION_GIT_URL_LABEL"
                hint="COM_JED_EXTENSION_GIT_URL_LABEL"/>
-        <field name="internal_download_url" type="jedurl" validate="jedurl" validator="download"
+        <field name="internal_download_url" type="hidden" validate="jedurl" validator="download"
                label="COM_JED_EXTENSION_INTERNAL_DOWNLOAD_URL_LABEL"
                hint="COM_JED_EXTENSION_INTERNAL_DOWNLOAD_URL_LABEL"/>
         <field name="download_key" filter="safehtml" type="text" label="COM_JED_EXTENSION_DOWNLOAD_KEY_LABEL"
